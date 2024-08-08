@@ -1,6 +1,12 @@
+import NavigationBar from "@/components/customui/NavigationBar"
+
 const HomePage = () => {
   return (
-    <div>HomePage</div>
+    <>
+    <NavigationBar/>
+    <div>
+        Dashboard
+    </div></>
   )
 }
 
