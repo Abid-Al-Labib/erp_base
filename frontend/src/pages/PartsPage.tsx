@@ -1,7 +1,8 @@
-// import Image from "next/image"
+import { useEffect, useState } from 'react';
+import { fetchParts } from '../services/PartsService';
 import { Link } from "react-router-dom"
 import {
-  ListFilter,
+  Loader2,
   PlusCircle,
   Search,
 } from "lucide-react"
@@ -15,14 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -37,8 +30,31 @@ import {
 } from "@/components/ui/tabs"
 import PartsTableRow from "@/components/customui/PartsTableRow"
 import NavigationBar from "@/components/customui/NavigationBar"
+import { Part } from '@/types';
+import toast from 'react-hot-toast';
+
+
+
 
 const PartsPage = () => {
+
+    const [parts,setParts] = useState<Part[]>([]);
+    const [loading, setLoading] = useState(true);
+
+
+    useEffect(()=>{
+        const loadParts = async () => {
+            try {
+                const data = await fetchParts();
+                setParts(data);
+            } catch (error) {
+                toast.error('Failed to fetch parts');
+            } finally {
+                setLoading(false)
+            }
+        };
+        loadParts();
+    }, [])
     return (
         <>
         <NavigationBar/>
@@ -56,117 +72,62 @@ const PartsPage = () => {
                         className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                         />
                     </div>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-8 gap-1">
-                            <ListFilter className="h-3.5 w-3.5" />
-                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                Filter
-                            </span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem checked>
-                            Active
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem>Draft</DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem>
-                            Archived
-                            </DropdownMenuCheckboxItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
                         <Link to="/addpart">
-                            <Button size="sm" className="h-8 gap-1">
+                            <Button size="sm" className="h-8 gap-1 bg-blue-950">
                             <PlusCircle className="h-3.5 w-3.5" />
                             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                 Add Part
                             </span>
                             </Button>
                         </Link>
-
                     </div>
                     </div>
                     <TabsContent value="all">
                     <Card x-chunk="dashboard-06-chunk-0">
                         <CardHeader>
-                        <CardTitle>Parts</CardTitle>
-                        <CardDescription>
-                            Manage parts and view information.
-                        </CardDescription>
+                            <CardTitle>Parts</CardTitle>
+                            <CardDescription>
+                                Manage parts and view information.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                        <Table>
-                            <TableHeader>
-                            <TableRow>
-                                <TableHead>ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead className="hidden md:table-cell">unit</TableHead>
-                                <TableHead>
-                                Cost/unit
-                                </TableHead>
-                                <TableHead className="hidden md:table-cell">
-                                Vendor
-                                </TableHead>
-                                <TableHead className="hidden md:table-cell">
-                                Created at
-                                </TableHead>
-                                <TableHead>
-                                <span className="sr-only">Actions</span>
-                                </TableHead>
-                            </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                            <PartsTableRow
-                                    id="1"
-                                    name="nut"
-                                    unit_cost="25"
-                                    unit="pc"
-                                    created_at="12-08-2024" 
-                                    vendor="adidas"                            
-                            />
-                            <PartsTableRow
-                                    id="1"
-                                    name="nut"
-                                    unit_cost="25"
-                                    unit="pc"
-                                    created_at="12-08-2024" 
-                                    vendor="adidas"                            
-                            />
-                            <PartsTableRow
-                                    id="1"
-                                    name="nut"
-                                    unit_cost="25"
-                                    unit="pc"
-                                    created_at="12-08-2024" 
-                                    vendor="adidas"                            
-                            />
-                            <PartsTableRow
-                                    id="1"
-                                    name="nut"
-                                    unit_cost="25"
-                                    unit="pc"
-                                    created_at="12-08-2024" 
-                                    vendor="adidas"                            
-                            />
-                            <PartsTableRow
-                                    id="1"
-                                    name="nut"
-                                    unit_cost="25"
-                                    unit="pc"
-                                    created_at="12-08-2024" 
-                                    vendor="adidas"                            
-                            />
-
-                            </TableBody>
-                        </Table>
+                            <Table>
+                                <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead className="hidden md:table-cell">unit</TableHead>
+                                    <TableHead className="hidden md:table-cell">
+                                    Created at
+                                    </TableHead>
+                                    <TableHead>
+                                    <span className="sr-only">Actions</span>
+                                    </TableHead>
+                                </TableRow>
+                                </TableHeader>
+                                {loading? (
+                                    <div className='flex flex-row justify-center'>
+                                        <Loader2 className='h-8 w-8 animate-spin'/>
+                                    </div>
+                                ):
+                                    <TableBody>
+                                    {parts.map(part => (
+                                        <PartsTableRow key={part.id}
+                                        id={part.id}
+                                        name={part.name}
+                                        unit={part.unit}
+                                        created_at={part.created_at}                 
+                                        />
+                                    ))}
+                                    </TableBody>
+                                }  
+                            </Table>
                         </CardContent>
                         <CardFooter>
-                        <div className="text-xs text-muted-foreground">
-                            Showing <strong>1-10</strong> of <strong>32</strong>{" "}
-                            Parts
-                        </div>
+                            <div className="text-xs text-muted-foreground">
+                                Showing <strong>1-10</strong> of <strong>32</strong>{" "}
+                                Parts
+                            </div>
                         </CardFooter>
                     </Card>
                     </TabsContent>

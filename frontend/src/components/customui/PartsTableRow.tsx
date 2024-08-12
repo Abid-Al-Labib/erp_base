@@ -3,17 +3,16 @@ import { MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { TableCell, TableRow } from "../ui/table";
+import { Link } from 'react-router-dom';
 
 interface PartsTableRowProps {
-  id: string;
+  id: number;
   name: string;
-  unit_cost: string;
   unit: string;
-  vendor: string;
   created_at: string;
 }
 
-const PartsTableRow: React.FC<PartsTableRowProps> = ({ id, name, unit_cost, unit, vendor, created_at }) => {
+const PartsTableRow: React.FC<PartsTableRowProps> = ({ id, name, unit, created_at }) => {
   return (
     <TableRow>
       <TableCell className="font-medium">
@@ -23,13 +22,7 @@ const PartsTableRow: React.FC<PartsTableRowProps> = ({ id, name, unit_cost, unit
         {name}
       </TableCell>
       <TableCell>
-        {unit_cost}
-      </TableCell>
-      <TableCell className="hidden md:table-cell">
         {unit}
-      </TableCell>
-      <TableCell className="hidden md:table-cell">
-        {vendor}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {created_at}
@@ -49,7 +42,9 @@ const PartsTableRow: React.FC<PartsTableRowProps> = ({ id, name, unit_cost, unit
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem>View</DropdownMenuItem>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link to={`/editpart/${id}`}>Edit</Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
