@@ -32,6 +32,7 @@ import PartsTableRow from "@/components/customui/PartsTableRow"
 import NavigationBar from "@/components/customui/NavigationBar"
 import { Part } from '@/types';
 import toast from 'react-hot-toast';
+import { convertUtcToBDTime } from '@/services/helper';
 
 
 
@@ -116,7 +117,7 @@ const PartsPage = () => {
                                         id={part.id}
                                         name={part.name}
                                         unit={part.unit}
-                                        created_at={part.created_at}                 
+                                        created_at={convertUtcToBDTime(part.created_at)}                 
                                         />
                                     ))}
                                     </TableBody>

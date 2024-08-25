@@ -30,7 +30,7 @@ export function mergeStatusWithTracker(
 
 export const convertUtcToBDTime = (utcTimestamp: string): string => {
     // Create a Date object from the UTC timestamp
-    const offset = 6
+    const offset = 0
     const date = new Date(utcTimestamp);
 
     // Apply the offset in hours

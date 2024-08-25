@@ -3,12 +3,13 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PartsPage from './pages/PartsPage';
-import AddPart from './pages/AddPart';
-import EditPart from './pages/EditPart';
+import EditPartPage from './pages/EditPartPage';
 import OrderPage from './pages/OrderPage';
 import CreateOrderPage from './pages/CreateOrderPage';
 import ViewOrderPage from './pages/ViewOrderPage';
 import ManageOrderPage from './pages/ManageOrderPage';
+import ViewPartPage from './pages/ViewPartPage';
+import AddPartPage from './pages/AddPartPage';
 
 const App: React.FC = () => {
   return (
@@ -17,8 +18,9 @@ const App: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/parts" element={<PartsPage />} />
-        <Route path="/addpart" element={<AddPart />} />
-        <Route path="/editpart/:id" element={<EditPart />} />
+        <Route path="/addpart" element={<AddPartPage />} />
+        <Route path="/editpart/:id" element={<EditPartPage />} />
+        <Route path="/viewpart/:id" element={<ViewPartPage />} />
         <Route path="/orders" element={<OrderPage />} />
         <Route path="/createorder" element={<CreateOrderPage />} />
         <Route path="/vieworder/:id" element={<ViewOrderPage />} />

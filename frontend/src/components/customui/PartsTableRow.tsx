@@ -41,10 +41,16 @@ const PartsTableRow: React.FC<PartsTableRowProps> = ({ id, name, unit, created_a
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>View</DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link to={`/editpart/${id}`}>Edit</Link>
-            </DropdownMenuItem>
+            <Link to={`/viewpart/${id}`}>
+              <DropdownMenuItem>
+                View
+              </DropdownMenuItem>
+            </Link>
+            <Link to={`/editpart/${id}`}>
+              <DropdownMenuItem>
+                Edit
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>

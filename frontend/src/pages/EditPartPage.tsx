@@ -7,10 +7,10 @@ import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { CirclePlus, CircleX, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { editPart, fetchPart } from "@/services/PartsService"
+import { editPart, fetchPartByID } from "@/services/PartsService"
 import toast from 'react-hot-toast'
 
-const EditPart = () => {
+const EditPartPage = () => {
 
     const { id } = useParams<{ id: string }>();
     const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ const EditPart = () => {
             const part_id = parseInt(id);
 
             try {
-                const data = await fetchPart(part_id);
+                const data = await fetchPartByID(part_id);
                 const currPart = data[0]
                 
                 const nameInput = document.getElementById("name") as HTMLInputElement;
@@ -178,4 +178,4 @@ const EditPart = () => {
   )
 }
 
-export default EditPart
+export default EditPartPage

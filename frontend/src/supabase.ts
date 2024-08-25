@@ -139,53 +139,59 @@ export type Database = {
           },
         ]
       }
-      order_items: {
+      order_parts: {
         Row: {
-          "cost/unit": string | null
           factory_id: number
           factory_section_id: number
-          goods_sent_date: string | null
           id: number
-          is_part_recieved: boolean
+          is_sample_received_by_office: boolean
+          is_sample_sent_to_office: boolean
           machine_id: number
           note: string | null
           order_id: number
           part_id: number
+          part_purchased_date: string | null
+          part_received_by_factory_date: string | null
+          part_sent_by_office_date: string | null
           qty: number
-          sample_received: number | null
           sample_unit: string | null
+          unit_cost: number | null
           vendor: string | null
         }
         Insert: {
-          "cost/unit"?: string | null
           factory_id: number
           factory_section_id: number
-          goods_sent_date?: string | null
           id?: number
-          is_part_recieved?: boolean
+          is_sample_received_by_office: boolean
+          is_sample_sent_to_office: boolean
           machine_id: number
           note?: string | null
           order_id: number
           part_id: number
+          part_purchased_date?: string | null
+          part_received_by_factory_date?: string | null
+          part_sent_by_office_date?: string | null
           qty: number
-          sample_received?: number | null
           sample_unit?: string | null
+          unit_cost?: number | null
           vendor?: string | null
         }
         Update: {
-          "cost/unit"?: string | null
           factory_id?: number
           factory_section_id?: number
-          goods_sent_date?: string | null
           id?: number
-          is_part_recieved?: boolean
+          is_sample_received_by_office?: boolean
+          is_sample_sent_to_office?: boolean
           machine_id?: number
           note?: string | null
           order_id?: number
           part_id?: number
+          part_purchased_date?: string | null
+          part_received_by_factory_date?: string | null
+          part_sent_by_office_date?: string | null
           qty?: number
-          sample_received?: number | null
           sample_unit?: string | null
+          unit_cost?: number | null
           vendor?: string | null
         }
         Relationships: [
@@ -280,6 +286,7 @@ export type Database = {
           created_at: string
           description: string
           id: number
+          lifetime: number | null
           name: string
           unit: string
         }
@@ -287,6 +294,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: number
+          lifetime?: number | null
           name: string
           unit: string
         }
@@ -294,6 +302,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: number
+          lifetime?: number | null
           name?: string
           unit?: string
         }

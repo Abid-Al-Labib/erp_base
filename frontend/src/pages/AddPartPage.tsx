@@ -10,7 +10,7 @@ import { useState } from "react"
 import { insertPart } from "@/services/PartsService"
 import toast from 'react-hot-toast'
 
-const AddPart = () => {
+const AddPartPage = () => {
     
     const [isSubmitting, setisSubmitting] = useState(false);
     
@@ -133,4 +133,4 @@ const AddPart = () => {
   )
 }
 
-export default AddPart
+export default AddPartPage

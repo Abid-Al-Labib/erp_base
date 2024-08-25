@@ -48,7 +48,7 @@ export const editPart =  async(part_id:number,name:string,unit:string,descriptio
     }
 }
 
-export const fetchPart = async (part_id: number)=> {
+export const fetchPartByID = async (part_id: number)=> {
     const { data, error } = await supabase_client.from('parts').select("*").eq(
         'id', part_id
     )
