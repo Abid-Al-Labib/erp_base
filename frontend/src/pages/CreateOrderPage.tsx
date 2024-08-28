@@ -15,8 +15,8 @@ const CreateOrderPage = () => {
     const [factoryName, setFactoryName] = useState('');
     const [department, setDepartment] = useState('');
     const [orderType, setOrderType] = useState('');
-    const [machineType, setMachineType] = useState('');  // Additional state for machine type if 'Machine' is selected
-    const [description, setDescription] = useState('');  // State for the description
+    const [machineType, setMachineType] = useState('');  
+    const [description, setDescription] = useState(''); 
    
     
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,13 +64,13 @@ const CreateOrderPage = () => {
     }
 
     const handleCancel = () => {
-        // Reset all state variables
+
         setFactoryName('');
         setDepartment('');
         setOrderType('');
         setMachineType('');
         setDescription('')
-        // Navigate('/orders');  // Redirect to the orders page or dashboard
+        // Navigate('/orders');  
     };
 
 
