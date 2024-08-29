@@ -40,23 +40,27 @@ const CreateOrderPage = () => {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [orderStarted, setOrderStarted] = useState(false);
+
+    const selectedDepartmentName = departmentId ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
+
+    const isOrderFormComplete = selectedFactoryId && departmentId && orderType;
+
 
     const handleCreateOrder = async () => {
         setIsSubmitting(true);
         try{
-            
+            if (!isOrderFormComplete) {
+                toast.error("Please fill out all required fields");
+                return;
+            }
 
             if (selectedFactoryId==-1 || departmentId==-1 || !orderType || !description) {
                 toast.error("Please fill out all the fields");
                 return;
             }
 
-            if (orderType === 'machine'){
-                if(!machineType){
-                    toast.error("Please specify the Machine Details");
-                    return;
-                }
-            }
+            
 
             // Suppose these IDs are fetched or predetermined from your application's state or via another method
             const createdById = 1; // Placeholder: fetch from user session or context
@@ -80,7 +84,7 @@ const CreateOrderPage = () => {
             const response = await insertOrder(orderData)
             console.log(response)
             if (response){
-                toast.success("Part Added")
+                toast.success("Your order has been confirmed, start adding parts below...")
 
                 // factoryName.value = "";
                 // department.value = "";
@@ -93,7 +97,17 @@ const CreateOrderPage = () => {
         } 
     }
 
-    const handleCancel = () => {
+    const handleCancelOrder = () => {
+
+        setSelectedFactoryId(-1);
+        setDepartmentId(-1);
+        setOrderType('');
+        setMachineType('');
+        setDescription('')
+        // Navigate('/orders');  
+    };
+
+    const handleCancelOrderParts = () => {
 
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
@@ -112,7 +126,6 @@ const CreateOrderPage = () => {
         loadFactories();
     }, []);
 
-    const selectedDepartmentName = departmentId ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
 
 
 
@@ -181,25 +194,51 @@ const CreateOrderPage = () => {
                                 />
                             </div>
 
-
+                                                    {/* BUTTONS */}
+                            <div className="flex flex-1 gap-4 py-5">
+                                {isSubmitting ? (
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <Loader2 className="h-6 w-6 animate-spin" />
+                                        Creating Order..."
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Button 
+                                            size="sm"
+                                            className="ml-auto gap-2"
+                                            onClick={handleCreateOrder}
+                                            disabled={!isOrderFormComplete}  // Disable the button if form is not complete
+                                        >
+                                            <CirclePlus className="h-4 w-4" />Create Order
+                                        </Button>
+                                        <Link to="/orders">
+                                            <Button 
+                                                size="sm" 
+                                                className="ml-auto gap-2"
+                                                onClick={handleCancelOrder}
+                                            >
+                                                <CircleX className="h-4 w-4" />
+                                                Cancel
+                                            </Button>
+                                        </Link>
+                                    </>
+                                )
+                            }
+                            </div>
 
 
                         </div>
+
+                        
                     </CardContent>
                 
                 </Card>
 
 
-                
-
-                        
-
-
-
-
-
-
              </div>
+
+
+            {/* SECOND CARD DATA */}
 
              <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
                 <Card x-chunk="dashboard-07-chunk-0">
@@ -245,7 +284,7 @@ const CreateOrderPage = () => {
                                         <Button 
                                             size="sm" 
                                             className="ml-auto gap-2"
-                                            onClick={handleCancel}  // Linking the Cancel button to the cancel function
+                                            onClick={handleCancelOrder}  // Linking the Cancel button to the cancel function
                                         >
                                             <CircleX className="h-4 w-4" />
                                             Cancel
@@ -254,8 +293,8 @@ const CreateOrderPage = () => {
                                 </>
                             )
                         }</div>
-
                     </CardContent>
+
                 </Card>
              </div>
         </>
