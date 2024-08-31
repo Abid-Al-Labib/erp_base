@@ -56,30 +56,47 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
 export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
 }
 
-export const insertOrderParts = async (orderPart: OrderedPart) => {
-    const { data, error } = await supabase_client.from('order_parts').insert([
-        {
-            "qty": orderPart.qty,
-            "order_id":orderPart.order_id,
-            "part_id":orderPart.part_id,
-            "factory_id":orderPart.factory_id,
-            "machine_id":orderPart.machine_id,
-            "factory_section_id":orderPart.factory_section_id,
-            "is_sample_sent_to_office":orderPart.is_sample_sent_to_office,
-            "part_sent_by_office_date":orderPart.part_sent_by_office_date,
-            "unit_cost":orderPart.unit_cost,
-            "vendor":orderPart.vendor,
-            "part_received_by_factory_date":orderPart.part_received_by_factory_date,
-            "part_purchased_date":orderPart.part_purchased_date,
-        }
-    ])
-    .select()
+export const insertOrderedParts = async (
+    
+    qty: number,
+    order_id: number,
+    part_id: number,
+    factory_id: number,
+    machine_id: number,
+    factory_section_id: number,
+    is_sample_sent_to_office: boolean,
+    // part_sent_by_office_date: string,
+    // unit_cost: number,
+    vendor: string,
+    // part_received_by_factory_date: string,
+    // part_purchased_date: string
+) => {
+    toast("Hey1");
 
+    const { data, error } = await supabase_client.from('order_parts').insert([{
+        qty,
+        order_id,
+        part_id,
+        factory_id,
+        machine_id,
+        factory_section_id,
+        is_sample_sent_to_office,
+        // part_sent_by_office_date,
+        // unit_cost,
+        vendor,
+        // part_received_by_factory_date,
+        // part_purchased_date,
+    }])
+    .select();
+
+    toast("Hey4");
 
     if (error) {
         toast.error("Failed to insert order part: " + error.message);
+        toast("Hey5");
         return null;
     }
+
 
     toast.success("Order part added successfully");
     return data as unknown as OrderedPart[];

@@ -9,8 +9,8 @@ export type Factory = Tables<"factories">
 
 export type OrderedPart = {
     id: number,
-    is_sample_received_by_office: string,
-    is_sample_sent_to_office: string,
+    is_sample_received_by_office: boolean,
+    is_sample_sent_to_office: boolean,
     part_sent_by_office_date: string | null,
     part_received_by_factory_date: string | null,
     part_purchased_date: string|null,
