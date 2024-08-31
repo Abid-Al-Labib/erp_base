@@ -41,7 +41,6 @@ interface InputOrder {
 }
 
 interface InputOrderedPart {
-    is_sample_received_by_office: boolean;
     qty: number;
     order_id: number;
     part_id: number;
@@ -50,6 +49,10 @@ interface InputOrderedPart {
     factory_section_id: number;
     factory_section_name: string;
     machine_number: number;
+    is_sample_sent_to_office: boolean,
+    unit_cost?: number;
+    note?: string; 
+    vendor?: string; 
 }
 
 const CreateOrderPage = () => {
@@ -77,6 +80,8 @@ const CreateOrderPage = () => {
 
     const [orderType, setOrderType] = useState('');
     const [description, setDescription] = useState(''); 
+    const [note, setNote] = useState(''); 
+
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
@@ -94,17 +99,21 @@ const CreateOrderPage = () => {
 
     const [orderedParts, setOrderedParts] = useState<InputOrderedPart[]>([]);
 
+    
+
 
     // Order Parts
     const [qty, setQty] = useState<number>(-1);
     const [partId, setPartId] = useState<number>(-1);
-    const [isSampleSentToOffice, setIsSampleSentToOffice] = useState(false);
+    const [isSampleSentToOffice, setIsSampleSentToOffice] = useState<boolean>();
     const [partSentByOfficeDate, setPartSentByOfficeDate] = useState(new Date().toISOString());
-    const [unitCost, setUnitCost] = useState('');
+    const [unitCost, setUnitCost] = useState<number | undefined>(undefined);
     const [vendor, setVendor] = useState('');
     const [partReceivedByFactoryDate, setPartReceivedByFactoryDate] = useState(new Date().toISOString());
     const [partPurchasedDate, setPartPurchasedDate] = useState(new Date().toISOString());
     // Array to store all parts
+
+    const isAddPartFormComplete = partId !== -1 && qty > 0 && selectedFactorySectionId !== -1 && selectedMachineId !== -1 && isSampleSentToOffice !== null;
 
     const handleCreateOrder = async () => {
         setIsSubmitting(true);
@@ -139,7 +148,6 @@ const CreateOrderPage = () => {
 
     const handleAddOrderParts = () => {
         const newOrderedPart = {
-            is_sample_received_by_office: false, // Default value, change as needed
             qty: qty,
             order_id: 0, // Will be set when the order is created
             part_id: partId,
@@ -148,6 +156,10 @@ const CreateOrderPage = () => {
             factory_section_id: selectedFactorySectionId,
             factory_section_name: selectedFactorySectionName,
             machine_number: selectedMachineNumber,
+            is_sample_sent_to_office: isSampleSentToOffice,
+            unit_cost: unitCost !== undefined ? unitCost : 0,
+            note: note || "", 
+            vendor: vendor || "",
         };
         toast.success("Trying id");
         toast(newOrderedPart.part_id.toString());
@@ -180,8 +192,11 @@ const CreateOrderPage = () => {
                         part.factory_id,
                         part.machine_id,
                         part.factory_section_id,
-                        part.is_sample_received_by_office, // Assume default or check your actual need
-                        vendor,
+                        part.is_sample_sent_to_office, // Assume default or check your actual need
+                        part.unit_cost || 0.0,
+                        part.note || "",
+                        part.vendor || "",
+
                     )
                 );
 
@@ -220,7 +235,7 @@ const CreateOrderPage = () => {
         setSelectedFactorySectionId(-1);
         setIsSampleSentToOffice(false);
         setPartSentByOfficeDate(new Date().toISOString());
-        setUnitCost('');
+        setUnitCost(0.0);
         setVendor('');
         setPartReceivedByFactoryDate(new Date().toISOString());
         setPartPurchasedDate(new Date().toISOString());
@@ -340,7 +355,7 @@ const CreateOrderPage = () => {
                                             size="sm"
                                             className="ml-auto gap-2"
                                             onClick={handleCreateOrder}
-                                            disabled={!isOrderFormComplete}  // Disable the button if form is not complete
+                                            disabled={!isOrderFormComplete}  // Disable the button
                                         >
                                             <CirclePlus className="h-4 w-4" />Start Order
                                         </Button>
@@ -430,11 +445,86 @@ const CreateOrderPage = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-    
+                                    
+                                    {/* Unit Cost */}
+                                    <div className="flex flex-col space-y-2">
+                                        <Label htmlFor="unitCost" className="font-medium">Unit Cost (Optional)</Label>
+                                        <input
+                                            id="unitCost"
+                                            type="number"
+                                            step="0.01"
+                                            value={unitCost !== undefined ? unitCost : ''}
+                                            onChange={e => setUnitCost(parseFloat(e.target.value))}
+                                            placeholder="Enter Unit Cost"
+                                            className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    {/* Sample Sent to Office */}
+                                    <div className="flex flex-col space-y-2">
+                                        <Label htmlFor="sampleSentToOffice" className="font-medium">Is Sample Sent to Office?</Label>
+                                        <Select onValueChange={(value) => setIsSampleSentToOffice(value === "true")}>
+                                            <SelectTrigger className="w-[220px]">
+                                                <SelectValue>{isSampleSentToOffice ? "Yes" : "No"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="true">Yes</SelectItem>
+                                                <SelectItem value="false">No</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Note */}
+                                    <div className="flex flex-col space-y-2">
+                                        <Label htmlFor="note" className="font-medium">Note (Optional)</Label>
+                                        <Textarea
+                                            id="note"
+                                            value={note || ''}
+                                            onChange={e => setNote(e.target.value)}
+                                            placeholder="Enter any notes"
+                                            className="min-h-24"
+                                        />
+                                    </div>
+
+                                    {/* Vendor */}
+                                    <div className="flex flex-col space-y-2">
+                                        <Label htmlFor="vendor" className="font-medium">Vendor (Optional)</Label>
+                                        <input
+                                            id="vendor"
+                                            type="text"
+                                            value={vendor || ''}
+                                            onChange={e => setVendor(e.target.value)}
+                                            placeholder="Enter Vendor"
+                                            className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                        
                                     {/* Buttons for adding parts and finalizing the order */}
                                     <div className="flex gap-3">
-                                        <Button onClick={handleAddOrderParts}>Add Part</Button>
-                                        <Button onClick={handleFinalCreateOrder}>Finalize Order</Button>
+                              
+
+                                        <Button 
+                                            size="sm"
+                                            className="ml-auto gap 2" 
+                                            onClick={handleAddOrderParts}
+                                            disabled={!isAddPartFormComplete}
+                                        >
+                                            <CirclePlus className="h-4 w-4" />
+                                            Add Parts
+                                        </Button>
+
+                                        
+
+                                        <Button
+                                            size="sm"
+                                            className="ml-auto gap"
+                                            onClick={handleFinalCreateOrder}
+                                            disabled={orderedParts.length === 0}
+                                        >
+                                            <CircleCheck className="h-4 w-4" />
+                                            Finalize Order
+                                        </Button>
+
                                     </div>
                                 </div>
     

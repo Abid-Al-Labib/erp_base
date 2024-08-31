@@ -65,11 +65,9 @@ export const insertOrderedParts = async (
     machine_id: number,
     factory_section_id: number,
     is_sample_sent_to_office: boolean,
-    // part_sent_by_office_date: string,
-    // unit_cost: number,
+    unit_cost: number,
+    note: string,
     vendor: string,
-    // part_received_by_factory_date: string,
-    // part_purchased_date: string
 ) => {
     toast("Hey1");
 
@@ -82,10 +80,11 @@ export const insertOrderedParts = async (
         factory_section_id,
         is_sample_sent_to_office,
         // part_sent_by_office_date,
-        // unit_cost,
+        unit_cost,
         vendor,
         // part_received_by_factory_date,
         // part_purchased_date,
+        note,
     }])
     .select();
 
