@@ -10,87 +10,94 @@ import { useEffect, useState } from "react"
 import { insertOrder } from "@/services/OrdersService";
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Order, OrderedPart } from "@/types"
-import { fetchFactories } from '@/services/FactoriesService';
+import { fetchFactories, fetchFactorySections, fetchMachines } from '@/services/FactoriesService';
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
-
+import { Part } from "@/types"
 
 interface Factory {
     id: number;
     name: string;
 }
+interface FactorySection{
+    id: number;	
+    name: string;
+    factory_id?: number;
+}
 
-interface Part {
+interface Machine {
+    id: number;
+    number: number;
+    type: string;
+    factory_section_id?: number;
+}
+
+interface InputOrder {
+    created_at: string;
+    order_note: string;
+    created_by_user_id: number;
+    department_id: number;
+    current_status_id: number;
+}
+
+interface InputOrderedPart {
+    is_sample_received_by_office: boolean;
     qty: number;
     order_id: number;
     part_id: number;
     factory_id: number;
     machine_id: number;
     factory_section_id: number;
-    is_sample_sent_to_office: boolean;
-    part_sent_by_office_date: string;
-    unit_cost: number;
-    vendor: string;
-    part_received_by_factory_date: string;
-    part_purchased_date: string;
-  }
-
-function validateReal(input: string) {
-    const num = parseFloat(input);
-    if (isNaN(num)) {
-        return 0.0;  // or return a default value like 0.0 if that makes sense for your application
-    }
-    return num;
+    factory_section_name: string;
+    machine_number: number;
 }
 
 const CreateOrderPage = () => {
 
-    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
 
     const [factories, setFactories] = useState<Factory[]>([]);
     const [selectedFactoryId, setSelectedFactoryId] = useState<number>(-1); 
     const selectedFactoryName = factories.find(factory => factory.id === selectedFactoryId)?.name || "Select Factory";
 
+    const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
+    const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number>(-1);
+    const selectedFactorySectionName = factorySections.find(section => section.id === selectedFactorySectionId)?.name || "Select Section";
+    
+    const [machines, setMachines] = useState<Machine[]>([]);
+    const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
+    const selectedMachineNumber = Number(machines.find(machine => machine.id === selectedMachineId)?.number || "Select Machine");
+
     const departments = [
         { id: 1, name: "Electrical" },
         { id: 2, name: "Mechanical" }
-    ];
-    
-    
+    ];    
     const [departmentId, setDepartmentId] = useState<number>(-1); 
-    const [orderType, setOrderType] = useState('');
-    const [machineType, setMachineType] = useState('');  
-    const [description, setDescription] = useState(''); 
-
-   
-    const [tempOrderDetails, setTempOrderDetails] = useState<Order | null>(null);
-
-
-    const [orderId, setOrderId] = useState(-1);
-
     const selectedDepartmentName = departmentId ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
 
+    const [orderType, setOrderType] = useState('');
+    const [description, setDescription] = useState(''); 
+
+    const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
+    const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
     const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType;
 
-    const [parts, setParts] = useState([]);
-
+    const [parts, setParts] = useState<Part[]>([]);
     useEffect(() => {
         const loadParts = async () => {
             const fetchedParts = await fetchParts();
             setParts(fetchedParts);
         };
-
+    
         loadParts();
     }, []);
+
+    const [orderedParts, setOrderedParts] = useState<InputOrderedPart[]>([]);
+
+
     // Order Parts
     const [qty, setQty] = useState<number>(-1);
     const [partId, setPartId] = useState<number>(-1);
-    const [factoryId, setFactoryId] = useState<number>(-1);
-    const [machineId, setMachineId] = useState<number>(-1);
-    const [factorySectionId, setFactorySectionId] = useState<number>(-1);
     const [isSampleSentToOffice, setIsSampleSentToOffice] = useState(false);
     const [partSentByOfficeDate, setPartSentByOfficeDate] = useState(new Date().toISOString());
     const [unitCost, setUnitCost] = useState('');
@@ -98,7 +105,6 @@ const CreateOrderPage = () => {
     const [partReceivedByFactoryDate, setPartReceivedByFactoryDate] = useState(new Date().toISOString());
     const [partPurchasedDate, setPartPurchasedDate] = useState(new Date().toISOString());
     // Array to store all parts
-    const [orderParts, setOrderParts] = useState<Part[]>([]);
 
     const handleCreateOrder = async () => {
         setIsSubmitting(true);
@@ -112,216 +118,106 @@ const CreateOrderPage = () => {
                 toast.error("Please fill out all the fields");
                 return;
             }
-
-            
-
-            // Suppose these IDs are fetched or predetermined from your application's state or via another method
-            const createdById = 1; // Placeholder: fetch from user session or context
-            const statusId = 1; // Placeholder or dynamically set based on some business logic
-
-            
-            const orderData: Order = {
-                id: 0, // This should be set by the database if it's auto-generated
-                created_at: new Date().toISOString(), // Sending the ISO string directly
-                order_note: description, // You should have a state or input for this
+            const createdById = 1; 
+            const statusId = 1; 
+            const orderData: InputOrder = {
+                created_at: new Date().toISOString(), 
+                order_note: description, 
                 created_by_user_id: createdById,
                 department_id: departmentId,
                 current_status_id: statusId,
-                departments: { id: 0, name: '' }, // Minimal stub data
-                profiles: { id: 0, email: '', name: '', password: '', permission: '', position: '', user_id: '' },
-                statuses: { id: 0, name: '', comment: '' }
-
             }
-
             setTempOrderDetails(orderData);
-            setShowPartForm(true);  // Show the part addition form
+            setShowPartForm(true);  
             toast.success("Order details are set. Please add parts.");
         } catch (error) {
             toast.error('Error preparing order: ' + error);
         } finally {
             setIsSubmitting(false);
         }
-
-
-            // const response = await insertOrder(orderData)
-            // console.log(response)
-            
-            // if (response){
-            //     toast.success("Your order has been confirmed, start adding parts below...")
-
-            //     // factoryName.value = "";
-            //     // department.value = "";
-            //     // orderType.value = "";
-            // }
-        // }catch(error) {
-        //     toast.error('' + error)
-        // } finally {
-        //     setIsSubmitting(false)
-        // } 
     }
 
-    const handleFinalCreateOrder = async () => {
-        if (!tempOrderDetails) {
-            toast.error("No order details to process.");
-            return;
-        }
-
-        // Finalize order creation and add parts
-        // try {
-        //     setIsSubmitting(true);
-        //     const orderResponse = await insertOrder(tempOrderDetails);
-        //     if (orderResponse && orderResponse.length > 0) {
-        //         setOrderId(orderResponse[0].id)
-        //         const partPromises: Promise<OrderedPart[] | null>[] = orderParts.map(part => {
-        //             const fullPartDetails: OrderedPart  = {
-        //             ...part,
-        //             order_id: orderId,
-        //             id:0,
-        //             is_sample_received_by_office: false,
-        //             note: null,
-        //             orders: {
-        //                 id: 0,
-        //                 created_at: "",
-        //                 order_note: "",
-        //                 created_by_user_id: 0,
-        //                 department_id: 0,
-        //                 current_status_id: 0,
-        //                 departments: {
-        //                     id: 0,
-        //                     name: ""},
-        //                 profiles: {
-        //                     email: "",
-        //                     id: 0,
-        //                     name: "",
-        //                     password: "",
-        //                     permission: "",
-        //                     position: "",
-        //                     user_id: ""},
-        //                 statuses: {
-        //                     comment: "",
-        //                     id: 0,
-        //                     name: ""}},
-        //             parts: {
-        //                 created_at: "",
-        //                 description: "",
-        //                 id: 0,
-        //                 lifetime: null,
-        //                 name: "",
-        //                 unit: ""},
-                    
-        //             };
-        //         return insertOrderedParts(fullPartDetails);
-        //         });
-    
-        //     // Await all promises for adding parts
-        //     await Promise.all(partPromises);    
-        //     toast.success("Order and all parts have been successfully created!");
-        //     // Here, you might want to redirect or clear form
-        //     }
-        // } catch (error) {
-        //     toast.error("An error occurred: " + error);
-        // } finally {
-        //     setIsSubmitting(false);
-        // }
-        try {
-                setIsSubmitting(true);
-                const orderResponse = await insertOrder(tempOrderDetails);
-                if (orderResponse && orderResponse.length > 0) {
-                    setOrderId(orderResponse[0].id)
-                    toast("Hey2");
-
-                
-                    for (const part of orderParts) {
-                        const partDetails = {
-                            order_id: orderResponse[0].id,
-                            qty: qty,
-                            part_id: partId,
-                            factory_id: factoryId,
-                            machine_id: machineId,
-                            factory_section_id: factorySectionId,
-                            is_sample_sent_to_office: isSampleSentToOffice,
-                            part_sent_by_office_date: new Date().toISOString(),
-                            unit_cost: validateReal(unitCost),
-                            vendor: vendor,
-                            part_received_by_factory_date: new Date().toISOString(),
-                            part_purchased_date: new Date().toISOString(),
-
-                    
-
-                        };
-                        try {
-                            toast("Hey3");
-
-                            await insertOrderedParts(qty,orderResponse[0].id,100,factoryId,machineId,factorySectionId,
-                                isSampleSentToOffice,vendor,
-                                // partReceivedByFactoryDate,partPurchasedDate
-                            );
-                            toast.success(`Part added successfully: ${part.part_id}`);
-                        } catch (error) {
-                            // Handle error per part
-                            toast.error(`Failed to add part ${part.part_id}: ${error}`);
-                            // Optional: break; // Uncomment if you want to stop processing after the first failure
-                        }                    
-                    };
-
-                }
-            }
-        catch (error) {
-                toast.error("An error occurred: " + error);
-            } finally {
-                setIsSubmitting(false);
-            }
+    const handleAddOrderParts = () => {
+        const newOrderedPart = {
+            is_sample_received_by_office: false, // Default value, change as needed
+            qty: qty,
+            order_id: 0, // Will be set when the order is created
+            part_id: partId,
+            factory_id: selectedFactoryId,
+            machine_id: selectedMachineId,
+            factory_section_id: selectedFactorySectionId,
+            factory_section_name: selectedFactorySectionName,
+            machine_number: selectedMachineNumber,
+        };
+        toast.success("Trying id");
+        toast(newOrderedPart.part_id.toString());
+        setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
+        // handleResetOrderParts();
         
     };
 
-    const handleAddOrderParts = async () => {
-        const newPart = {
-            qty: qty,
-            order_id: -1,
-            part_id: partId,
-            factory_id: factoryId,
-            machine_id: machineId,
-            factory_section_id: factorySectionId,
-            is_sample_sent_to_office: isSampleSentToOffice,
-            part_sent_by_office_date: partSentByOfficeDate,
-            unit_cost: validateReal(unitCost),
-            vendor,
-            part_received_by_factory_date: partReceivedByFactoryDate,
-            part_purchased_date: partPurchasedDate
-        };
-        setOrderParts(prevParts => [...prevParts, newPart]);
+    const handleFinalCreateOrder = async () => {
+        setIsSubmitting(true);
+        try {
+            // Check if the temporary order details are set
+            if (!tempOrderDetails) {
+                toast.error("No order details to process.");
+                return;
+            }
 
-        setQty(0);
-        setPartId(0);
-        setFactoryId(0);
-        setMachineId(0);
-        setFactorySectionId(0);
-        setIsSampleSentToOffice(false);
-        setPartSentByOfficeDate('');
-        setUnitCost('');
-        setVendor('');
-        setPartReceivedByFactoryDate('');
-        setPartPurchasedDate('');
-    }
+            // Insert the main order and retrieve the order ID
+            const orderResponse = await insertOrder(tempOrderDetails.created_at,tempOrderDetails.order_note,tempOrderDetails.created_by_user_id,tempOrderDetails.department_id,tempOrderDetails.current_status_id);
+            if (orderResponse && orderResponse.length > 0) {
+                const orderId = orderResponse[0].id; // Assume the order ID is returned as the first element
+                toast.success(`Order created with ID: ${orderId}, now adding parts...`);
 
+                // Map over the ordered parts and add the order ID to each, then insert them
+                const partPromises = orderedParts.map(part =>
+                    insertOrderedParts(
+                        part.qty,
+                        orderId,
+                        part.part_id,
+                        part.factory_id,
+                        part.machine_id,
+                        part.factory_section_id,
+                        part.is_sample_received_by_office, // Assume default or check your actual need
+                        vendor,
+                    )
+                );
 
+                // Execute all part insertions concurrently
+                await Promise.all(partPromises);
+                toast.success("All parts added successfully!");
+
+                // Optionally, navigate away or reset the form here
+                setShowPartForm(false);
+                setOrderedParts([]); // Clear the parts list
+                // resetFormFields();   // Reset all form fields
+            } else {
+                // Handle case where order is not created properly
+                toast.error("Failed to create order.");
+            }
+        } catch (error) {
+            toast.error(`An error occurred: ${error}`);
+        } finally {
+            setIsSubmitting(false);
+        }
+};
     const handleCancelOrder = () => {
 
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
         setOrderType('');
-        setMachineType('');
         setDescription('')
         setTempOrderDetails(null);
         // Navigate('/orders');  
     };
 
-    const handleCancelOrderParts = () => {
+    const handleResetOrderParts = () => {
         setQty(0);
         setPartId(0);
-        setFactoryId(0);
-        setMachineId(0);
-        setFactorySectionId(0);
+        setSelectedMachineId(-1);
+        setSelectedFactorySectionId(-1);
         setIsSampleSentToOffice(false);
         setPartSentByOfficeDate(new Date().toISOString());
         setUnitCost('');
@@ -330,14 +226,40 @@ const CreateOrderPage = () => {
         setPartPurchasedDate(new Date().toISOString());
     };
 
+    const handleRemovePart = (indexToRemove: number) => {
+        setOrderedParts(prevParts => prevParts.filter((_, index) => index !== indexToRemove));
+    };
+
     useEffect(() => {
         const loadFactories = async () => {
             const fetchedFactories = await fetchFactories();
-            setFactories(fetchedFactories);  // Assuming this function fetches an array of { id, name }
+            setFactories(fetchedFactories);
         };
     
         loadFactories();
     }, []);
+
+    useEffect(() => {
+        if (selectedFactoryId !== null) {
+            const loadFactorySections = async () => {
+                const sections = await fetchFactorySections(selectedFactoryId);
+                setFactorySections(sections);
+            };
+    
+            loadFactorySections();
+        }
+    }, [selectedFactoryId]);  // Dependency array includes selectedFactoryId
+
+    useEffect(() => {
+        const loadMachines = async () => {
+            if (selectedFactorySectionId !== -1) {
+                const fetchedMachines = await fetchMachines(selectedFactorySectionId);
+                setMachines(fetchedMachines);
+            }
+        };
+    
+        loadMachines();
+    }, [selectedFactorySectionId]);
 
 
 
@@ -346,15 +268,16 @@ const CreateOrderPage = () => {
         <>
             <NavigationBar/>
             <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
-                <Card x-chunk="dashboard-07-chunk-0">
+                <Card>
+    
                     <CardHeader>
                         <CardTitle>Order Details</CardTitle>
                         <CardDescription>Start creating an order</CardDescription>
                     </CardHeader>
-
+    
                     <CardContent>
                         <div className="grid gap-6">
-
+                            {/* Factory */}
                             <Select onValueChange={(value) => setSelectedFactoryId(Number(value))}>
                                 <Label htmlFor="factoryName">Factory Name</Label>
                                 <SelectTrigger className="w-[220px]">
@@ -368,11 +291,11 @@ const CreateOrderPage = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
-
+                            {/* Department */}
                             <Select onValueChange={(value) => setDepartmentId(Number(value))}>
                                 <Label htmlFor="department">Department</Label>
                                 <SelectTrigger className="w-[220px]">
-                                    <SelectValue>{selectedDepartmentName}</SelectValue>
+                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     {departments.map((dept) => (
@@ -382,7 +305,7 @@ const CreateOrderPage = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
-
+                            {/* OrderType */}
                             <Select onValueChange={setOrderType}>
                                 <Label htmlFor="orderType">Is this Order for Storage or a Machine?</Label>
                                 <SelectTrigger className="w-[180px]">
@@ -393,8 +316,7 @@ const CreateOrderPage = () => {
                                     <SelectItem value="machine">Machine</SelectItem>
                                 </SelectContent>
                             </Select>
-
-
+                            {/* Order Description */}
                             <div className="grid gap-3">
                                 <Label htmlFor="description">Description</Label>
                                 <Textarea
@@ -404,8 +326,7 @@ const CreateOrderPage = () => {
                                     onChange={e => setDescription(e.target.value)}
                                 />
                             </div>
-
-                                                    {/* BUTTONS */}
+                            {/* Buttons for Main Order*/}
                             <div className="flex flex-1 gap-4 py-5">
                                 {isSubmitting ? (
                                     <div className="ml-auto flex items-center gap-2">
@@ -435,101 +356,121 @@ const CreateOrderPage = () => {
                                             </Button>
                                         </Link>
                                     </>
-                                )
-                            }
+                                )}
                             </div>
-
-
                         </div>
-
-                        
                     </CardContent>
-                
                 </Card>
-
-
-             </div>
-
-
-            {/* SECOND CARD DATA */}
-            {showPartForm && (
-                <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
-                    <Card x-chunk="dashboard-07-chunk-0">
+    
+                {/* PART SELECTION AND DETAILS CARD */}
+                {showPartForm && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Add Parts</CardTitle>
+                            <CardDescription>Start adding parts to your order</CardDescription>
+                        </CardHeader>
                         <CardContent>
-                        <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
-                            <div>
-                                <input type="text" value={qty} onChange={e => setQty(Number(e.target.value))} placeholder="Quantity" />
-                                <input type="text" value={partId} onChange={e => setPartId(Number(e.target.value))} placeholder="Part ID" />
-                                <Select onValueChange={(value) => setFactoryId(Number(value))}>
-                                    <Label htmlFor="partFactoryId">Part Factory</Label>
-                                    <SelectTrigger className="w-[220px]">
-                                        <SelectValue>{factories.find(f => f.id === factoryId)?.name || "Select Factory"}</SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {factories.map((factory) => (
-                                            <SelectItem key={factory.id} value={factory.id.toString()}>
-                                                {factory.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                            </div>
-                        </div>
-
-                        <ul>
-                            {orderParts.map((part, index) => (
-                                <li key={index}>
-                                    Part ID: {part.part_id}, Qty: {part.qty}, Cost: {part.unit_cost}
-                                    {/* Display other fields as needed */}
-                                </li>
-                            ))}
-                        </ul>
-                            
-
-
-            
-                            {/* BUTTONS */}
-                            <div className="flex flex-1 gap-1 py-5 ">
-                                {isSubmitting ? (
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <Loader2 className="h-6 w-6 animate-spin" />
-                                        Creating Order..."
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Left side: Part Selection */}
+                                <div className="space-y-4">
+                                    {/* Selecting Part ID */}
+                                    <Select onValueChange={(value) => setPartId(Number(value))}>
+                                        <Label htmlFor="partId">Select Part</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>{parts.find(p => p.id === partId)?.name || "Select Part"}</SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {parts.map((part) => (
+                                                <SelectItem key={part.id} value={part.id.toString()}>
+                                                    {part.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+    
+                                    {/* Setting QTY */}
+                                    <div className="flex flex-col space-y-2">
+                                        <Label htmlFor="quantity" className="font-medium">Quantity</Label>
+                                        <input
+                                            id="quantity"
+                                            type="number"
+                                            value={qty >= 0 ? qty : ''}
+                                            onChange={e => setQty(Number(e.target.value))}
+                                            placeholder="Enter Quantity"
+                                            className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
                                     </div>
-                                ) : (
-                                    <>
-                                        <Button 
-                                            size="sm"
-                                            className="ml-auto gap-2"
-                                            onClick={handleAddOrderParts}  // Ensure this is correctly linked to creating an order
-                                        >
-                                            <CircleCheck className="h-4 w-4" />Add Order Parts
-                                        </Button>
-                                        <Button 
-                                            size="sm"
-                                            className="ml-auto gap-2"
-                                            onClick={handleFinalCreateOrder}  // Ensure this is correctly linked to creating an order
-                                        >
-                                            <CircleCheck className="h-4 w-4" />Create Order
-                                        </Button>
-                                        <Button 
-                                            size="sm" 
-                                            className="ml-auto gap-2"
-                                            onClick={handleCancelOrderParts}  // Linking the Cancel button to the cancel function
-                                        >
-                                            <CircleX className="h-4 w-4" />
-                                            Cancel
-                                        </Button>
-                                    </>
-                                )
-                            }</div>
+                                    
+                                    {/* Factory Section Id */}
+                                    <Select onValueChange={(value) => setSelectedFactorySectionId(Number(value))}>
+                                        <Label htmlFor="factorySection">Factory Section</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>{selectedFactorySectionName}</SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {factorySections.map((section) => (
+                                                <SelectItem key={section.id} value={section.id.toString()}>
+                                                    {section.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    
+                                    {/* Machine Id */}
+                                    <Select onValueChange={(value) => setSelectedMachineId(Number(value))}>
+                                        <Label htmlFor="machine">Machine</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>{selectedMachineNumber}</SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {machines.map((machine) => (
+                                                <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                    {machine.type}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+    
+                                    {/* Buttons for adding parts and finalizing the order */}
+                                    <div className="flex gap-3">
+                                        <Button onClick={handleAddOrderParts}>Add Part</Button>
+                                        <Button onClick={handleFinalCreateOrder}>Finalize Order</Button>
+                                    </div>
+                                </div>
+    
+                                {/* Right side: List of Added Parts */}
+                                <div className="space-y-4">
+                                    <h4 className="font-bold mb-2">Added Parts</h4>
+                                    <ul className="space-y-2">
+                                        {orderedParts.map((part, index) => (
+                                            <li key={index} className="p-2 border rounded-lg bg-gray-100">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
+                                                        <p><strong>Quantity:</strong> {part.qty}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleRemovePart(index)}
+                                                        className="text-red-500 hover:text-red-700 focus:outline-none"
+                                                    >
+                                                        ✖
+                                                    </button>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
+                                                    <p><strong>Machine:</strong> {part.machine_number || "Unknown"}</p>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
                         </CardContent>
-
                     </Card>
-                </div>)}
+                )}
+            </div>
         </>
-
-  )
+    );
 }
 
 export default CreateOrderPage
