@@ -533,18 +533,27 @@ const CreateOrderPage = () => {
                                     <h4 className="font-bold mb-2">Added Parts</h4>
                                     <ul className="space-y-2">
                                         {orderedParts.map((part, index) => (
-                                            <li key={index} className="p-2 border rounded-lg bg-gray-100">
+                                            <li key={index} className="relative p-4 border rounded-lg bg-gray-100">
+                                                {/* <Button
+                                                    onClick={() => handleRemovePart(index)}
+                                                    className="absolute -top-3 -right-3 text-white rounded-full h-8 w-8 flex items-center justify-center hover:bg-red-700 focus:outline-none"
+                                                >
+                                                    ✖
+                                                </Button> */}
+                                                <CircleX
+                                                    width = "28px"
+                                                    height= "22px"
+                                                    className="absolute -top-3 -right-3"
+                                                    onClick={() => handleRemovePart(index)}
+                                                >
+                                                    {/* <CircleX className="h-4 w-4" /> */}
+                                                    
+                                                </CircleX>
                                                 <div className="flex justify-between items-center">
                                                     <div>
                                                         <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
                                                         <p><strong>Quantity:</strong> {part.qty}</p>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleRemovePart(index)}
-                                                        className="text-red-500 hover:text-red-700 focus:outline-none"
-                                                    >
-                                                        ✖
-                                                    </button>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
