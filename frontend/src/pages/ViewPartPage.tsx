@@ -1,13 +1,13 @@
 import LinkedOrdersRow from "@/components/customui/LinkedOrdersRow";
 import PartInfo from "@/components/customui/PartInfo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { convertUtcToBDTime } from "@/services/helper";
 import { fetchLinkedOrdersByPartID } from "@/services/OrderedPartsService";
 import { fetchPartByID } from "@/services/PartsService";
 import { LinkedOrders, Part } from "@/types";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -138,9 +138,6 @@ const ViewPartPage = () => {
         </div>
       </div>
   )
-
-
-
 }
 
 export default ViewPartPage

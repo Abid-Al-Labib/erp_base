@@ -40,17 +40,24 @@ const OrderPage = () => {
     const [loading, setLoading] = useState(true);
 
 
+    const refreshTable = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchOrders();
+            console.log(data)
+            setOrders(data);
+        } catch (error) {
+            toast.error('Failed to fetch orders');
+        } finally {
+            setLoading(false)
+        }
+    }
+
+
+
     useEffect(()=>{
         const loadOrders = async () => {
-            try {
-                const data = await fetchOrders();
-                console.log(data)
-                setOrders(data);
-            } catch (error) {
-                toast.error('Failed to fetch orders');
-            } finally {
-                setLoading(false)
-            }
+            refreshTable()
         };
         loadOrders();
     }, [])
@@ -115,7 +122,8 @@ const OrderPage = () => {
                                         created_by_name={order.profiles.name}
                                         created_at={order.created_at}
                                         department_name= {order.departments.name}
-                                        current_status= {order.statuses.name}                 
+                                        current_status= {order.statuses.name}
+                                        onDeleteRefresh={refreshTable}                 
                                         />
                                     ))}
                                     </TableBody>

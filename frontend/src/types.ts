@@ -7,10 +7,26 @@ export type Status = Tables<"statuses">
 export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
 
+export type Machine = {
+    id: number,
+    number: number,
+    type: string,
+    is_running: boolean,
+    factory_section_id: number,
+    factory_sections: FactorySection
+}
+
+export type FactorySection = {
+    id: number,
+    name: string,
+    factory_id: number,
+    factories: Factory
+} 
+
 export type OrderedPart = {
     id: number,
-    is_sample_received_by_office: string,
-    is_sample_sent_to_office: string,
+    is_sample_received_by_office: boolean,
+    is_sample_sent_to_office: boolean,
     part_sent_by_office_date: string | null,
     part_received_by_factory_date: string | null,
     part_purchased_date: string|null,
@@ -23,11 +39,16 @@ export type OrderedPart = {
     factory_id: number,
     machine_id: number,
     factory_section_id: number,
+    approved_pending_order: boolean
+    approved_office_order: boolean
+    approved_budget: boolean
     orders : Order,
-    parts: Part
-
+    parts: Part,
+    machines: Machine,
+    factories: Factory,
+    factory_sections: FactorySection
 }
-
+  
 export type LinkedOrders = {
     id: number,
     order_id: number,

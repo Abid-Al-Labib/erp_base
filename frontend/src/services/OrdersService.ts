@@ -24,7 +24,7 @@ export const fetchOrders = async () => {
                 *
             )
         `
-    )
+    ).order('id', { ascending: true });
     if (error){
         toast.error(error.message)
     }
@@ -60,3 +60,26 @@ export const fetchOrderByID = async (order_id:number) => {
     console.log(data)
     return data as unknown as Order[];
 };
+
+export const UpdateStatusByID = async (orderid: number, status_id:number) => {
+    
+    const { error } = await supabase_client.from('orders')
+    .update({ current_status_id: status_id })
+    .eq('id', orderid)
+    
+    if (error){
+        toast.error(error.message)
+    }
+}
+
+export const deleteStatusByID = async (orderid:number) => {
+    
+    const { error } = await supabase_client
+    .from('orders')
+    .delete()
+    .eq('id', orderid)
+    
+    if(error) {
+        toast.error(error.message)
+    }
+}

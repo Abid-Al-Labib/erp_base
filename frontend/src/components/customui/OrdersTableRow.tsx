@@ -5,6 +5,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table";
 import { Link } from 'react-router-dom';
 import { Badge } from '../ui/badge';
+import { deleteStatusByID } from '@/services/OrdersService';
+import toast from 'react-hot-toast';
 
 interface OrdersTableRowProps {
   id: number;
@@ -12,9 +14,21 @@ interface OrdersTableRowProps {
   created_by_name: string;
   department_name: string;
   current_status: string;
+  onDeleteRefresh: ()=>void;
 }
 
-const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created_by_name, department_name, current_status }) => {
+const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created_by_name, department_name, current_status, onDeleteRefresh }) => {
+  const handleDeleteOrder = async () => {
+    try {
+        await deleteStatusByID(id)
+        onDeleteRefresh()
+        toast.success("Order successfully deleted")
+    } catch (error) {
+        toast.error("Failed to delete");
+        
+    }
+  }
+  
   return (
     <TableRow>
       <TableCell className="font-medium">
@@ -30,7 +44,12 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created
         {department_name}
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">{current_status}</Badge>
+      <Badge
+        className={current_status === "Parts Received" ? "bg-green-100": current_status === "Pending" ? "bg-red-100": "bg-orange-100"}
+        variant="secondary"
+      >
+        {current_status}
+      </Badge>
       </TableCell>
       <TableCell>
         <DropdownMenu>
@@ -56,7 +75,9 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created
                 Manage
               </DropdownMenuItem>
             </Link>
-            <DropdownMenuItem>Delete</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDeleteOrder}>
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>

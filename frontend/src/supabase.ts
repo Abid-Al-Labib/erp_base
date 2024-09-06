@@ -141,6 +141,9 @@ export type Database = {
       }
       order_parts: {
         Row: {
+          approved_budget: boolean
+          approved_office_order: boolean
+          approved_pending_order: boolean
           factory_id: number
           factory_section_id: number
           id: number
@@ -154,16 +157,18 @@ export type Database = {
           part_received_by_factory_date: string | null
           part_sent_by_office_date: string | null
           qty: number
-          sample_unit: string | null
           unit_cost: number | null
           vendor: string | null
         }
         Insert: {
+          approved_budget?: boolean
+          approved_office_order?: boolean
+          approved_pending_order?: boolean
           factory_id: number
           factory_section_id: number
           id?: number
-          is_sample_received_by_office: boolean
-          is_sample_sent_to_office: boolean
+          is_sample_received_by_office?: boolean
+          is_sample_sent_to_office?: boolean
           machine_id: number
           note?: string | null
           order_id: number
@@ -172,11 +177,13 @@ export type Database = {
           part_received_by_factory_date?: string | null
           part_sent_by_office_date?: string | null
           qty: number
-          sample_unit?: string | null
           unit_cost?: number | null
           vendor?: string | null
         }
         Update: {
+          approved_budget?: boolean
+          approved_office_order?: boolean
+          approved_pending_order?: boolean
           factory_id?: number
           factory_section_id?: number
           id?: number
@@ -190,7 +197,6 @@ export type Database = {
           part_received_by_factory_date?: string | null
           part_sent_by_office_date?: string | null
           qty?: number
-          sample_unit?: string | null
           unit_cost?: number | null
           vendor?: string | null
         }

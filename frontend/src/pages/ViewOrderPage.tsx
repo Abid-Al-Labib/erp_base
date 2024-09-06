@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { Order } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
 import { convertUtcToBDTime } from "@/services/helper";
+import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -63,6 +64,11 @@ const ViewOrderPage = () => {
               note={orders[0].order_note}
             />
           </div>
+          <OrderedPartsTable
+            mode="view"
+            order_id={orders[0].id} 
+            current_status={orders[0].statuses}         
+          />
         </div>
         <div>
           <StatusTracker order_id={orders[0].id} />

@@ -5,7 +5,6 @@ import { TableCell, TableRow } from "../ui/table";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { Part } from "@/types";
-import PartInfo from "./PartInfo";
 import { convertUtcToBDTime } from "@/services/helper";
 import OrderedPartInfo from "./OrderedPartInfo";
 
