@@ -327,8 +327,8 @@ const CreateOrderPage = () => {
                                     <SelectValue>{orderType || "Select an Option"}</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="storage">Storage</SelectItem>
-                                    <SelectItem value="machine">Machine</SelectItem>
+                                    <SelectItem value="Storage">Storage</SelectItem>
+                                    <SelectItem value="Machine">Machine</SelectItem>
                                 </SelectContent>
                             </Select>
                             {/* Order Description */}
