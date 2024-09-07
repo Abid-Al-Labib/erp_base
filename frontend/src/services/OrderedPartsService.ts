@@ -196,11 +196,8 @@ export const insertOrderedParts = async (
     machine_id: number,
     factory_section_id: number,
     is_sample_sent_to_office: boolean,
-    unit_cost: number,
-    note: string,
-    vendor: string,
+    note: string | null,
 ) => {
-    toast("Hey1");
 
     const { data, error } = await supabase_client.from('order_parts').insert([{
         qty,
@@ -210,24 +207,17 @@ export const insertOrderedParts = async (
         machine_id,
         factory_section_id,
         is_sample_sent_to_office,
-        // part_sent_by_office_date,
-        unit_cost,
-        vendor,
-        // part_received_by_factory_date,
-        // part_purchased_date,
+
         note,
     }])
     .select();
 
-    toast("Hey4");
 
     if (error) {
         toast.error("Failed to insert order part: " + error.message);
-        toast("Hey5");
         return null;
     }
 
-
-    toast.success("Order part added successfully");
+    // toast.success("Order part added successfully");
     return data as unknown as OrderedPart[];
 };

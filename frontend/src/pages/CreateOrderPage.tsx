@@ -5,6 +5,7 @@ import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck} from "lucide-react"
 import { useEffect, useState } from "react"
 import { insertOrder } from "@/services/OrdersService";
@@ -50,9 +51,7 @@ interface InputOrderedPart {
     factory_section_name: string;
     machine_number: number;
     is_sample_sent_to_office: boolean,
-    unit_cost?: number;
-    note?: string; 
-    vendor?: string; 
+    note?: string | null; 
 }
 
 const CreateOrderPage = () => {
@@ -85,7 +84,7 @@ const CreateOrderPage = () => {
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
-    const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType;
+    const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType && description.trim();
 
     const [parts, setParts] = useState<Part[]>([]);
     useEffect(() => {
@@ -106,14 +105,34 @@ const CreateOrderPage = () => {
     const [qty, setQty] = useState<number>(-1);
     const [partId, setPartId] = useState<number>(-1);
     const [isSampleSentToOffice, setIsSampleSentToOffice] = useState<boolean>();
-    const [partSentByOfficeDate, setPartSentByOfficeDate] = useState(new Date().toISOString());
-    const [unitCost, setUnitCost] = useState<number | undefined>(undefined);
-    const [vendor, setVendor] = useState('');
-    const [partReceivedByFactoryDate, setPartReceivedByFactoryDate] = useState(new Date().toISOString());
-    const [partPurchasedDate, setPartPurchasedDate] = useState(new Date().toISOString());
+
+    const [forceRender, setForceRender] = useState<number>(0);
+    const [forcePartRender, setForcePartRender] = useState<number>(0); 
+    const [forceFactorySectionRender, setForceFactorySectionRender] = useState<number>(0);
+    const [forceMachineRender, setForceMachineRender] = useState<number>(0);
+
+
+
+
     // Array to store all parts
 
     const isAddPartFormComplete = partId !== -1 && qty > 0 && selectedFactorySectionId !== -1 && selectedMachineId !== -1 && isSampleSentToOffice !== null;
+
+    const handleResetOrderParts = () => {
+        setQty(-1);
+        setPartId(-1);
+        setSelectedFactorySectionId(-1);
+        setSelectedMachineId(-1); 
+        setIsSampleSentToOffice(false);
+        setNote('');
+
+        
+        setForceRender(prev => prev + 1); 
+        setForcePartRender(prev => prev + 1);
+        setForceFactorySectionRender(prev => prev + 1);
+        setForceMachineRender(prev => prev + 1); 
+    };
+    
 
     const handleCreateOrder = async () => {
         setIsSubmitting(true);
@@ -156,15 +175,11 @@ const CreateOrderPage = () => {
             factory_section_id: selectedFactorySectionId,
             factory_section_name: selectedFactorySectionName,
             machine_number: selectedMachineNumber,
-            is_sample_sent_to_office: isSampleSentToOffice,
-            unit_cost: unitCost !== undefined ? unitCost : 0,
-            note: note || "", 
-            vendor: vendor || "",
+            is_sample_sent_to_office: isSampleSentToOffice ?? false,
+            note: note.trim() || null, 
         };
-        toast.success("Trying id");
-        toast(newOrderedPart.part_id.toString());
         setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
-        // handleResetOrderParts();
+        handleResetOrderParts();
         
     };
 
@@ -177,13 +192,11 @@ const CreateOrderPage = () => {
                 return;
             }
 
-            // Insert the main order and retrieve the order ID
             const orderResponse = await insertOrder(tempOrderDetails.created_at,tempOrderDetails.order_note,tempOrderDetails.created_by_user_id,tempOrderDetails.department_id,tempOrderDetails.current_status_id);
             if (orderResponse && orderResponse.length > 0) {
-                const orderId = orderResponse[0].id; // Assume the order ID is returned as the first element
-                toast.success(`Order created with ID: ${orderId}, now adding parts...`);
+                const orderId = orderResponse[0].id; 
+                // toast.success(`Order created with ID: ${orderId}, now adding parts...`);
 
-                // Map over the ordered parts and add the order ID to each, then insert them
                 const partPromises = orderedParts.map(part =>
                     insertOrderedParts(
                         part.qty,
@@ -192,24 +205,18 @@ const CreateOrderPage = () => {
                         part.factory_id,
                         part.machine_id,
                         part.factory_section_id,
-                        part.is_sample_sent_to_office, // Assume default or check your actual need
-                        part.unit_cost || 0.0,
-                        part.note || "",
-                        part.vendor || "",
-
+                        part.is_sample_sent_to_office,
+                        part.note || null,
                     )
                 );
 
-                // Execute all part insertions concurrently
                 await Promise.all(partPromises);
-                toast.success("All parts added successfully!");
+                // toast.success("All parts added successfully!");
 
-                // Optionally, navigate away or reset the form here
                 setShowPartForm(false);
-                setOrderedParts([]); // Clear the parts list
-                // resetFormFields();   // Reset all form fields
+                setOrderedParts([]); 
+
             } else {
-                // Handle case where order is not created properly
                 toast.error("Failed to create order.");
             }
         } catch (error) {
@@ -228,18 +235,15 @@ const CreateOrderPage = () => {
         // Navigate('/orders');  
     };
 
-    const handleResetOrderParts = () => {
-        setQty(0);
-        setPartId(0);
-        setSelectedMachineId(-1);
-        setSelectedFactorySectionId(-1);
-        setIsSampleSentToOffice(false);
-        setPartSentByOfficeDate(new Date().toISOString());
-        setUnitCost(0.0);
-        setVendor('');
-        setPartReceivedByFactoryDate(new Date().toISOString());
-        setPartPurchasedDate(new Date().toISOString());
-    };
+    // const handleResetOrderParts = () => {
+    //     setQty(-1);  
+    //     setPartId(-1); 
+    //     setSelectedMachineId(-1); 
+    //     setSelectedFactorySectionId(-1);
+    //     setIsSampleSentToOffice(false);  
+    //     setNote('');
+
+    // };
 
     const handleRemovePart = (indexToRemove: number) => {
         setOrderedParts(prevParts => prevParts.filter((_, index) => index !== indexToRemove));
@@ -263,20 +267,59 @@ const CreateOrderPage = () => {
     
             loadFactorySections();
         }
-    }, [selectedFactoryId]);  // Dependency array includes selectedFactoryId
+    }, [selectedFactoryId]);  
 
     useEffect(() => {
         const loadMachines = async () => {
             if (selectedFactorySectionId !== -1) {
                 const fetchedMachines = await fetchMachines(selectedFactorySectionId);
                 setMachines(fetchedMachines);
+                setSelectedMachineId(-1); // Reset machine ID when the section changes
+                setTimeout(() => setSelectedMachineId(-1), 0); // Clear and reset
+            } else {
+                setMachines([]);
+                setSelectedMachineId(-1); // Reset if no section is selected
             }
         };
-    
+
         loadMachines();
     }, [selectedFactorySectionId]);
 
+    const handleSelectPart = (value: number) => {
+        if (partId === value) {
+            setPartId(-1); // Temporarily clear the selection
+            setTimeout(() => {
+                setPartId(value);
+                setForcePartRender(prev => prev + 1); // Force re-render to reset the dropdown
+            }, 0);
+        } else {
+            setPartId(value);
+        }
+    };
 
+    const handleSelectFactorySection = (value: number) => {
+        if (selectedFactorySectionId === value) {
+            setSelectedFactorySectionId(-1); // Temporarily clear the selection
+            setTimeout(() => {
+                setSelectedFactorySectionId(value);
+                setForceFactorySectionRender(prev => prev + 1); // Force re-render to reset the dropdown
+            }, 0);
+        } else {
+            setSelectedFactorySectionId(value);
+        }
+    };
+
+    const handleSelectMachine = (value: number) => {
+        if (selectedMachineId === value) {
+            setSelectedMachineId(-1); // Temporarily clear the selection
+            setTimeout(() => {
+                setSelectedMachineId(value);
+                setForceMachineRender(prev => prev + 1); // Force re-render to reset the dropdown
+            }, 0);
+        } else {
+            setSelectedMachineId(value);
+        }
+    };
 
 
     return (
@@ -388,11 +431,15 @@ const CreateOrderPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 {/* Left side: Part Selection */}
                                 <div className="space-y-4">
+
                                     {/* Selecting Part ID */}
-                                    <Select onValueChange={(value) => setPartId(Number(value))}>
+                                    <Select
+                                        key={`part-${forcePartRender}`} // Key prop to force re-rendering
+                                        onValueChange={(value) => handleSelectPart(Number(value))}
+                                        >
                                         <Label htmlFor="partId">Select Part</Label>
                                         <SelectTrigger className="w-[220px]">
-                                            <SelectValue>{parts.find(p => p.id === partId)?.name || "Select Part"}</SelectValue>
+                                            <SelectValue>{partId !== -1 ? parts.find(p => p.id === partId)?.name : "Select Part"}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
                                             {parts.map((part) => (
@@ -417,10 +464,13 @@ const CreateOrderPage = () => {
                                     </div>
                                     
                                     {/* Factory Section Id */}
-                                    <Select onValueChange={(value) => setSelectedFactorySectionId(Number(value))}>
+                                    <Select
+                                        key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
+                                        onValueChange={(value) => handleSelectFactorySection(Number(value))}
+                                        >
                                         <Label htmlFor="factorySection">Factory Section</Label>
                                         <SelectTrigger className="w-[220px]">
-                                            <SelectValue>{selectedFactorySectionName}</SelectValue>
+                                            <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
                                             {factorySections.map((section) => (
@@ -432,46 +482,43 @@ const CreateOrderPage = () => {
                                     </Select>
                                     
                                     {/* Machine Id */}
-                                    <Select onValueChange={(value) => setSelectedMachineId(Number(value))}>
-                                        <Label htmlFor="machine">Machine</Label>
-                                        <SelectTrigger className="w-[220px]">
-                                            <SelectValue>{selectedMachineNumber}</SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {machines.map((machine) => (
-                                                <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                    {machine.type}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Select
+                                        onValueChange={(value) => handleSelectMachine(Number(value))}
+                                        key={`machine-${forceMachineRender}`}
+                                    >
+                                    <Label htmlFor="machine">Machine</Label>
+                                    <SelectTrigger className="w-[220px]">
+                                        <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {machines.map((machine) => (
+                                            <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                {machine.number.toString()}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                     
-                                    {/* Unit Cost */}
-                                    <div className="flex flex-col space-y-2">
-                                        <Label htmlFor="unitCost" className="font-medium">Unit Cost (Optional)</Label>
-                                        <input
-                                            id="unitCost"
-                                            type="number"
-                                            step="0.01"
-                                            value={unitCost !== undefined ? unitCost : ''}
-                                            onChange={e => setUnitCost(parseFloat(e.target.value))}
-                                            placeholder="Enter Unit Cost"
-                                            className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
 
                                     {/* Sample Sent to Office */}
-                                    <div className="flex flex-col space-y-2">
-                                        <Label htmlFor="sampleSentToOffice" className="font-medium">Is Sample Sent to Office?</Label>
-                                        <Select onValueChange={(value) => setIsSampleSentToOffice(value === "true")}>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{isSampleSentToOffice ? "Yes" : "No"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="true">Yes</SelectItem>
-                                                <SelectItem value="false">No</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                    <div className="items-top flex space-x-2">
+                                        <Checkbox
+                                            id="sampleSentToOffice"
+                                            checked={isSampleSentToOffice}
+                                            onCheckedChange={(checked) => setIsSampleSentToOffice(checked === true)}
+                                            className="h-5 w-5 border-gray-300 rounded focus:ring-gray-500 checked:bg-gray-600 checked:border-transparent"
+                                        />
+                                        <div className="grid gap-1.5 leading-none">
+                                            <label
+                                                htmlFor="sampleSentToOffice"
+                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                            >
+                                                Is Sample Sent to Office?
+                                            </label>
+                                            <p className="text-sm text-muted-foreground">
+                                                {isSampleSentToOffice ? "Yes" : "No"}
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {/* Note */}
@@ -482,20 +529,7 @@ const CreateOrderPage = () => {
                                             value={note || ''}
                                             onChange={e => setNote(e.target.value)}
                                             placeholder="Enter any notes"
-                                            className="min-h-24"
-                                        />
-                                    </div>
-
-                                    {/* Vendor */}
-                                    <div className="flex flex-col space-y-2">
-                                        <Label htmlFor="vendor" className="font-medium">Vendor (Optional)</Label>
-                                        <input
-                                            id="vendor"
-                                            type="text"
-                                            value={vendor || ''}
-                                            onChange={e => setVendor(e.target.value)}
-                                            placeholder="Enter Vendor"
-                                            className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="min-h-24 w-1/2"  
                                         />
                                     </div>
                                         
