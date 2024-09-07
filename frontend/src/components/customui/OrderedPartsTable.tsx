@@ -29,48 +29,51 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
   const [loadingApproval, setLoadingApproval] =useState(false)
   const navigate = useNavigate()
   
-  const handleApproveAllPendingOrder = () => {
+  const handleApproveAllPendingOrder = async () => {
+    setLoadingApproval(true)
     try {
-      setLoadingApproval(true)
-      orderedParts.forEach(async (ordered_part) => {
-        await updateApprovedPendingOrderByID(ordered_part.id,true)
+      const updatePromises = orderedParts.map((ordered_part) => {
+        return updateApprovedPendingOrderByID(ordered_part.id, true);
       });
+      await Promise.all(updatePromises);
       toast.success("Approved all parts in the pending order")
-      refreshPartsTable()
+      await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
-      setLoadingApproval(true)
+      setLoadingApproval(false)
     }
   }
   
-  const handleApproveAllOfficeOrder = () => {
+  const handleApproveAllOfficeOrder = async () => {
+    setLoadingApproval(true)
     try {
-      setLoadingApproval(true)
-      orderedParts.forEach(async (ordered_part) => {
-        await updateApprovedOfficeOrderByID(ordered_part.id,true)
+      const updatePromises = orderedParts.map((ordered_part) => {
+        return updateApprovedOfficeOrderByID(ordered_part.id, true);
       });
-      toast.success("Approved all parts from this order at office")
-      refreshPartsTable()
+      await Promise.all(updatePromises);
+      toast.success("Approved all ordered items from office")
+      await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
-      setLoadingApproval(true)
+      setLoadingApproval(false)
     }
   }
   
-  const handleApproveAllBudgets = () => {
+  const handleApproveAllBudgets = async () => {
+    setLoadingApproval(true)
     try {
-      setLoadingApproval(true)
-      orderedParts.forEach(async (ordered_part) => {
-        await updateApprovedBudgetByID(ordered_part.id,true)
+      const updatePromises = orderedParts.map((ordered_part) => {
+        return updateApprovedBudgetByID(ordered_part.id, true);
       });
+      await Promise.all(updatePromises);
       toast.success("Approved budgets for all parts")
-      refreshPartsTable()
+      await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
-      setLoadingApproval(true)
+      setLoadingApproval(false)
     }
   }
   

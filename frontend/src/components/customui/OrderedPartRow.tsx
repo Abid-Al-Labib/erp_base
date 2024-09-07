@@ -146,14 +146,20 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const handleUpdateSentDate = () => {
     console.log("Updating sent date with" + dateSent);
     const updateSentDate = async() => {
-      if(dateSent){
-        try {
-          await updateSentDateByID(orderedPartInfo.id, dateSent)
-          toast.success("Part sent to office date set!")
-          onOrderedPartUpdate();
-        } catch (error) {
-          toast.error("Error occured could not complete action");
-        } 
+      if(dateSent && datePurchased){
+        if (dateSent.getDate()>=datePurchased.getDate()){
+          try {
+            await updateSentDateByID(orderedPartInfo.id, dateSent)
+            toast.success("Part sent to office date set!")
+            onOrderedPartUpdate();
+          } catch (error) {
+            toast.error("Error occured could not complete action");
+          } 
+        }
+        else{
+          toast.error("Date sent must be after date purchased")
+        }
+        
       }
       else{
         toast.error("Sent date was not found")
@@ -168,14 +174,20 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const handleUpdateReceivedDate = () => {
     console.log("Updating received date" + dateReceived);
     const updateReceivedDate = async() => {
-      if(dateReceived){
-        try {
-          await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
-          toast.success("Part received by factory date set!")
-          onOrderedPartUpdate();
-        } catch (error) {
-          toast.error("Error occured could not complete action");
-        } 
+      if(dateReceived && dateSent){
+        if (dateReceived.getDate()>=dateSent.getDate()){
+          try {
+            await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
+            toast.success("Part received by factory date set!")
+            onOrderedPartUpdate();
+          } catch (error) {
+            toast.error("Error occured could not complete action");
+          } 
+        }
+        else{
+          toast.error("Received date must be after sent date")
+        }
+
       }
       else{
         toast.error("Received date was not found")
