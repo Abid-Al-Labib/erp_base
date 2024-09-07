@@ -15,6 +15,7 @@ import { fetchFactories, fetchFactorySections, fetchMachines } from '@/services/
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
+import { InsertStatusTracker } from "@/services/StatusTrackerService"
 
 interface Factory {
     id: number;
@@ -215,6 +216,8 @@ const CreateOrderPage = () => {
 
                 setShowPartForm(false);
                 setOrderedParts([]); 
+
+                await InsertStatusTracker((new Date()), orderId, 1, 1);
 
             } else {
                 toast.error("Failed to create order.");
@@ -548,16 +551,18 @@ const CreateOrderPage = () => {
                                         </Button>
 
                                         
+                                        <Link to="/orders">
+                                            <Button
+                                                size="sm"
+                                                className="ml-auto gap"
+                                                onClick={handleFinalCreateOrder}
+                                                disabled={orderedParts.length === 0}
+                                            >
+                                                <CircleCheck className="h-4 w-4" />
+                                                Finalize Order
+                                            </Button>
+                                        </Link>
 
-                                        <Button
-                                            size="sm"
-                                            className="ml-auto gap"
-                                            onClick={handleFinalCreateOrder}
-                                            disabled={orderedParts.length === 0}
-                                        >
-                                            <CircleCheck className="h-4 w-4" />
-                                            Finalize Order
-                                        </Button>
 
                                     </div>
                                 </div>
