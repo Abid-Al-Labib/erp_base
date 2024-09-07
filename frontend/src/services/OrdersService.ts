@@ -1,7 +1,6 @@
 import { Order } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
-import { convertUtcToBDTime } from "./helper"; // Import the helper function
 
 
 export const fetchOrders = async () => {
@@ -107,9 +106,9 @@ export const insertOrder = async (created_at: string,
 
     if (error) {
         toast.error("Failed to create order: " + error.message);
-        return null; // Return null or appropriate error handling
+        return null; 
     }
 
     toast.success("Order successfully created");
-    return data as unknown as Order[]; // Return the newly created order
+    return data as unknown as Order[];
 };

@@ -117,8 +117,12 @@ const CreateOrderPage = () => {
 
     // Array to store all parts
 
-    const isAddPartFormComplete = partId !== -1 && qty > 0 && selectedFactorySectionId !== -1 && selectedMachineId !== -1 && isSampleSentToOffice !== null;
-
+    const isAddPartFormComplete =
+        partId !== -1 &&
+        qty > 0 &&
+        (orderType !== "Machine" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1)) &&
+        isSampleSentToOffice !== null;
+        
     const handleResetOrderParts = () => {
         setQty(-1);
         setPartId(-1);
@@ -466,41 +470,46 @@ const CreateOrderPage = () => {
                                         />
                                     </div>
                                     
-                                    {/* Factory Section Id */}
-                                    <Select
-                                        key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
-                                        onValueChange={(value) => handleSelectFactorySection(Number(value))}
-                                        >
-                                        <Label htmlFor="factorySection">Factory Section</Label>
-                                        <SelectTrigger className="w-[220px]">
-                                            <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {factorySections.map((section) => (
-                                                <SelectItem key={section.id} value={section.id.toString()}>
-                                                    {section.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    
-                                    {/* Machine Id */}
-                                    <Select
-                                        onValueChange={(value) => handleSelectMachine(Number(value))}
-                                        key={`machine-${forceMachineRender}`}
-                                    >
-                                    <Label htmlFor="machine">Machine</Label>
-                                    <SelectTrigger className="w-[220px]">
-                                        <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {machines.map((machine) => (
-                                            <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                {machine.number.toString()}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+
+                                    {orderType === "Machine" && (
+                                        <>
+                                            {/* Factory Section Id */}
+                                            <Select
+                                                key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
+                                                onValueChange={(value) => handleSelectFactorySection(Number(value))}
+                                                >
+                                                <Label htmlFor="factorySection">Factory Section</Label>
+                                                <SelectTrigger className="w-[220px]">
+                                                    <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factorySections.map((section) => (
+                                                        <SelectItem key={section.id} value={section.id.toString()}>
+                                                            {section.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            
+                                            {/* Machine Id */}
+                                            <Select
+                                                onValueChange={(value) => handleSelectMachine(Number(value))}
+                                                key={`machine-${forceMachineRender}`}
+                                            >
+                                            <Label htmlFor="machine">Machine</Label>
+                                            <SelectTrigger className="w-[220px]">
+                                                <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {machines.map((machine) => (
+                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                        {machine.number.toString()}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        </>
+                                    )}
                                     
 
                                     {/* Sample Sent to Office */}
