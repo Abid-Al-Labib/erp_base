@@ -15,6 +15,7 @@ import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
+import { Separator } from "@/components/ui/separator"
 
 interface Factory {
     id: number;
@@ -434,27 +435,29 @@ const CreateOrderPage = () => {
                             <CardDescription>Start adding parts to your order</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
                                 {/* Left side: Part Selection */}
                                 <div className="space-y-4">
-
+                                    <div className="mt-2">
+                                        <Select
+                                            key={`part-${forcePartRender}`} // Key prop to force re-rendering
+                                            onValueChange={(value) => handleSelectPart(Number(value))}
+                                            >
+                                            <Label htmlFor="partId">Select Part</Label>
+                                            <SelectTrigger className="w-[220px]">
+                                                <SelectValue>{partId !== -1 ? parts.find(p => p.id === partId)?.name : "Select Part"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {parts.map((part) => (
+                                                    <SelectItem key={part.id} value={part.id.toString()}>
+                                                        {part.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     {/* Selecting Part ID */}
-                                    <Select
-                                        key={`part-${forcePartRender}`} // Key prop to force re-rendering
-                                        onValueChange={(value) => handleSelectPart(Number(value))}
-                                        >
-                                        <Label htmlFor="partId">Select Part</Label>
-                                        <SelectTrigger className="w-[220px]">
-                                            <SelectValue>{partId !== -1 ? parts.find(p => p.id === partId)?.name : "Select Part"}</SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {parts.map((part) => (
-                                                <SelectItem key={part.id} value={part.id.toString()}>
-                                                    {part.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+
     
                                     {/* Setting QTY */}
                                     <div className="flex flex-col space-y-2">
@@ -473,64 +476,67 @@ const CreateOrderPage = () => {
                                     {orderType === "Machine" && (
                                         <>
                                             {/* Factory Section Id */}
-                                            <Select
-                                                key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
-                                                onValueChange={(value) => handleSelectFactorySection(Number(value))}
-                                                >
-                                                <Label htmlFor="factorySection">Factory Section</Label>
-                                                <SelectTrigger className="w-[220px]">
-                                                    <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {factorySections.map((section) => (
-                                                        <SelectItem key={section.id} value={section.id.toString()}>
-                                                            {section.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <div className="mt-2">
+                                                <Select
+                                                    key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
+                                                    onValueChange={(value) => handleSelectFactorySection(Number(value))}
+                                                    >
+                                                    <Label htmlFor="factorySection">Factory Section</Label>
+                                                    <SelectTrigger className="w-[220px]">
+                                                        <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {factorySections.map((section) => (
+                                                            <SelectItem key={section.id} value={section.id.toString()}>
+                                                                {section.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                             
                                             {/* Machine Id */}
-                                            <Select
-                                                onValueChange={(value) => handleSelectMachine(Number(value))}
-                                                key={`machine-${forceMachineRender}`}
-                                            >
-                                            <Label htmlFor="machine">Machine</Label>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {machines.map((machine) => (
-                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                        {machine.number.toString()}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            <div className="mt-2">
+                                                <Select
+                                                    onValueChange={(value) => handleSelectMachine(Number(value))}
+                                                    key={`machine-${forceMachineRender}`}
+                                                >
+                                                    <Label htmlFor="machine">Machine</Label>
+                                                    <SelectTrigger className="w-[220px]">
+                                                        <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {machines.map((machine) => (
+                                                            <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                                {machine.number.toString()}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </>
                                     )}
                                     
 
                                     {/* Sample Sent to Office */}
-                                    <div className="items-top flex space-x-2">
+                                    <div className="flex items-center gap-2 leading-none">
+                                        <label
+                                            htmlFor="sampleSentToOffice"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            Is Sample Sent to Office?
+                                        </label>
                                         <Checkbox
                                             id="sampleSentToOffice"
                                             checked={isSampleSentToOffice}
                                             onCheckedChange={(checked) => setIsSampleSentToOffice(checked === true)}
                                             className="h-5 w-5 border-gray-300 rounded focus:ring-gray-500 checked:bg-gray-600 checked:border-transparent"
-                                        />
-                                        <div className="grid gap-1.5 leading-none">
-                                            <label
-                                                htmlFor="sampleSentToOffice"
-                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                            >
-                                                Is Sample Sent to Office?
-                                            </label>
-                                            <p className="text-sm text-muted-foreground">
-                                                {isSampleSentToOffice ? "Yes" : "No"}
-                                            </p>
-                                        </div>
+                                            />
+                                        <p className="text-sm text-muted-foreground">
+                                            {isSampleSentToOffice ? "Yes" : "No"}
+                                        </p>
                                     </div>
+
 
                                     {/* Note */}
                                     <div className="flex flex-col space-y-2">
@@ -540,43 +546,24 @@ const CreateOrderPage = () => {
                                             value={note || ''}
                                             onChange={e => setNote(e.target.value)}
                                             placeholder="Enter any notes"
-                                            className="min-h-24 w-1/2"  
+                                            className="min-h-24 w-3/4"  
                                         />
                                     </div>
-                                        
-                                    {/* Buttons for adding parts and finalizing the order */}
-                                    <div className="flex gap-3">
-                              
 
+                                    <div className="flex justify-start">
                                         <Button 
                                             size="sm"
-                                            className="ml-auto gap 2" 
                                             onClick={handleAddOrderParts}
                                             disabled={!isAddPartFormComplete}
                                         >
                                             <CirclePlus className="h-4 w-4" />
                                             Add Parts
                                         </Button>
-
-                                        
-                                        <Link to="/orders">
-                                            <Button
-                                                size="sm"
-                                                className="ml-auto gap"
-                                                onClick={handleFinalCreateOrder}
-                                                disabled={orderedParts.length === 0}
-                                            >
-                                                <CircleCheck className="h-4 w-4" />
-                                                Finalize Order
-                                            </Button>
-                                        </Link>
-
-
                                     </div>
                                 </div>
     
                                 {/* Right side: List of Added Parts */}
-                                <div className="space-y-4">
+                                <div className="space-y-4 p-3">
                                     <h4 className="font-bold mb-2">Added Parts</h4>
                                     <ul className="space-y-2">
                                         {orderedParts.map((part, index) => (
@@ -610,6 +597,20 @@ const CreateOrderPage = () => {
                                         ))}
                                     </ul>
                                 </div>
+                            </div>
+                            {/* Buttons for adding parts and finalizing the order */}
+                            <div className="flex justify-end mt-4">
+
+                                <Link to="/orders">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleFinalCreateOrder}
+                                        disabled={orderedParts.length === 0}
+                                    >
+                                        <CircleCheck className="h-4 w-4" />
+                                        Finalize Order
+                                    </Button>
+                                </Link>
                             </div>
                         </CardContent>
                     </Card>
