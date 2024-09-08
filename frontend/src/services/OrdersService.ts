@@ -3,11 +3,11 @@ import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
 
-export const fetchOrders = async (page: number = 1, limit: number = 10, searchQuery: string = '') => {
+export const fetchOrders = async (page: number = 1, limit: number = 10, query: string = '') => {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data, error, count } = await supabase_client
+    let queryBuilder = supabase_client
         .from('orders')
         .select(
             `
@@ -19,13 +19,19 @@ export const fetchOrders = async (page: number = 1, limit: number = 10, searchQu
             current_status_id,
             departments(*),
             profiles(*),
-            statuses(*)
+            statuses(*),
+            order_parts!inner(*)  -- Assuming order_parts is the relation name
             `,
             { count: 'exact' }
         )
-        .ilike('order_note', `%${searchQuery}%`)
         .range(from, to)
         .order('id', { ascending: true });
+
+    if (query) {
+        queryBuilder = queryBuilder.or(query);
+    }
+
+    const { data, error, count } = await queryBuilder;
 
     if (error) {
         toast.error(error.message);

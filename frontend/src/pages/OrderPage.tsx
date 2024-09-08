@@ -1,56 +1,34 @@
 import { useEffect, useState } from 'react';
-import { Link } from "react-router-dom"
-import {
-  Loader2,
-  PlusCircle,
-  Search,
-} from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-} from "@/components/ui/tabs"
-import NavigationBar from "@/components/customui/NavigationBar"
+import { Link } from "react-router-dom";
+import { Loader2, PlusCircle, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import NavigationBar from "@/components/customui/NavigationBar";
 import toast from 'react-hot-toast';
 import OrdersTableRow from '@/components/customui/OrdersTableRow';
 import { Order } from '@/types';
 import { fetchOrders } from '@/services/OrdersService';
 
-
-
 const OrderPage = () => {
-    const [orders,setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [ordersPerPage] = useState(10); // Change this to set how many orders per page
+    const [ordersPerPage] = useState(5); // Change this to set how many orders per page
     const [searchQuery, setSearchQuery] = useState('');
-
+    const [count, setCount] = useState(0); // Add state for total count of orders
 
     const refreshTable = async (page: number = 1, query: string = '') => {
         try {
             setLoading(true);
             const { data, count } = await fetchOrders(page, ordersPerPage, query);
             setOrders(data);
-        setTotalPages(Math.ceil((count ?? 0) / ordersPerPage)); // Ensure count is not null
+            setCount(count ?? 0); // Set the count here
+            setTotalPages(Math.ceil((count ?? 0) / ordersPerPage)); // Ensure count is not null
         } catch (error) {
             toast.error('Failed to fetch orders');
         } finally {
@@ -66,7 +44,6 @@ const OrderPage = () => {
         setCurrentPage(newPage);
         refreshTable(newPage, searchQuery);
     };
-
 
     useEffect(() => {
         refreshTable(currentPage, searchQuery);
@@ -147,7 +124,7 @@ const OrderPage = () => {
                                     <CardFooter>
                                         <div className="flex justify-between items-center w-full text-xs text-muted-foreground">
                                             <span>
-                                                Showing <strong>{(currentPage - 1) * ordersPerPage + 1}</strong> to <strong>{Math.min(currentPage * ordersPerPage, orders.length)}</strong> of <strong>{totalPages * ordersPerPage}</strong> Orders
+                                                Showing <strong>{(currentPage - 1) * ordersPerPage + 1}</strong> to <strong>{Math.min(currentPage * ordersPerPage, count)}</strong> of <strong>{count}</strong> Orders
                                             </span>
                                             <div className="flex gap-2">
                                                 <Button
