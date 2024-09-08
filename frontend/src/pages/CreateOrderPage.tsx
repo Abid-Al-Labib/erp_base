@@ -86,6 +86,7 @@ const CreateOrderPage = () => {
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
     const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType && description.trim();
+    const [isOrderStarted, setIsOrderStarted] = useState(false);
 
     const [parts, setParts] = useState<Part[]>([]);
     useEffect(() => {
@@ -161,7 +162,8 @@ const CreateOrderPage = () => {
                 current_status_id: statusId,
             }
             setTempOrderDetails(orderData);
-            setShowPartForm(true);  
+            setShowPartForm(true);
+            setIsOrderStarted(true);
             toast.success("Order details are set. Please add parts.");
         } catch (error) {
             toast.error('Error preparing order: ' + error);
@@ -343,7 +345,7 @@ const CreateOrderPage = () => {
                     <CardContent>
                         <div className="grid gap-6">
                             {/* Factory */}
-                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))}>
+                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                 <Label htmlFor="factoryName">Factory Name</Label>
                                 <SelectTrigger className="w-[220px]">
                                     <SelectValue>{selectedFactoryName}</SelectValue>
@@ -357,7 +359,7 @@ const CreateOrderPage = () => {
                                 </SelectContent>
                             </Select>
                             {/* Department */}
-                            <Select onValueChange={(value) => setDepartmentId(Number(value))}>
+                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                 <Label htmlFor="department">Department</Label>
                                 <SelectTrigger className="w-[220px]">
                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
@@ -371,7 +373,7 @@ const CreateOrderPage = () => {
                                 </SelectContent>
                             </Select>
                             {/* OrderType */}
-                            <Select onValueChange={setOrderType}>
+                            <Select onValueChange={setOrderType} disabled={isOrderStarted}>
                                 <Label htmlFor="orderType">Is this Order for Storage or a Machine?</Label>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue>{orderType || "Select an Option"}</SelectValue>
@@ -389,6 +391,7 @@ const CreateOrderPage = () => {
                                     defaultValue=""
                                     className="min-h-32"
                                     onChange={e => setDescription(e.target.value)}
+                                    disabled={isOrderStarted}
                                 />
                             </div>
                             {/* Buttons for Main Order*/}
@@ -568,31 +571,29 @@ const CreateOrderPage = () => {
                                     <ul className="space-y-2">
                                         {orderedParts.map((part, index) => (
                                             <li key={index} className="relative p-4 border rounded-lg bg-gray-100">
-                                                {/* <Button
-                                                    onClick={() => handleRemovePart(index)}
-                                                    className="absolute -top-3 -right-3 text-white rounded-full h-8 w-8 flex items-center justify-center hover:bg-red-700 focus:outline-none"
-                                                >
-                                                    ✖
-                                                </Button> */}
+                                                {/* Top right remove button */}
                                                 <CircleX
-                                                    width = "28px"
-                                                    height= "22px"
-                                                    className="absolute -top-3 -right-3"
+                                                    width="28px"
+                                                    height="22px"
+                                                    className="absolute -top-3 -right-3 cursor-pointer"
                                                     onClick={() => handleRemovePart(index)}
-                                                >
-                                                    {/* <CircleX className="h-4 w-4" /> */}
-                                                    
-                                                </CircleX>
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
-                                                        <p><strong>Quantity:</strong> {part.qty}</p>
+                                                />
+                                                {/* Flex container to align Part and Quantity side by side */}
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
+                                                    <p><strong>Quantity:</strong> {part.qty}</p>
+                                                </div>
+                                                {/* Flex container for Factory Section and Machine */}
+                                                {orderType === "Machine" ? (
+                                                    <div className="flex justify-between">
+                                                        <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
+                                                        <p><strong>Machine:</strong> {part.machine_number || "Unknown"}</p>
                                                     </div>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
-                                                    <p><strong>Machine:</strong> {part.machine_number || "Unknown"}</p>
-                                                </div>
+                                                ) : (
+                                                    <div className="">
+                                                        <p><strong>Order for Storage</strong></p>
+                                                    </div>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>
