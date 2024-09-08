@@ -10,12 +10,19 @@ import { useEffect, useState } from "react"
 import { insertOrder } from "@/services/OrdersService";
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { fetchFactories, fetchFactorySections, fetchMachines } from '@/services/FactoriesService';
+import { fetchFactories, fetchFactorySections, fetchMachines, fetchDepartments } from '@/services/FactoriesService';
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Separator } from "@/components/ui/separator"
+
+
+
+interface Department{
+    id: number;
+    name: string;
+}
 
 interface Factory {
     id: number;
@@ -71,12 +78,9 @@ const CreateOrderPage = () => {
     const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
     const selectedMachineNumber = Number(machines.find(machine => machine.id === selectedMachineId)?.number || "Select Machine");
 
-    const departments = [
-        { id: 1, name: "Electrical" },
-        { id: 2, name: "Mechanical" }
-    ];    
-    const [departmentId, setDepartmentId] = useState<number>(-1); 
-    const selectedDepartmentName = departmentId ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [departmentId, setDepartmentId] = useState<number>(-1);
+    const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
 
     const [orderType, setOrderType] = useState('');
     const [description, setDescription] = useState(''); 
@@ -87,6 +91,7 @@ const CreateOrderPage = () => {
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
     const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType && description.trim();
     const [isOrderStarted, setIsOrderStarted] = useState(false);
+
 
     const [parts, setParts] = useState<Part[]>([]);
     useEffect(() => {
@@ -268,6 +273,19 @@ const CreateOrderPage = () => {
     }, []);
 
     useEffect(() => {
+        const loadDepartments = async () => {
+            try {
+                const fetchedDepartments = await fetchDepartments();
+                setDepartments(fetchedDepartments);
+            } catch (error) {
+                toast.error('Failed to load departments');
+            }
+        };
+
+        loadDepartments();
+    }, []);
+
+    useEffect(() => {
         if (selectedFactoryId !== null) {
             const loadFactorySections = async () => {
                 const sections = await fetchFactorySections(selectedFactoryId);
@@ -293,6 +311,8 @@ const CreateOrderPage = () => {
 
         loadMachines();
     }, [selectedFactorySectionId]);
+
+    
 
     const handleSelectPart = (value: number) => {
         if (partId === value) {
@@ -331,6 +351,7 @@ const CreateOrderPage = () => {
     };
 
 
+
     return (
         <>
             <NavigationBar/>
@@ -359,7 +380,7 @@ const CreateOrderPage = () => {
                                 </SelectContent>
                             </Select>
                             {/* Department */}
-                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                            <Select onValueChange={(value) => setDepartmentId(Number(value))}>
                                 <Label htmlFor="department">Department</Label>
                                 <SelectTrigger className="w-[220px]">
                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>

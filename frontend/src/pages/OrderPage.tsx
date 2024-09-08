@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from "react-router-dom";
-import { Loader2, PlusCircle, Search } from "lucide-react";
+import { Loader2, PlusCircle, Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,23 @@ import toast from 'react-hot-toast';
 import OrdersTableRow from '@/components/customui/OrdersTableRow';
 import { Order } from '@/types';
 import { fetchOrders } from '@/services/OrdersService';
+import { DayPicker } from 'react-day-picker';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { fetchDepartments } from '@/services/FactoriesService';
+import { fetchStatuses } from '@/services/StatusesService';
+
+
+interface Department {
+    id: number;
+    name: string;
+}
+interface Status {
+    id: number;
+    name: string;
+}
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -18,17 +35,39 @@ const OrderPage = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [ordersPerPage] = useState(5); // Change this to set how many orders per page
+    const [ordersPerPage] = useState(5);
     const [searchQuery, setSearchQuery] = useState('');
-    const [count, setCount] = useState(0); // Add state for total count of orders
+    const [searchType, setSearchType] = useState<'id' | 'date'>('id'); // Toggle between ID and Date search
+    const [tempDate, setTempDate] = useState<Date | undefined>(undefined);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [count, setCount] = useState(0);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [statuses, setStatuses] = useState<Status[]>([]);
+    const [selectedStatusId, setSelectedStatusId] = useState<number | undefined>(undefined);
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>(undefined);
+    const selectedDepartmentName = selectedDepartmentId ? departments.find(dept => dept.id === selectedDepartmentId)?.name : "All Departments";
+    const selectedStatusName = selectedStatusId ? statuses.find(status => status.id === selectedStatusId)?.name : "All Statuses";
 
-    const refreshTable = async (page: number = 1, query: string = '') => {
+
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+
+    const refreshTable = async () => {
+        console.log('Refreshing table...');
+        console.log('Current Department ID:', selectedDepartmentId);
         try {
             setLoading(true);
-            const { data, count } = await fetchOrders(page, ordersPerPage, query);
+            const { data, count } = await fetchOrders({
+                page: currentPage,
+                limit: ordersPerPage,
+                query: searchType === 'id' ? searchQuery : '',
+                searchDate: searchType === 'date' ? selectedDate : undefined,
+                statusId: selectedStatusId,
+                departmentId: selectedDepartmentId,
+            });
             setOrders(data);
-            setCount(count ?? 0); // Set the count here
-            setTotalPages(Math.ceil((count ?? 0) / ordersPerPage)); // Ensure count is not null
+            setCount(count ?? 0);
+            setTotalPages(Math.ceil((count ?? 0) / ordersPerPage));
         } catch (error) {
             toast.error('Failed to fetch orders');
         } finally {
@@ -40,14 +79,75 @@ const OrderPage = () => {
         setSearchQuery(event.target.value);
     };
 
+    const handleDateChange = () => {
+        setSelectedDate(tempDate); // Set the date (undefined is fine here)
+        setIsDatePickerOpen(false); // Close the date picker after selecting a date
+    };
+
+    const handleSearchTypeChange = (type: 'id' | 'date') => {
+        setSearchType(type);
+        setSearchQuery('');
+        setSelectedDate(undefined);
+    };
+
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
-        refreshTable(newPage, searchQuery);
+    };
+
+    const handleStatusChange = (value: string) => {
+        const statusId = value === 'all' ? undefined : Number(value); // Convert the selected value to a number or set to undefined for "All Statuses"
+        setSelectedStatusId(statusId); // Directly set the status ID or undefined
+        console.log(`Selected Status ID: ${statusId}`); // Log the correct status ID
+    };
+
+    const handleDepartmentChange = (value: string) => {
+        const departmentId = value === 'all' ? undefined : Number(value); // Convert the selected value to a number or set to undefined for "All Departments"
+        setSelectedDepartmentId(departmentId); // Directly set the department ID or undefined
+        console.log(`Selected Department ID: ${departmentId}`); // Log the correct department ID
     };
 
     useEffect(() => {
-        refreshTable(currentPage, searchQuery);
-    }, [currentPage, searchQuery]);
+        refreshTable();
+    }, [currentPage, searchQuery, selectedDate]);
+
+    useEffect(() => {
+        console.log('Refreshing table with department ID:', selectedDepartmentId);
+        refreshTable(); // Call refreshTable after department ID is set
+    }, [selectedDepartmentId]);
+
+    useEffect(() => {
+        console.log('Refreshing table with status ID:', selectedStatusId);
+        refreshTable(); // Call refreshTable after status ID is set
+    }, [selectedStatusId]);
+
+    useEffect(() => {
+        const loadDepartments = async () => {
+            try {
+                const fetchedDepartments = await fetchDepartments();
+                setDepartments(fetchedDepartments);
+            } catch (error) {
+                toast.error('Failed to load departments');
+            }
+        };
+
+        loadDepartments();
+    }, []);
+
+    
+
+    useEffect(() => {
+        const loadStatuses = async () => {
+            try {
+                const fetchedStatuses = await fetchStatuses();
+                console.log('Fetched Statuses:', fetchedStatuses); // Log the fetched departments to verify
+                setStatuses(fetchedStatuses);
+            } catch (error) {
+                toast.error('Failed to load departments');
+            }
+        };
+
+        loadStatuses();
+    }, []);
 
     return (
         <>
@@ -58,15 +158,109 @@ const OrderPage = () => {
                         <Tabs defaultValue="all">
                             <div className="flex items-center">
                                 <div className="ml-auto flex items-center gap-2">
+
+                                    {/* Department Filter */}
+                                    <div className="flex flex-col">
+                                        <Select
+                                            value={selectedDepartmentId === undefined ? "all" : selectedDepartmentId.toString()}
+                                            onValueChange={(value) => handleDepartmentChange(value)}
+                                        >
+                                            <SelectTrigger className="w-[220px]">
+                                                <SelectValue>
+                                                    {selectedDepartmentId === undefined || selectedDepartmentName === "Select Department"
+                                                        ? "All Departments"
+                                                        : selectedDepartmentName}
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Departments</SelectItem>
+                                                {departments.map((dept) => (
+                                                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                        {dept.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Status Filter */}
+                                    <Select
+                                        value={selectedStatusId === undefined ? "all" : selectedStatusId.toString()}
+                                        onValueChange={(value) => handleStatusChange(value)}
+                                    >
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>
+                                                {selectedStatusId === undefined || selectedStatusName === "Select Status"
+                                                    ? "All Statuses"
+                                                    : selectedStatusName}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            {statuses
+                                                .sort((a, b) => a.id - b.id)  // Sorting statuses by id
+                                                .map((status) => (
+                                                    <SelectItem key={status.id} value={status.id.toString()}>
+                                                        {status.name}
+                                                    </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* Search by ID and Date */}
+                                    <div className="flex gap-4">
+                                        <Button
+                                            variant={searchType === 'id' ? 'default' : 'outline'}
+                                            onClick={() => handleSearchTypeChange('id')}
+                                        >
+                                            Search by ID
+                                        </Button>
+                                        <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button
+                                                    variant={searchType === 'date' ? 'default' : 'outline'}
+                                                    onClick={() => handleSearchTypeChange('date')}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    Search by Date
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-[425px] p-6 rounded-lg bg-white shadow-lg">
+                                                <DialogTitle className="text-lg font-semibold mb-4">Select Date</DialogTitle>
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={tempDate}
+                                                    onSelect={setTempDate}
+                                                    className="rounded-md border"
+                                                />
+                                                <div className="flex justify-end mt-4">
+                                                    <Button
+                                                        onClick={() => {
+                                                            handleDateChange();
+                                                        }}
+                                                        className="bg-blue-950 text-white px-4 py-2 rounded-md"
+                                                    >
+                                                        Confirm
+                                                    </Button>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
+
+                                    {/* Search by ID Input */}
                                     <div className="relative ml-auto flex-1 md:grow-0">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="search"
-                                            placeholder="Search..."
-                                            value={searchQuery}
-                                            onChange={handleSearchChange}
-                                            className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-                                        />
+                                        {searchType === 'id' && (
+                                            <>
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    type="search"
+                                                    placeholder="Search by ID..."
+                                                    value={searchQuery}
+                                                    onChange={handleSearchChange}
+                                                    className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                                                />
+                                            </>
+                                        )}
                                     </div>
                                     <Link to="/createorder">
                                         <Button size="sm" className="h-8 gap-1 bg-blue-950">
@@ -114,7 +308,7 @@ const OrderPage = () => {
                                                             created_at={order.created_at}
                                                             department_name={order.departments.name}
                                                             current_status={order.statuses.name}
-                                                            onDeleteRefresh={() => refreshTable(currentPage, searchQuery)}
+                                                            onDeleteRefresh={refreshTable}
                                                         />
                                                     ))}
                                                 </TableBody>
@@ -152,6 +346,8 @@ const OrderPage = () => {
             </div>
         </>
     );
+
+
 }
 
 export default OrderPage;

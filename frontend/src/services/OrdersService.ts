@@ -3,7 +3,31 @@ import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
 
-export const fetchOrders = async (page: number = 1, limit: number = 10, query: string = '') => {
+export const fetchOrders = async ({
+    page = 1,
+    limit = 10,
+    query = '',
+    searchDate,
+    statusId,
+    departmentId,
+}: {
+    page: number;
+    limit: number;
+    query?: string;
+    searchDate?: Date;
+    statusId?: number;
+    departmentId?: number;
+}) => {
+
+    console.log(`Fetching orders with parameters: 
+        Page: ${page}, 
+        Limit: ${limit}, 
+        Query: ${query}, 
+        Search Date: ${searchDate}, 
+        Status ID: ${statusId}, 
+        Department ID: ${departmentId}`
+    );
+
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -19,8 +43,7 @@ export const fetchOrders = async (page: number = 1, limit: number = 10, query: s
             current_status_id,
             departments(*),
             profiles(*),
-            statuses(*),
-            order_parts!inner(*)  -- Assuming order_parts is the relation name
+            statuses(*)
             `,
             { count: 'exact' }
         )
@@ -28,7 +51,23 @@ export const fetchOrders = async (page: number = 1, limit: number = 10, query: s
         .order('id', { ascending: true });
 
     if (query) {
-        queryBuilder = queryBuilder.or(query);
+        queryBuilder = queryBuilder.eq('id', query);
+    }
+
+    if (searchDate) {
+        const formattedDate = searchDate.toISOString().split('T')[0];
+        queryBuilder = queryBuilder.gte('created_at', `${formattedDate}T00:00:00.000Z`)
+            .lte('created_at', `${formattedDate}T23:59:59.999Z`);
+    }
+
+    if (statusId) {
+        queryBuilder = queryBuilder.eq('current_status_id', statusId);
+    }
+
+    if (departmentId) {
+        console.log('Fetching orders with deptID '); 
+        console.log({departmentId});
+        queryBuilder = queryBuilder.eq('department_id', departmentId);
     }
 
     const { data, error, count } = await queryBuilder;
@@ -40,7 +79,6 @@ export const fetchOrders = async (page: number = 1, limit: number = 10, query: s
 
     return { data: data as unknown as Order[], count };
 };
-
 
 export const fetchOrderByID = async (order_id:number) => {
     const {data,error} = await supabase_client.from('orders').

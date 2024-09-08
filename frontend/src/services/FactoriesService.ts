@@ -38,3 +38,15 @@ export const fetchMachines = async (factorySectionId: number) => {
     }
     return data;
 };
+
+export const fetchDepartments = async () => {
+    const { data, error } = await supabase_client
+        .from('departments')
+        .select('id, name');
+
+    if (error) {
+        console.error('Error fetching departments:', error.message);
+        return [];
+    }
+    return data;
+};
