@@ -29,19 +29,19 @@ const NavigationBar = () => {
                 </Link>
                 <Link
                     to="/orders"
-                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    className="text-foreground transition-colors hover:text-foreground"
                 >
                     Orders
                 </Link>
                 <Link
                     to="/parts"
-                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    className="text-foreground transition-colors hover:text-foreground"
                 >
                     Parts
                 </Link>
                 <Link
                     to="#"
-                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    className="text-foreground transition-colors hover:text-foreground"
                 >
                     Storage
                 </Link>
@@ -58,8 +58,8 @@ const NavigationBar = () => {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left">
-                <nav className="grid gap-6 text-lg font-medium">
-                <Link to="#" className="hover:text-foreground">
+                <nav className="grid gap-6 text-lg">
+                <Link to="/" className="hover:text-foreground">
                     Dashboard
                 </Link>
                 <Link
@@ -69,13 +69,13 @@ const NavigationBar = () => {
                     Orders
                 </Link>
                 <Link
-                    to="#"
+                    to="/parts"
                     className="text-muted-foreground hover:text-foreground"
                 >
                     Parts
                 </Link>
                 <Link
-                    to="#"
+                    to="/"
                     className="text-muted-foreground hover:text-foreground"
                 >
                     Storage

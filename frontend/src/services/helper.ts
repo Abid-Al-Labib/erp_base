@@ -41,9 +41,10 @@ export const convertUtcToBDTime = (utcTimestamp: string): string => {
         year: 'numeric', // "2024"
         month: 'short', // "Aug"
         day: 'numeric', // "16"
-        hour: '2-digit', // "01"
-        minute: '2-digit', // "21"
-        hour12: true // Use 12-hour clock format
+        // below code commented out as we only need to display date for this system
+        // hour: '2-digit', // "01"
+        // minute: '2-digit', // "21"
+        // hour12: true // Use 12-hour clock format
     });
 };
 

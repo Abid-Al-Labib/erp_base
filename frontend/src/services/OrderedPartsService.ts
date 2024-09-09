@@ -1,27 +1,6 @@
-import { LinkedOrders, OrderedPart } from "@/types";
+import { OrderedPart } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
-
-
-
-export const fetchLinkedOrdersByPartID = async (part_id: number)=> {
-    const {data,error} = await supabase_client.from('order_parts').
-    select(
-        `
-            id,
-            order_id
-            ,
-            orders(
-                *
-            )
-        `
-    ).eq('part_id',part_id)
-    if (error){
-        toast.error(error.message)
-    }
-    console.log(data)
-    return data as unknown as LinkedOrders[];
-}
 
 export const fetchOrderedPartByPartID = async( part_id:number) => {
     const {data,error} =  await supabase_client.from('order_parts').select(

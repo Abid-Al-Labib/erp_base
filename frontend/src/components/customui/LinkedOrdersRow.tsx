@@ -4,37 +4,44 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { ExternalLink, MoreHorizontal } from "lucide-react";
-import { Part } from "@/types";
+import { OrderedPart } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
 import OrderedPartInfo from "./OrderedPartInfo";
 
 
 interface LinkedOrdersRowProps {
-  order_id: number,
-  order_creation_date: string
-  part_info: Part
+  linkedOrderPart: OrderedPart
 }
 
-const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({order_id,order_creation_date,part_info}) => {
+const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({linkedOrderPart}) => {
   return (
     <TableRow>
       <TableCell className="font-medium">
-        {order_id}
+        {linkedOrderPart.order_id}
+      </TableCell>
+      <TableCell className="hidden md:table-cell">
+        {convertUtcToBDTime(linkedOrderPart.orders.created_at)}
       </TableCell>
       <TableCell>
-        {convertUtcToBDTime(order_creation_date)}
+        {linkedOrderPart.factories.abbreviation} - {linkedOrderPart.factory_sections.name} - {linkedOrderPart.machines.number}
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">{linkedOrderPart.qty}</TableCell>
+      <TableCell className="hidden md:table-cell">{linkedOrderPart.unit_cost? `BDT ${(linkedOrderPart.unit_cost)}`: '-'}</TableCell>
+      <TableCell className="hidden md:table-cell">{linkedOrderPart.vendor? (linkedOrderPart.vendor): '-'}</TableCell>
+      <TableCell className="hidden md:table-cell">{linkedOrderPart.part_purchased_date? convertUtcToBDTime(linkedOrderPart.part_purchased_date) : '-'}</TableCell>
+      <TableCell className="hidden md:table-cell">{linkedOrderPart.part_sent_by_office_date? convertUtcToBDTime(linkedOrderPart.part_sent_by_office_date) : '-'}</TableCell>
+      <TableCell className="hidden md:table-cell">{linkedOrderPart.part_received_by_factory_date? convertUtcToBDTime(linkedOrderPart.part_received_by_factory_date) : '-'}</TableCell>
+      <TableCell className="md:hidden">
         <Dialog>
         <DialogTrigger asChild>
           <ExternalLink className="hover:cursor-pointer"/>
         </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogTitle>
-                  Additional info
+                  Ordered Part Info
                 </DialogTitle>
                 <OrderedPartInfo
-                  part_id={part_info.id}
+                  linkedOrderPart={linkedOrderPart}
                 />
             </DialogContent>
         </Dialog>
@@ -53,7 +60,7 @@ const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({order_id,order_creation
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link to={`/vieworder/${order_id}`}>
+            <Link to={`/vieworder/${linkedOrderPart.order_id}`}>
               <DropdownMenuItem>
                 View Full Order
               </DropdownMenuItem>

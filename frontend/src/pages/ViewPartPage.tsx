@@ -1,12 +1,10 @@
-import LinkedOrdersRow from "@/components/customui/LinkedOrdersRow";
+import LinkedOrdersTable from "@/components/customui/LinkedOrdersTable";
 import PartInfo from "@/components/customui/PartInfo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { convertUtcToBDTime } from "@/services/helper";
-import { fetchLinkedOrdersByPartID } from "@/services/OrderedPartsService";
+import { fetchOrderedPartByPartID } from "@/services/OrderedPartsService";
 import { fetchPartByID } from "@/services/PartsService";
-import { LinkedOrders, Part } from "@/types";
+import { OrderedPart, Part } from "@/types";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -15,7 +13,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 const ViewPartPage = () => {
   const { id } = useParams<{ id: string }>();
   const [parts, setParts] = useState<Part[]>([]);
-  const [linkedOrders, setLinkedOrders] = useState<LinkedOrders[]>([])
+  const [linkedOrderedParts, setlinkedOrderedParts] = useState<OrderedPart[]>([])
   const [loadingPartInfo, setLoadingPartInfo] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const navigate = useNavigate();
@@ -46,9 +44,9 @@ const ViewPartPage = () => {
       }
 
       try {
-        const linked_order_data = await fetchLinkedOrdersByPartID(part_id);
-        console.log(linked_order_data)
-        setLinkedOrders(linked_order_data);
+        const linked_ordered_parts_data = await fetchOrderedPartByPartID(part_id);
+        console.log(linked_ordered_parts_data)
+        setlinkedOrderedParts(linked_ordered_parts_data);
         
       } catch (error) {
         toast.error("Failed to fetch linked orders");
@@ -85,50 +83,18 @@ const ViewPartPage = () => {
                 description={parts[0].description}
               />
             </div>
-
-            <Card x-chunk="dashboard-06-chunk-0" className="mt-5">
-                        <CardHeader>
-                            <CardTitle>Linked Orders</CardTitle>
-                            <CardDescription>
-                                This is a list of orders that are linked to this part.
-                            </CardDescription>
-                        </CardHeader>
-                        {(loadingTable===true)? (
-                                    <div className='animate-spin flex flex-row justify-center p-5'>
-                                        <Loader2 />
-                                    </div>
-                          ):
-                          <CardContent>
-                              <Table>
-                                  <TableHeader>
-                                  <TableRow>
-                                      <TableHead>Order ID</TableHead>
-                                      <TableHead className="hidden md:table-cell">Created at</TableHead>
-                                      <TableHead>Additional Info</TableHead>
-                                      <TableHead>
-                                      <span className="sr-only">Actions</span>
-                                      </TableHead>
-                                  </TableRow>
-                                  </TableHeader>
-                                  {loadingTable? (
-                                      <div className='flex flex-row justify-center'>
-                                          <Loader2 className='h-8 w-8 animate-spin'/>
-                                      </div>
-                                  ):
-                                      <TableBody>
-                                      {linkedOrders.map(linkedOrder => (                                        
-                                          <LinkedOrdersRow key={linkedOrder.id}
-                                          order_id={linkedOrder.order_id}
-                                          order_creation_date={convertUtcToBDTime(linkedOrder.orders.created_at)}
-                                          part_info={parts[0]}            
-                                          />
-                                      ))}
-                                      </TableBody>
-                                  }  
-                              </Table>
-                          </CardContent>
-                        }
-                </Card>
+            
+            {(loadingTable===true)? (
+                        <div className='animate-spin flex flex-row justify-center p-5'>
+                            <Loader2 />
+                        </div>
+            ): (
+              <LinkedOrdersTable 
+                linkedOrderedParts={
+                  linkedOrderedParts
+                }                  
+              />
+            )}
 
         </main>
         <div className="flex justify-end">
