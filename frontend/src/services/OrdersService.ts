@@ -3,33 +3,81 @@ import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
 
-export const fetchOrders = async () => {
-    const {data,error} = await supabase_client.from('orders').
-    select(
-        `
+export const fetchOrders = async ({
+    page = 1,
+    limit = 10,
+    query = '',
+    searchDate,
+    statusId,
+    departmentId,
+}: {
+    page: number;
+    limit: number;
+    query?: string;
+    searchDate?: Date;
+    statusId?: number;
+    departmentId?: number;
+}) => {
+
+    console.log(`Fetching orders with parameters: 
+        Page: ${page}, 
+        Limit: ${limit}, 
+        Query: ${query}, 
+        Search Date: ${searchDate}, 
+        Status ID: ${statusId}, 
+        Department ID: ${departmentId}`
+    );
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let queryBuilder = supabase_client
+        .from('orders')
+        .select(
+            `
             id,
             created_at,
             order_note,
             created_by_user_id,
             department_id,
-            current_status_id
-            ,
-            departments(
-                *
-            ),
-            profiles(
-                *
-            ),
-            statuses(
-                *
-            )
-        `
-    ).order('id', { ascending: true });
-    if (error){
-        toast.error(error.message)
+            current_status_id,
+            departments(*),
+            profiles(*),
+            statuses(*)
+            `,
+            { count: 'exact' }
+        )
+        .range(from, to)
+        .order('id', { ascending: true });
+
+    if (query) {
+        queryBuilder = queryBuilder.eq('id', query);
     }
-    console.log(data)
-    return data as unknown as Order[];
+
+    if (searchDate) {
+        const formattedDate = searchDate.toISOString().split('T')[0];
+        queryBuilder = queryBuilder.gte('created_at', `${formattedDate}T00:00:00.000Z`)
+            .lte('created_at', `${formattedDate}T23:59:59.999Z`);
+    }
+
+    if (statusId) {
+        queryBuilder = queryBuilder.eq('current_status_id', statusId);
+    }
+
+    if (departmentId) {
+        console.log('Fetching orders with deptID '); 
+        console.log({departmentId});
+        queryBuilder = queryBuilder.eq('department_id', departmentId);
+    }
+
+    const { data, error, count } = await queryBuilder;
+
+    if (error) {
+        toast.error(error.message);
+        return { data: [], count: 0 };
+    }
+
+    return { data: data as unknown as Order[], count };
 };
 
 export const fetchOrderByID = async (order_id:number) => {
