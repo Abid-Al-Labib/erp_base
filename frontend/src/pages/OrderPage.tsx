@@ -11,11 +11,9 @@ import toast from 'react-hot-toast';
 import OrdersTableRow from '@/components/customui/OrdersTableRow';
 import { Order } from '@/types';
 import { fetchOrders } from '@/services/OrdersService';
-import { DayPicker } from 'react-day-picker';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import { fetchDepartments } from '@/services/FactoriesService';
 import { fetchStatuses } from '@/services/StatusesService';
 
