@@ -25,7 +25,7 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({order_id}) => {
     fetchData();},[order_id]);
 
     return (
-    <Card className="overflow-hidden overflow-y-scroll h-[85vh]" x-chunk="dashboard-05-chunk-4">
+    <Card className="overflow-hidden overflow-y-scroll h-[60vh]" x-chunk="dashboard-05-chunk-4">
     <CardHeader className="sticky top-0 flex flex-row items-start bg-muted">
       <div className="grid gap-0.5">
         <CardTitle className="group flex items-center gap-2 text-lg">

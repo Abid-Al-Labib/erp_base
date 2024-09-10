@@ -12,9 +12,11 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         part_received_by_factory_date,
         part_purchased_date,
         qty,
+        brand,
         vendor, 
         unit_cost,
         note,
+        office_note,
         order_id,
         part_id,
         factory_id,
@@ -46,9 +48,11 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         part_received_by_factory_date,
         part_purchased_date,
         qty,
-        vendor, 
+        vendor,
+        brand, 
         unit_cost,
         note,
+        office_note,
         order_id,
         part_id,
         factory_id,
@@ -114,9 +118,10 @@ export const deleteOrderedPartByID = async (orderedpart_id: number) => {
         
 }
 
-export const updateCostingByID = async (orderedpart_id: number, unit_cost: number, vendor: string) => {
+export const updateCostingByID = async (orderedpart_id: number, brand:string, unit_cost: number, vendor: string) => {
     const { error } = await supabase_client.from('order_parts').update(
         { 
+            brand: brand,
             vendor: vendor,
             unit_cost: unit_cost
         }

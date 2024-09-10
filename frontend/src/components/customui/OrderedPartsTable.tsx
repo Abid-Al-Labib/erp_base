@@ -138,14 +138,19 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
         <Table>
         <TableHeader>
         <TableRow>
-            <TableHead>Part name</TableHead>
-            <TableHead>Qty</TableHead>
-            <TableHead>Costing</TableHead>
-            <TableHead>Machine Info</TableHead>
-            <TableHead>Relevant Dates</TableHead>
-            <TableHead>
-            <span className="sr-only">Actions</span>
-            </TableHead>
+            <TableHead className="whitespace-nowrap">Part</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Purchased Date</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Sent To Factory Date</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Sent To Office</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Received By Office</TableHead>
+            <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
         </TableHeader>
         {loadingTable? (
@@ -199,12 +204,19 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
         <Table>
         <TableHeader>
         <TableRow>
-          <TableHead>Part name</TableHead>
-          <TableHead>Qty</TableHead>
-          <TableHead>Costing</TableHead>
-          <TableHead>Machine Info</TableHead>
-          <TableHead>Relevant Dates</TableHead>
-          <TableHead>Actions</TableHead>
+            <TableHead className="whitespace-nowrap">Part</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Purchased Date</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Sent To Factory Date</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Sent To Office</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Received By Office</TableHead>
+            <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
         </TableHeader>
         {loadingTable? (

@@ -51,28 +51,32 @@ const ViewOrderPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40 mt-2">
-      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40 mx-2">
+      <main className="grid m-4">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
-            <OrderInfo
-              id={orders[0].id}
-              created_at={convertUtcToBDTime(orders[0].created_at)}
-              created_by={orders[0].profiles.name}
-              department_name={orders[0].departments.name}
-              current_status={orders[0].statuses.name}
-              note={orders[0].order_note}
-            />
+          <div className="sm:flex flex-1 gap-2">
+            <div className="w-full mt-4">
+              <OrderInfo
+                id={orders[0].id}
+                created_at={convertUtcToBDTime(orders[0].created_at)}
+                created_by={orders[0].profiles.name}
+                department_name={orders[0].departments.name}
+                current_status={orders[0].statuses.name}
+                note={orders[0].order_note}
+              />
+            </div>
+            <div className="mt-4">
+              <StatusTracker order_id={orders[0].id} />
+            </div>
           </div>
-          <OrderedPartsTable
-            mode="view"
-            order_id={orders[0].id} 
-            current_status={orders[0].statuses}         
-          />
-        </div>
-        <div>
-          <StatusTracker order_id={orders[0].id} />
-        </div>
+            <div className="w-full mt-4 overflow-x-auto">
+              <OrderedPartsTable
+                mode="view"
+                order_id={orders[0].id} 
+                current_status={orders[0].statuses}         
+              />
+            </div>
+          </div>
       </main>
       <div className="flex justify-end">
         <div className="my-3 mx-3">

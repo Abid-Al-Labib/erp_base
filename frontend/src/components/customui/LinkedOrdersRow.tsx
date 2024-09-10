@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { OrderedPart } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
-import OrderedPartInfo from "./OrderedPartInfo";
+import LinkedOrderedPartInfo from "./LinkedOrderedPartInfo";
 
 
 interface LinkedOrdersRowProps {
@@ -40,7 +40,7 @@ const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({linkedOrderPart}) => {
                 <DialogTitle>
                   Ordered Part Info
                 </DialogTitle>
-                <OrderedPartInfo
+                <LinkedOrderedPartInfo
                   linkedOrderPart={linkedOrderPart}
                 />
             </DialogContent>

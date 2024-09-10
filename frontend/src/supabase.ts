@@ -144,6 +144,7 @@ export type Database = {
           approved_budget: boolean
           approved_office_order: boolean
           approved_pending_order: boolean
+          brand: string | null
           factory_id: number
           factory_section_id: number
           id: number
@@ -151,6 +152,7 @@ export type Database = {
           is_sample_sent_to_office: boolean
           machine_id: number
           note: string | null
+          office_note: string | null
           order_id: number
           part_id: number
           part_purchased_date: string | null
@@ -164,6 +166,7 @@ export type Database = {
           approved_budget?: boolean
           approved_office_order?: boolean
           approved_pending_order?: boolean
+          brand?: string | null
           factory_id: number
           factory_section_id: number
           id?: number
@@ -171,6 +174,7 @@ export type Database = {
           is_sample_sent_to_office?: boolean
           machine_id: number
           note?: string | null
+          office_note?: string | null
           order_id: number
           part_id: number
           part_purchased_date?: string | null
@@ -184,6 +188,7 @@ export type Database = {
           approved_budget?: boolean
           approved_office_order?: boolean
           approved_pending_order?: boolean
+          brand?: string | null
           factory_id?: number
           factory_section_id?: number
           id?: number
@@ -191,6 +196,7 @@ export type Database = {
           is_sample_sent_to_office?: boolean
           machine_id?: number
           note?: string | null
+          office_note?: string | null
           order_id?: number
           part_id?: number
           part_purchased_date?: string | null
@@ -223,17 +229,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "order_items_part_id_fkey"
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_parts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]

@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import OrderInfo from "@/components/customui/OrderInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -6,6 +6,7 @@ import { Order } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
 import { convertUtcToBDTime } from "@/services/helper";
 import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
+import { Button } from "@/components/ui/button";
 
 
 const ManageOrderPage = () => {
@@ -46,7 +47,7 @@ const ManageOrderPage = () => {
   }
 
   return (
-    <div>
+    <div className="mx-4">
       <OrderInfo
         id={orders[0].id}
         created_at={convertUtcToBDTime(orders[0].created_at)}
@@ -60,6 +61,11 @@ const ManageOrderPage = () => {
         order_id={orders[0].id}
         current_status = {orders[0].statuses}
       />
+      <div className="flex justify-end">
+        <div className="my-3 mx-3">
+          <Link to={'/orders'}><Button>Back To Orders</Button></Link>
+        </div>
+      </div>
     </div>
   )
 }

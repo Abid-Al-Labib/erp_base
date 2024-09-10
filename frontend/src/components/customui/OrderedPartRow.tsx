@@ -1,19 +1,18 @@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { TableCell, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
-import { Calculator, CalendarArrowUp, ExternalLink, MoreHorizontal,  } from "lucide-react"
+import { ExternalLink, MoreHorizontal, Notebook, NotebookPen,  } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { useState } from "react"
 import { Calendar } from "../ui/calendar"
 import { OrderedPart } from "@/types"
-import MachineInfo from "./MachineInfo"
-import RelevantDatesInfo from "./RelevantDatesInfo"
-import { CostingInfo } from "./CostingInfo"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
 import { deleteOrderedPartByID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton } from "@/services/ButtonVisibilityHelper"
+import OrderedPartInfo from "./OrderedPartInfo"
+import { convertUtcToBDTime } from "@/services/helper"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
@@ -31,6 +30,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [isReceivedDialogOpen, setIsReceivedDialogOpen] = useState(false);
   const [isCostingDialogOpent,setIsCostingDialogOpen] = useState(false);
   const [vendor, setVendor] = useState('');
+  const [brand, setBrand] = useState('')
   const [unitCost, setUnitCost] = useState('');
   const [costLoading, setCostLoading] = useState(false);
   
@@ -91,10 +91,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   };
 
   const handleUpdateCosting = () => {
-    const updateCosting = async(c:number,v: string) => {
+    const updateCosting = async(brand:string, cost:number, vendor: string) => {
       try {
         setCostLoading(true);
-        await updateCostingByID(orderedPartInfo.id, c, v )
+        await updateCostingByID(orderedPartInfo.id, brand, cost, vendor )
         toast.success("Costing for this part is submitted")
         onOrderedPartUpdate();
       } catch (error) {
@@ -105,8 +105,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     }
 
-    if (!vendor || !unitCost) {
-      toast.error('Please fill in both Vendor and Cost/Unit fields.');
+    if (!vendor || !unitCost || !brand) {
+      toast.error('Please fill in all information');
       return;
     }
     
@@ -116,7 +116,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       return;
     }
     
-    updateCosting(numericUnitCost,vendor)
+    updateCosting(brand,numericUnitCost,vendor)
+    setBrand('')
     setVendor('');
     setUnitCost('');
     setIsCostingDialogOpen(false);
@@ -214,110 +215,119 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   if(mode==='view'){
     return (
       <TableRow>
-      <TableCell className="font-medium">
-        {orderedPartInfo.parts.name}
-      </TableCell>
-      <TableCell>
-        {orderedPartInfo.qty}
-      </TableCell>
-      <TableCell>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Calculator className="hover:cursor-pointer"/>
-          </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                  <CostingInfo
-                    vendor={orderedPartInfo.vendor}
-                    price={orderedPartInfo.unit_cost}
-                  />
-              </DialogContent>
-        </Dialog>
-      </TableCell>
-      <TableCell>
-        <Dialog>
-        <DialogTrigger asChild>
-          <ExternalLink className="hover:cursor-pointer"/>
-        </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <MachineInfo
-                      factory_name={orderedPartInfo.factories.name}
-                      section_name={orderedPartInfo.factory_sections.name} 
-                      machine_number={orderedPartInfo.machines.number} 
-                      machine_type={orderedPartInfo.machines.type}
-                      machine_is_running={orderedPartInfo.machines.is_running}
-                />
-            </DialogContent>
-        </Dialog>
-      </TableCell>
-      <TableCell>
-          <Dialog>
-            <DialogTrigger asChild>
-              <CalendarArrowUp className="hover:cursor-pointer"/>
-            </DialogTrigger>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>
+        <TableCell className="hidden md:table-cell">
+          {
+            orderedPartInfo.note?
+            (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Notebook className="hover:cursor-pointer"/>
+                </DialogTrigger>
+                  <DialogContent>
+                    <div>{orderedPartInfo.note}</div>    
+                  </DialogContent>
+              </Dialog>
+            ) : '-'
+          }
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {
+            orderedPartInfo.office_note?
+            ( <Dialog>
+                <DialogTrigger asChild>
+                  <NotebookPen className="hover:cursor-pointer"/>
+                </DialogTrigger>
+                  <DialogContent>
+                    <div>
+                      {orderedPartInfo.office_note}
+                    </div>
+                  </DialogContent>
+              </Dialog>
+            ) : '-'
+          }
+        </TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}</TableCell>
+
+        <TableCell className="md:hidden">
+            <Dialog>
+              <DialogTrigger asChild>
+                <ExternalLink className="hover:cursor-pointer"/>
+              </DialogTrigger>
                 <DialogContent className="">
-                  <RelevantDatesInfo 
-                  part_purchased_date={orderedPartInfo.part_purchased_date} 
-                  part_received_by_factory_date={orderedPartInfo.part_received_by_factory_date} 
-                  part_sent_by_office_date={orderedPartInfo.part_sent_by_office_date}                    
-                  />
-            </DialogContent>
-          </Dialog>
-      </TableCell>
+                  <OrderedPartInfo 
+                    orderedPart={orderedPartInfo}                
+                  />    
+                </DialogContent>
+            </Dialog>
+        </TableCell>
     </TableRow>
     )
   }
   else if(mode==="manage"){
     return(
         <TableRow>
-          <TableCell className="font-medium">
-            {orderedPartInfo.parts.name}
-          </TableCell>
-          <TableCell>
-            {orderedPartInfo.qty}
-          </TableCell>
-          <TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>
+        <TableCell className="hidden md:table-cell">
+          {
+            orderedPartInfo.note?
+            (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Notebook className="hover:cursor-pointer"/>
+                </DialogTrigger>
+                  <DialogContent>
+                    <div>{orderedPartInfo.note}</div>    
+                  </DialogContent>
+              </Dialog>
+            ) : '-'
+          }
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {
+            orderedPartInfo.office_note?
+            ( <Dialog>
+                <DialogTrigger asChild>
+                  <NotebookPen className="hover:cursor-pointer"/>
+                </DialogTrigger>
+                  <DialogContent>
+                    <div>
+                      {orderedPartInfo.office_note}
+                    </div>
+                  </DialogContent>
+              </Dialog>
+            ) : '-'
+          }
+        </TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}</TableCell>
+        <TableCell className="md:hidden">
             <Dialog>
               <DialogTrigger asChild>
-                <Calculator className="hover:cursor-pointer"/>
+                <ExternalLink className="hover:cursor-pointer"/>
               </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                      <CostingInfo
-                        vendor={orderedPartInfo.vendor}
-                        price={orderedPartInfo.unit_cost}
-                      />
-                  </DialogContent>
-            </Dialog>
-          </TableCell>
-          <TableCell>
-            <Dialog>
-            <DialogTrigger asChild>
-              <ExternalLink className="hover:cursor-pointer"/>
-            </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                    <MachineInfo
-                          factory_name={orderedPartInfo.factories.name}
-                          section_name={orderedPartInfo.factory_sections.name} 
-                          machine_number={orderedPartInfo.machines.number} 
-                          machine_type={orderedPartInfo.machines.type}
-                          machine_is_running={orderedPartInfo.machines.is_running}
-                    />
+                <DialogContent className="">
+                  <OrderedPartInfo 
+                    orderedPart={orderedPartInfo}                
+                  />    
                 </DialogContent>
             </Dialog>
-          </TableCell>
-          <TableCell>
-            <Dialog>
-              <DialogTrigger asChild>
-                <CalendarArrowUp className="hover:cursor-pointer"/>
-              </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <RelevantDatesInfo 
-                    part_purchased_date={orderedPartInfo.part_purchased_date} 
-                    part_received_by_factory_date={orderedPartInfo.part_received_by_factory_date} 
-                    part_sent_by_office_date={orderedPartInfo.part_sent_by_office_date}                    
-                    />
-                  </DialogContent>
-            </Dialog>
-          </TableCell>
+        </TableCell>
           <TableCell>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -373,13 +383,23 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                         </DialogTitle>
                         <fieldset className="grid gap-6 rounded-lg border p-4">
                           <div className="grid gap-3">
+                            <Label htmlFor="brand">Brand</Label>
+                            <Input 
+                              id="brand" 
+                              type="text" 
+                              value={brand}
+                              placeholder="Enter brand name"
+                              onChange={(e) => setBrand(e.target.value.trim())}
+                            />
+                          </div>
+                          <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
                             <Input 
                               id="vendor" 
                               type="text" 
                               value={vendor}
                               placeholder="Enter vendor name"
-                              onChange={(e) => setVendor(e.target.value)}
+                              onChange={(e) => setVendor(e.target.value.trim())}
                             />
                           </div>
                           <div className="grid gap-3">
@@ -388,7 +408,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                               id="unit_cost" 
                               type="number" 
                               placeholder="Enter the unit cost" 
-                              onChange={(e) => setUnitCost(e.target.value)}
+                              onChange={(e) => setUnitCost(e.target.value.trim())}
                               />
                         </div>
                         </fieldset>

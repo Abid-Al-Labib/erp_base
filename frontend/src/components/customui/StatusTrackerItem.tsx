@@ -23,15 +23,15 @@ export const StatusTrackerItem: React.FC<StatusTrackerItemProp> = ({ status, act
             <ul className="grid gap-2">
                 
                 {action_at? (
-                    <li className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Action at</span>
-                        <span>{convertUtcToBDTime(action_at)}</span>
+                    <li className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground whitespace-nowrap">Action at</span>
+                        <span className="whitespace-nowrap">{convertUtcToBDTime(action_at)}</span>
                     </li>): (<div></div>)
                 }
                 {action_by? (
-                    <li className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Action by</span>
-                        <span>{action_by}</span>
+                    <li className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground whitespace-nowrap">Action by</span>
+                        <span className="whitespace-nowrap">{action_by}</span>
                     </li>): (<div></div>)
                 }
             </ul>
