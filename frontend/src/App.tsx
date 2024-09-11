@@ -10,6 +10,9 @@ import ViewOrderPage from './pages/ViewOrderPage';
 import ManageOrderPage from './pages/ManageOrderPage';
 import ViewPartPage from './pages/ViewPartPage';
 import AddPartPage from './pages/AddPartPage';
+import StoragePage from './pages/StoragePage';
+import MachinePage from './pages/MachinePage';
+import DamagedPartsPage from './pages/DamagedPartsPage';
 
 const App: React.FC = () => {
   return (
@@ -25,7 +28,9 @@ const App: React.FC = () => {
         <Route path="/createorder" element={<CreateOrderPage />} />
         <Route path="/vieworder/:id" element={<ViewOrderPage />} />
         <Route path="/manageorder/:id" element={<ManageOrderPage />} />
-
+        <Route path="/storage" element={<StoragePage />} />
+        <Route path="/machine" element={<MachinePage />} />
+        <Route path="/damagedparts" element={<DamagedPartsPage />} />
       </Routes>
     </Router>
   );

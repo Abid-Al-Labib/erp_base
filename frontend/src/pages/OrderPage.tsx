@@ -292,6 +292,7 @@ const OrderPage = () => {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ID</TableHead>
+                                                    <TableHead>Machine</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created at</TableHead>
                                                     <TableHead>Created by user</TableHead>
                                                     <TableHead>Department</TableHead>
@@ -309,12 +310,7 @@ const OrderPage = () => {
                                                 <TableBody>
                                                     {orders.map(order => (
                                                         <OrdersTableRow
-                                                            key={order.id}
-                                                            id={order.id}
-                                                            created_by_name={order.profiles.name}
-                                                            created_at={order.created_at}
-                                                            department_name={order.departments.name}
-                                                            current_status={order.statuses.name}
+                                                            order={order}
                                                             onDeleteRefresh={refreshTable}
                                                         />
                                                     ))}

@@ -40,10 +40,22 @@ const NavigationBar = () => {
                     Parts
                 </Link>
                 <Link
-                    to="#"
+                    to="/storage"
                     className="text-foreground transition-colors hover:text-foreground"
                 >
                     Storage
+                </Link>
+                <Link
+                    to="/machine"
+                    className="text-foreground transition-colors hover:text-foreground"
+                >
+                    Machine
+                </Link>
+                <Link
+                    to="/damagedparts"
+                    className="text-foreground transition-colors whitespace-nowrap hover:text-foreground"
+                >
+                    Damaged-Parts
                 </Link>
             </nav>
             <Sheet>
@@ -75,10 +87,22 @@ const NavigationBar = () => {
                     Parts
                 </Link>
                 <Link
-                    to="/"
-                    className="text-muted-foreground hover:text-foreground"
+                    to="/storage"
+                    className="text-foreground transition-colors hover:text-foreground"
                 >
                     Storage
+                </Link>
+                <Link
+                    to="/machine"
+                    className="text-foreground transition-colors hover:text-foreground"
+                >
+                    Machine
+                </Link>
+                <Link
+                    to="/damagedparts"
+                    className="text-foreground transition-colors whitespace-nowrap hover:text-foreground"
+                >
+                    Damaged-Parts
                 </Link>
                 </nav>
             </SheetContent>

@@ -5,22 +5,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table";
 import { Link } from 'react-router-dom';
 import { Badge } from '../ui/badge';
-import { deleteStatusByID } from '@/services/OrdersService';
+import { deleteStatusByOrderID } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
+import { Order } from '@/types';
+import { convertUtcToBDTime } from '@/services/helper';
 
 interface OrdersTableRowProps {
-  id: number;
-  created_at: string;
-  created_by_name: string;
-  department_name: string;
-  current_status: string;
+  order: Order
   onDeleteRefresh: ()=>void;
 }
 
-const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created_by_name, department_name, current_status, onDeleteRefresh }) => {
+const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh }) => {
   const handleDeleteOrder = async () => {
     try {
-        await deleteStatusByID(id)
+        await deleteStatusByOrderID(order.id)
         onDeleteRefresh()
         toast.success("Order successfully deleted")
     } catch (error) {
@@ -32,23 +30,26 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created
   return (
     <TableRow>
       <TableCell className="font-medium">
-        {id}
+        {order.id}
+      </TableCell>
+      <TableCell>
+        {order.factories.abbreviation} - {order.factory_sections.name} - {order.machines.number}
       </TableCell>
       <TableCell className="hidden md:table-cell">
-        {created_at}
+        {convertUtcToBDTime(order.created_at)}
       </TableCell>
       <TableCell>
-        {created_by_name}
+        {order.profiles.name}
       </TableCell>
       <TableCell>
-        {department_name}
+        {order.departments.name}
       </TableCell>
       <TableCell>
       <Badge
-        className={current_status === "Parts Received" ? "bg-green-100": current_status === "Pending" ? "bg-red-100": "bg-orange-100"}
+        className={order.statuses.name === "Parts Received" ? "bg-green-100": order.statuses.name === "Pending" ? "bg-red-100": "bg-orange-100"}
         variant="secondary"
       >
-        {current_status}
+        {order.statuses.name}
       </Badge>
       </TableCell>
       <TableCell>
@@ -65,12 +66,12 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ id, created_at, created
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link to={`/vieworder/${id}`}>
+            <Link to={`/vieworder/${order.id}`}>
               <DropdownMenuItem>
                 View
               </DropdownMenuItem>
             </Link>
-            <Link to={`/manageorder/${id}`}>
+            <Link to={`/manageorder/${order.id}`}>
               <DropdownMenuItem>
                 Manage
               </DropdownMenuItem>
