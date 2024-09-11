@@ -4,9 +4,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { ExternalLink, MoreHorizontal } from "lucide-react";
-import { OrderedPart } from "@/types";
+import { Order, OrderedPart } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
 import LinkedOrderedPartInfo from "./LinkedOrderedPartInfo";
+import { useEffect, useState } from "react";
+import { fetchOrderByID } from "@/services/OrdersService";
+import toast from "react-hot-toast";
 
 
 interface LinkedOrdersRowProps {
@@ -14,6 +17,32 @@ interface LinkedOrdersRowProps {
 }
 
 const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({linkedOrderPart}) => {
+  
+  const [order, setOrder] = useState<Order[]>([])
+  const [loadingOrder, setloadingOrder] = useState(true);
+
+  const loadOrder = async () => {
+
+    const order_id = linkedOrderPart.order_id
+    try {
+      const order_data = await fetchOrderByID(order_id);
+      if (order_data) {
+        setOrder(order_data);
+      } else {
+        toast.error(`order with id ${order_id} could not be fetched`);
+      }
+      
+    } catch (error) {
+      toast.error("Failed to fetch Order info");
+    } finally {
+      setloadingOrder(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrder();
+  },[linkedOrderPart]);
+  
   return (
     <TableRow>
       <TableCell className="font-medium">
@@ -22,9 +51,13 @@ const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({linkedOrderPart}) => {
       <TableCell className="hidden md:table-cell">
         {convertUtcToBDTime(linkedOrderPart.orders.created_at)}
       </TableCell>
-      <TableCell>
-        {linkedOrderPart.factories.abbreviation} - {linkedOrderPart.factory_sections.name} - {linkedOrderPart.machines.number}
-      </TableCell>
+      {
+        loadingOrder?('-') : (
+          <TableCell>
+          {order[0].factories.abbreviation} - {order[0].factory_sections.name} - {order[0].machines.number}
+        </TableCell>
+        )
+      }
       <TableCell className="hidden md:table-cell">{linkedOrderPart.qty}</TableCell>
       <TableCell className="hidden md:table-cell">{linkedOrderPart.unit_cost? `BDT ${(linkedOrderPart.unit_cost)}`: '-'}</TableCell>
       <TableCell className="hidden md:table-cell">{linkedOrderPart.vendor? (linkedOrderPart.vendor): '-'}</TableCell>

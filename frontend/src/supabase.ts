@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      damaged_parts: {
+        Row: {
+          id: number
+          machine_id: number
+          part_id: number
+          qty: number
+        }
+        Insert: {
+          id?: number
+          machine_id: number
+          part_id: number
+          qty: number
+        }
+        Update: {
+          id?: number
+          machine_id?: number
+          part_id?: number
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damaged_parts_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damaged_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           id: number
@@ -74,21 +110,18 @@ export type Database = {
           machine_id: number
           part_id: number
           qty: number
-          unit: string
         }
         Insert: {
           id?: number
           machine_id: number
           part_id: number
           qty: number
-          unit: string
         }
         Update: {
           id?: number
           machine_id?: number
           part_id?: number
           qty?: number
-          unit?: string
         }
         Relationships: [
           {
@@ -145,12 +178,9 @@ export type Database = {
           approved_office_order: boolean
           approved_pending_order: boolean
           brand: string | null
-          factory_id: number
-          factory_section_id: number
           id: number
           is_sample_received_by_office: boolean
           is_sample_sent_to_office: boolean
-          machine_id: number
           note: string | null
           office_note: string | null
           order_id: number
@@ -167,12 +197,9 @@ export type Database = {
           approved_office_order?: boolean
           approved_pending_order?: boolean
           brand?: string | null
-          factory_id: number
-          factory_section_id: number
           id?: number
           is_sample_received_by_office?: boolean
           is_sample_sent_to_office?: boolean
-          machine_id: number
           note?: string | null
           office_note?: string | null
           order_id: number
@@ -189,12 +216,9 @@ export type Database = {
           approved_office_order?: boolean
           approved_pending_order?: boolean
           brand?: string | null
-          factory_id?: number
-          factory_section_id?: number
           id?: number
           is_sample_received_by_office?: boolean
           is_sample_sent_to_office?: boolean
-          machine_id?: number
           note?: string | null
           office_note?: string | null
           order_id?: number
@@ -207,27 +231,6 @@ export type Database = {
           vendor?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "order_items_factory_id_fkey"
-            columns: ["factory_id"]
-            isOneToOne: false
-            referencedRelation: "factories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_factory_section_id_fkey"
-            columns: ["factory_section_id"]
-            isOneToOne: false
-            referencedRelation: "factory_sections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_machine_id_fkey"
-            columns: ["machine_id"]
-            isOneToOne: false
-            referencedRelation: "machines"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "order_items_part_id_fkey"
             columns: ["part_id"]
@@ -250,7 +253,10 @@ export type Database = {
           created_by_user_id: number
           current_status_id: number
           department_id: number
+          factory_id: number
+          factory_section_id: number
           id: number
+          machine_id: number
           order_note: string | null
         }
         Insert: {
@@ -258,7 +264,10 @@ export type Database = {
           created_by_user_id: number
           current_status_id: number
           department_id: number
+          factory_id: number
+          factory_section_id: number
           id?: number
+          machine_id: number
           order_note?: string | null
         }
         Update: {
@@ -266,7 +275,10 @@ export type Database = {
           created_by_user_id?: number
           current_status_id?: number
           department_id?: number
+          factory_id?: number
+          factory_section_id?: number
           id?: number
+          machine_id?: number
           order_note?: string | null
         }
         Relationships: [
@@ -289,6 +301,27 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_factory_section_id_fkey"
+            columns: ["factory_section_id"]
+            isOneToOne: false
+            referencedRelation: "factory_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
             referencedColumns: ["id"]
           },
         ]
@@ -422,64 +455,38 @@ export type Database = {
         }
         Relationships: []
       }
-      storage: {
+      storage_parts: {
         Row: {
           factory_id: number
           id: number
+          part_id: number
+          qty: number
         }
         Insert: {
           factory_id: number
           id?: number
+          part_id: number
+          qty: number
         }
         Update: {
           factory_id?: number
           id?: number
+          part_id?: number
+          qty?: number
         }
         Relationships: [
           {
-            foreignKeyName: "storage_factory_id_fkey"
+            foreignKeyName: "storage_parts_factory_id_fkey"
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      storage_parts: {
-        Row: {
-          id: number
-          part_id: number
-          qty: number
-          storage_id: number
-          unit: string
-        }
-        Insert: {
-          id?: number
-          part_id: number
-          qty: number
-          storage_id: number
-          unit: string
-        }
-        Update: {
-          id?: number
-          part_id?: number
-          qty?: number
-          storage_id?: number
-          unit?: string
-        }
-        Relationships: [
           {
             foreignKeyName: "storage_parts_part_id_fkey"
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "storage_parts_storage_id_fkey"
-            columns: ["storage_id"]
-            isOneToOne: false
-            referencedRelation: "storage"
             referencedColumns: ["id"]
           },
         ]

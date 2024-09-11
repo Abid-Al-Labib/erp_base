@@ -1,17 +1,13 @@
+import { Order } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Separator } from "../ui/separator"
 
 interface OrderInfoProp {
-    id: number,
-    created_at: string,
-    created_by: string,
-    department_name: string,
-    current_status: string,
-    note: string
+    order: Order
 }
 
 
-const OrderInfo: React.FC<OrderInfoProp> = ({id,created_at,created_by,department_name,current_status,note}) => {
+const OrderInfo: React.FC<OrderInfoProp> = ({order}) => {
   return (
         <Card
         className="sm:col-span-2" x-chunk="dashboard-05-chunk-0"
@@ -24,28 +20,32 @@ const OrderInfo: React.FC<OrderInfoProp> = ({id,created_at,created_by,department
             <ul className="grid gap-3">
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">ID</span>
-                <span>{id}</span>
+                <span>{order.id}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Created at</span>
-                <span>{created_at}</span>
+                <span>{order.created_at}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Created by</span>
-                <span>{created_by}</span>
+                <span>{order.profiles.name}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Department</span>
-                <span>{department_name}</span>
+                <span>{order.departments.name}</span>
+            </li>
+            <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Machine</span>
+                <span>{order.machines.number}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Current Status</span>
-                <span>{current_status}</span>
+                <span>{order.factories.abbreviation} - {order.factory_sections.name} - {order.machines.number}</span>
             </li>
             </ul>
         <Separator className="my-2" />
         <span className="font-semibold text-muted-foreground">Note</span>
-        <div className="max-w-xl text-balance leading-relaxed mt-2">{note}</div>
+        <div className="max-w-xl text-balance leading-relaxed mt-2">{order.order_note}</div>
         </CardContent>
     </Card>
   )

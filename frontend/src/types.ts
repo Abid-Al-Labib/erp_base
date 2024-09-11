@@ -38,25 +38,12 @@ export type OrderedPart = {
     office_note: string | null,
     order_id: number,
     part_id: number,
-    factory_id: number,
-    machine_id: number,
-    factory_section_id: number,
     approved_pending_order: boolean
     approved_office_order: boolean
     approved_budget: boolean
     orders : Order,
     parts: Part,
-    machines: Machine,
-    factories: Factory,
-    factory_sections: FactorySection
 }
-  
-export type LinkedOrders = {
-    id: number,
-    order_id: number,
-    orders : Order,
-}
-
 
 export type Order = {
     id: number;
@@ -64,10 +51,16 @@ export type Order = {
     order_note: string;
     created_by_user_id: number;
     department_id: number;
+    factory_id: number,
+    machine_id: number,
+    factory_section_id: number,
     current_status_id: number;
     departments: Department;
     profiles: Profile;
     statuses: Status;
+    machines: Machine,
+    factories: Factory,
+    factory_sections: FactorySection
 };
 
 export type StatusTracker = {

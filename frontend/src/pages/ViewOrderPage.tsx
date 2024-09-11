@@ -56,14 +56,9 @@ const ViewOrderPage = () => {
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <div className="sm:flex flex-1 gap-2">
             <div className="w-full mt-4">
-              <OrderInfo
-                id={orders[0].id}
-                created_at={convertUtcToBDTime(orders[0].created_at)}
-                created_by={orders[0].profiles.name}
-                department_name={orders[0].departments.name}
-                current_status={orders[0].statuses.name}
-                note={orders[0].order_note}
-              />
+            <OrderInfo
+              order={orders[0]}
+            />
             </div>
             <div className="mt-4">
               <StatusTracker order_id={orders[0].id} />

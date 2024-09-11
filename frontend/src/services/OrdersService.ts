@@ -41,9 +41,15 @@ export const fetchOrders = async ({
             created_by_user_id,
             department_id,
             current_status_id,
+            factory_id,
+            machine_id,
+            factory_section_id,
             departments(*),
             profiles(*),
-            statuses(*)
+            statuses(*),
+            factory_sections(*),
+            factories(*),
+            machines(*)
             `,
             { count: 'exact' }
         )
@@ -89,17 +95,16 @@ export const fetchOrderByID = async (order_id:number) => {
             order_note,
             created_by_user_id,
             department_id,
-            current_status_id
-            ,
-            departments(
-                *
-            ),
-            profiles(
-                *
-            ),
-            statuses(
-                *
-            )
+            current_status_id,
+            factory_id,
+            machine_id,
+            factory_section_id,
+            departments(*),
+            profiles(*),
+            statuses(*),
+            factory_sections(*),
+            factories(*),
+            machines(*)
         `
     ).eq('id',order_id)
     if (error){

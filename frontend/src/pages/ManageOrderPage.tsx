@@ -49,12 +49,7 @@ const ManageOrderPage = () => {
   return (
     <div className="mx-4">
       <OrderInfo
-        id={orders[0].id}
-        created_at={convertUtcToBDTime(orders[0].created_at)}
-        created_by={orders[0].profiles.name}
-        department_name={orders[0].departments.name}
-        current_status={orders[0].statuses.name}
-        note={orders[0].order_note}
+        order={orders[0]}
       />
       <OrderedPartsTable
         mode="manage"

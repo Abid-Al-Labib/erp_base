@@ -12,21 +12,18 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         part_received_by_factory_date,
         part_purchased_date,
         qty,
-        brand,
-        vendor, 
+        vendor,
+        brand, 
         unit_cost,
         note,
         office_note,
         order_id,
         part_id,
-        factory_id,
-        machine_id,
-        factory_section_id,
+        approved_pending_order,
+        approved_office_order,
+        approved_budget,
         orders(*),
-        parts(*),
-        factory_sections(*),
-        factories(*),
-        machines(*)
+        parts(*)
         `
     ).eq('part_id',part_id).order('id', { ascending: true });
 
@@ -55,17 +52,11 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         office_note,
         order_id,
         part_id,
-        factory_id,
-        machine_id,
-        factory_section_id,
         approved_pending_order,
         approved_office_order,
         approved_budget,
         orders(*),
-        parts(*),
-        factory_sections(*),
-        factories(*),
-        machines(*)
+        parts(*)
         `
     ).eq('order_id',order_id).order('id', { ascending: true });
     console.log(data)

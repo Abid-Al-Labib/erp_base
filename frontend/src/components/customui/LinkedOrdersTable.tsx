@@ -1,15 +1,51 @@
 import { OrderedPart } from '@/types'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table'
 import LinkedOrdersRow from './LinkedOrdersRow'
+import { fetchOrderByID } from '@/services/OrdersService'
 
 interface LinkedOrdersTableProp {
     linkedOrderedParts: OrderedPart[]
 }
 
 const LinkedOrdersTable: React.FC<LinkedOrdersTableProp> = ({linkedOrderedParts}) => {
-  
+    
+
+    
+    // useEffect(() => {
+    //     const loadOrder = async () => {
+    //       const order_id = linkedOrderedParts.
+    //       try {
+    //         const order_data = await fetchOrderByID(Link);
+    //         if (part_data && part_data.length > 0) {
+    //           setParts(part_data);
+    //         } else {
+    //           toast.error("Part not found");
+    //           navigate("/parts");
+    //         }
+            
+    //       } catch (error) {
+    //         toast.error("Failed to fetch Part info");
+    //         navigate("/parts");
+    //       } finally {
+    //         setLoadingPartInfo(false);
+    //         setLoadingTable(false);
+    //       }
+    
+    //       try {
+    //         const linked_ordered_parts_data = await fetchOrderedPartByPartID(part_id);
+    //         console.log(linked_ordered_parts_data)
+    //         setlinkedOrderedParts(linked_ordered_parts_data);
+            
+    //       } catch (error) {
+    //         toast.error("Failed to fetch linked orders");
+    //       } finally {
+    //         setLoadingPartInfo(false);
+    //       }
+    //     };
+    //     loadParts();
+    //   }, [id, navigate]);
     return (
     <div>
         <Card x-chunk="dashboard-06-chunk-0" className="mt-5">
