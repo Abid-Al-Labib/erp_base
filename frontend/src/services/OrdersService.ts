@@ -10,6 +10,9 @@ export const fetchOrders = async ({
     searchDate,
     statusId,
     departmentId,
+    factoryId,
+    factorySectionId,
+    machineId
 }: {
     page: number;
     limit: number;
@@ -17,6 +20,9 @@ export const fetchOrders = async ({
     searchDate?: Date;
     statusId?: number;
     departmentId?: number;
+    factoryId?: number;
+    factorySectionId?: number;
+    machineId?: number;
 }) => {
 
     console.log(`Fetching orders with parameters: 
@@ -25,7 +31,10 @@ export const fetchOrders = async ({
         Query: ${query}, 
         Search Date: ${searchDate}, 
         Status ID: ${statusId}, 
-        Department ID: ${departmentId}`
+        Department ID: ${departmentId}, 
+        Factory ID: ${factoryId},
+        Factory Section ID: ${factorySectionId},
+        Machine ID: ${machineId}`
     );
 
     const from = (page - 1) * limit;
@@ -71,9 +80,23 @@ export const fetchOrders = async ({
     }
 
     if (departmentId) {
-        console.log('Fetching orders with deptID '); 
-        console.log({departmentId});
+        console.log('Fetching orders with deptID ', departmentId);
         queryBuilder = queryBuilder.eq('department_id', departmentId);
+    }
+
+    if (factoryId) {
+        console.log('Fetching orders with factoryID ', factoryId);
+        queryBuilder = queryBuilder.eq('factory_id', factoryId);
+    }
+
+    if (factorySectionId) {
+        console.log('Fetching orders with factorySectionID ', factorySectionId);
+        queryBuilder = queryBuilder.eq('factory_section_id', factorySectionId);
+    }
+
+    if (machineId) {
+        console.log('Fetching orders with machineID ', machineId);
+        queryBuilder = queryBuilder.eq('machine_id', machineId);
     }
 
     const { data, error, count } = await queryBuilder;
@@ -138,20 +161,25 @@ export const deleteStatusByOrderID = async (orderid:number) => {
 }
 
 
-export const insertOrder = async (created_at: string,
+export const insertOrder = async (
     order_note: string,
     created_by_user_id: number,
     department_id: number,
+    factory_id: number,
+    factory_section_id: number,
+    machine_id: number,
     current_status_id: number) => {
 
     
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
-            "created_at": created_at,
             "order_note": order_note,
             "created_by_user_id": created_by_user_id,
             "department_id": department_id,
+            "factory_id": factory_id,
+            "factory_section_id": factory_section_id,
+            "machine_id": machine_id,
             "current_status_id": current_status_id,
         },
         ])

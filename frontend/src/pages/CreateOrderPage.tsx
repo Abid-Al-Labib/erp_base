@@ -42,11 +42,13 @@ interface Machine {
 }
 
 interface InputOrder {
-    created_at: string;
-    order_note: string;
-    created_by_user_id: number;
-    department_id: number;
-    current_status_id: number;
+    order_note: string,
+    created_by_user_id: number,
+    department_id: number,
+    factory_id: number,
+    factory_section_id: number,
+    machine_id: number,
+    current_status_id: number
 }
 
 interface InputOrderedPart {
@@ -89,7 +91,7 @@ const CreateOrderPage = () => {
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
-    const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType && description.trim();
+    const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType && selectedFactorySectionId !== -1 && selectedMachineId !== -1 && description.trim();
     const [isOrderStarted, setIsOrderStarted] = useState(false);
 
 
@@ -126,7 +128,7 @@ const CreateOrderPage = () => {
     const isAddPartFormComplete =
         partId !== -1 &&
         qty > 0 &&
-        (orderType !== "Machine" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1)) &&
+        // (orderType !== "Machine" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1)) &&
         isSampleSentToOffice !== null;
         
     const handleResetOrderParts = () => {
@@ -160,12 +162,14 @@ const CreateOrderPage = () => {
             const createdById = 1; 
             const statusId = 1; 
             const orderData: InputOrder = {
-                created_at: new Date().toISOString(), 
-                order_note: description, 
+                order_note: description,
                 created_by_user_id: createdById,
                 department_id: departmentId,
+                factory_id: selectedFactoryId,
+                factory_section_id: selectedFactorySectionId,
+                machine_id: selectedMachineId,
                 current_status_id: statusId,
-            }
+            };
             setTempOrderDetails(orderData);
             setShowPartForm(true);
             setIsOrderStarted(true);
@@ -204,7 +208,15 @@ const CreateOrderPage = () => {
                 return;
             }
 
-            const orderResponse = await insertOrder(tempOrderDetails.created_at,tempOrderDetails.order_note,tempOrderDetails.created_by_user_id,tempOrderDetails.department_id,tempOrderDetails.current_status_id);
+            const orderResponse = await insertOrder(
+                tempOrderDetails.order_note, 
+                tempOrderDetails.created_by_user_id, 
+                tempOrderDetails.department_id, 
+                tempOrderDetails.factory_id, 
+                tempOrderDetails.factory_section_id, 
+                tempOrderDetails.machine_id,
+                1);
+
             if (orderResponse && orderResponse.length > 0) {
                 const orderId = orderResponse[0].id; 
                 // toast.success(`Order created with ID: ${orderId}, now adding parts...`);
@@ -214,9 +226,6 @@ const CreateOrderPage = () => {
                         part.qty,
                         orderId,
                         part.part_id,
-                        part.factory_id,
-                        part.machine_id,
-                        part.factory_section_id,
                         part.is_sample_sent_to_office,
                         part.note || null,
                     )
@@ -380,7 +389,7 @@ const CreateOrderPage = () => {
                                 </SelectContent>
                             </Select>
                             {/* Department */}
-                            <Select onValueChange={(value) => setDepartmentId(Number(value))}>
+                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                 <Label htmlFor="department">Department</Label>
                                 <SelectTrigger className="w-[220px]">
                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
@@ -404,6 +413,51 @@ const CreateOrderPage = () => {
                                     <SelectItem value="Machine">Machine</SelectItem>
                                 </SelectContent>
                             </Select>
+
+                            {orderType !== "Storage" && (
+                                <>
+                                    {/* Factory Section Id */}
+                                    <div className="mt-2">
+                                        <Select
+                                            key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
+                                            onValueChange={(value) => handleSelectFactorySection(Number(value))} disabled={isOrderStarted}
+                                        >
+                                            <Label htmlFor="factorySection">Factory Section</Label>
+                                            <SelectTrigger className="w-[220px]">
+                                                <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {factorySections.map((section) => (
+                                                    <SelectItem key={section.id} value={section.id.toString()}>
+                                                        {section.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Machine Id */}
+                                    <div className="mt-2">
+                                        <Select
+                                            onValueChange={(value) => handleSelectMachine(Number(value))}
+                                            key={`machine-${forceMachineRender}`} disabled={isOrderStarted}
+                                        >
+                                            <Label htmlFor="machine">Machine</Label>
+                                            <SelectTrigger className="w-[220px]">
+                                                <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {machines.map((machine) => (
+                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                        {machine.number.toString()}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </>
+                            )}
+
                             {/* Order Description */}
                             <div className="grid gap-3">
                                 <Label htmlFor="description">Description</Label>
@@ -496,51 +550,7 @@ const CreateOrderPage = () => {
                                         />
                                     </div>
                                     
-
-                                    {orderType === "Machine" && (
-                                        <>
-                                            {/* Factory Section Id */}
-                                            <div className="mt-2">
-                                                <Select
-                                                    key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
-                                                    onValueChange={(value) => handleSelectFactorySection(Number(value))}
-                                                    >
-                                                    <Label htmlFor="factorySection">Factory Section</Label>
-                                                    <SelectTrigger className="w-[220px]">
-                                                        <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {factorySections.map((section) => (
-                                                            <SelectItem key={section.id} value={section.id.toString()}>
-                                                                {section.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            
-                                            {/* Machine Id */}
-                                            <div className="mt-2">
-                                                <Select
-                                                    onValueChange={(value) => handleSelectMachine(Number(value))}
-                                                    key={`machine-${forceMachineRender}`}
-                                                >
-                                                    <Label htmlFor="machine">Machine</Label>
-                                                    <SelectTrigger className="w-[220px]">
-                                                        <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {machines.map((machine) => (
-                                                            <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                                {machine.number.toString()}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </>
-                                    )}
-                                    
+                                
 
                                     {/* Sample Sent to Office */}
                                     <div className="flex items-center gap-2 leading-none">

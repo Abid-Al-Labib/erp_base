@@ -14,8 +14,10 @@ import { fetchOrders } from '@/services/OrdersService';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { fetchDepartments } from '@/services/FactoriesService';
+import { fetchDepartments, fetchFactories, fetchFactorySections, fetchMachines } from '@/services/FactoriesService';
 import { fetchStatuses } from '@/services/StatusesService';
+import { Sheet,SheetClose,SheetContent,SheetDescription,SheetFooter,SheetHeader,SheetTitle,SheetTrigger,} from "@/components/ui/sheet"
+import { Label } from '@/components/ui/label';
 
 
 interface Department {
@@ -26,6 +28,23 @@ interface Status {
     id: number;
     name: string;
 }
+interface Factory {
+    id: number;
+    name: string;
+}
+interface FactorySection {
+    id: number;
+    name: string;
+    factory_id?: number;
+}
+interface Machine {
+    id: number;
+    number: number;
+    type: string;
+    factory_section_id?: number;
+}
+
+
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -49,6 +68,17 @@ const OrderPage = () => {
 
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
+    const [factories, setFactories] = useState<Factory[]>([]);
+    const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
+
+    const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
+    const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(undefined);
+
+    const [machines, setMachines] = useState<Machine[]>([]);
+    const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(undefined);
+
+    
+
 
     const refreshTable = async () => {
         console.log('Refreshing table...');
@@ -62,6 +92,9 @@ const OrderPage = () => {
                 searchDate: searchType === 'date' ? selectedDate : undefined,
                 statusId: selectedStatusId,
                 departmentId: selectedDepartmentId,
+                factoryId: selectedFactoryId,
+                factorySectionId: selectedFactorySectionId,
+                machineId: selectedMachineId,
             });
             setOrders(data);
             setCount(count ?? 0);
@@ -78,6 +111,7 @@ const OrderPage = () => {
     };
 
     const handleDateChange = () => {
+        setIsDatePickerOpen(false);
         setCurrentPage(1)
         setSelectedDate(tempDate); // Set the date (undefined is fine here)
         setIsDatePickerOpen(false); // Close the date picker after selecting a date
@@ -87,7 +121,10 @@ const OrderPage = () => {
         setCurrentPage(1)
         setSearchType(type);
         setSearchQuery('');
-        setSelectedDate(undefined);
+        setSelectedDate(undefined)
+        if (type === 'date'){
+            setIsDatePickerOpen(true);
+        };
     };
 
     const handlePageChange = (newPage: number) => {
@@ -151,6 +188,46 @@ const OrderPage = () => {
         loadStatuses();
     }, []);
 
+    useEffect(() => {
+        const loadFactories = async () => {
+            try {
+                const fetchedFactories = await fetchFactories();
+                setFactories(fetchedFactories);
+            } catch (error) {
+                toast.error('Failed to load factories');
+            }
+        };
+        loadFactories();
+    }, []);
+
+    useEffect(() => {
+        if (selectedFactoryId !== undefined) {
+            const loadFactorySections = async () => {
+                try {
+                    const fetchedFactorySections = await fetchFactorySections(selectedFactoryId);
+                    setFactorySections(fetchedFactorySections);
+                } catch (error) {
+                    toast.error('Failed to load factory sections');
+                }
+            };
+            loadFactorySections();
+        }
+    }, [selectedFactoryId]);
+
+    useEffect(() => {
+        if (selectedFactorySectionId !== undefined) {
+            const loadMachines = async () => {
+                try {
+                    const fetchedMachines = await fetchMachines(selectedFactorySectionId);
+                    setMachines(fetchedMachines);
+                } catch (error) {
+                    toast.error('Failed to load machines');
+                }
+            };
+            loadMachines();
+        }
+    }, [selectedFactorySectionId]);
+
     return (
         <>
             <NavigationBar />
@@ -160,113 +237,215 @@ const OrderPage = () => {
                         <Tabs defaultValue="all">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4"> {/* Grouping filters and searches on the left */}
-                                    {/* Department Filter */}
-                                    <div className="flex flex-col">
-                                        <label className="text-sm font-medium"></label>
-                                        <Select
-                                            value={selectedDepartmentId === undefined ? "all" : selectedDepartmentId.toString()}
-                                            onValueChange={(value) => handleDepartmentChange(value)}
-                                        >
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>
-                                                    {selectedDepartmentId === undefined || selectedDepartmentName === "Select Department"
-                                                        ? "All Departments"
-                                                        : selectedDepartmentName}
-                                                </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Departments</SelectItem>
-                                                {departments.map((dept) => (
-                                                    <SelectItem key={dept.id} value={dept.id.toString()}>
-                                                        {dept.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        
+                                        <Sheet>
+                                            <SheetTrigger asChild>
+                                                <Button variant="default">Search & Filters</Button>
+                                            </SheetTrigger>
+                                            <SheetContent className="w-full sm:w-[540px] h-full sm:h-auto" side="right">
+                                                <SheetHeader>
+                                                    <SheetTitle>Search & Filter Orders</SheetTitle>
+                                                    <SheetDescription>Use the filters below to search for orders.</SheetDescription>
+                                                </SheetHeader>
+                                                <div className="grid gap-4 py-4 overflow-y-auto">
 
-                                    {/* Status Filter */}
-                                    <div className="flex flex-col">
-                                        <label className="text-sm font-medium"></label>
-                                        <Select
-                                            value={selectedStatusId === undefined ? "all" : selectedStatusId.toString()}
-                                            onValueChange={(value) => handleStatusChange(value)}
-                                        >
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>
-                                                    {selectedStatusId === undefined || selectedStatusName === "Select Status"
-                                                        ? "All Statuses"
-                                                        : selectedStatusName}
-                                                </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Statuses</SelectItem>
-                                                {statuses
-                                                    .sort((a, b) => a.id - b.id) // Sorting statuses by id
-                                                    .map((status) => (
-                                                        <SelectItem key={status.id} value={status.id.toString()}>
-                                                            {status.name}
-                                                        </SelectItem>
-                                                    ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                                    {/* Factory Filter */}
+                                                    <div className="flex flex-col w-full">
+                                                        <Label>Factory</Label>
+                                                        <Select
+                                                            value={selectedFactoryId === undefined ? "all" : selectedFactoryId.toString()}
+                                                            onValueChange={(value) => {
+                                                                const factoryId = value === 'all' ? undefined : Number(value);
+                                                                setSelectedFactoryId(factoryId);
+                                                                setSelectedFactorySectionId(undefined); // Reset sections and machines when factory changes
+                                                                setSelectedMachineId(undefined);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="w-full sm:w-[220px]">
+                                                                <SelectValue>
+                                                                    {selectedFactoryId === undefined ? "All Factories" : factories.find(f => f.id === selectedFactoryId)?.name}
+                                                                </SelectValue>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Factories</SelectItem>
+                                                                {factories.map(factory => (
+                                                                    <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                                        {factory.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
 
-                                    {/* Search by ID*/}
-                                    <Button
-                                        variant={searchQuery ? 'default' : 'outline'}  // Highlight if searchQuery is not empty
-                                        onClick={() => handleSearchTypeChange('id')}
-                                    >
-                                        Search by ID
-                                    </Button>
+                                                    {/* Factory Section Filter */}
+                                                    <div className="flex flex-col w-full">
+                                                        <Label>Factory Section</Label>
+                                                        <Select
+                                                            value={selectedFactorySectionId === undefined ? "all" : selectedFactorySectionId.toString()}
+                                                            onValueChange={(value) => {
+                                                                const sectionId = value === 'all' ? undefined : Number(value);
+                                                                setSelectedFactorySectionId(sectionId);
+                                                                setSelectedMachineId(undefined); // Reset machines when section changes
+                                                            }}
+                                                            disabled={!selectedFactoryId} // Disable until a factory is selected
+                                                        >
+                                                            <SelectTrigger className="w-full sm:w-[220px]">
+                                                                <SelectValue>
+                                                                    {selectedFactorySectionId === undefined ? "All Sections" : factorySections.find(s => s.id === selectedFactorySectionId)?.name}
+                                                                </SelectValue>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Sections</SelectItem>
+                                                                {factorySections.map(section => (
+                                                                    <SelectItem key={section.id} value={section.id.toString()}>
+                                                                        {section.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Machine Filter */}
+                                                    <div className="flex flex-col w-full">
+                                                        <Label>Machine</Label>
+                                                        <Select
+                                                            value={selectedMachineId === undefined ? "all" : selectedMachineId.toString()}
+                                                            onValueChange={(value) => setSelectedMachineId(value === 'all' ? undefined : Number(value))}
+                                                            disabled={!selectedFactorySectionId} // Disable until a section is selected
+                                                        >
+                                                            <SelectTrigger className="w-full sm:w-[220px]">
+                                                                <SelectValue>
+                                                                    {selectedMachineId === undefined ? "All Machines" : machines.find(m => m.id === selectedMachineId)?.number}
+                                                                </SelectValue>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Machines</SelectItem>
+                                                                {machines.map(machine => (
+                                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                                        {machine.number}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Existing Department Filter */}
+                                                    <div className="flex flex-col w-full">
+                                                        <Label>Department</Label>
+                                                        <Select
+                                                            value={selectedDepartmentId === undefined ? "all" : selectedDepartmentId.toString()}
+                                                            onValueChange={(value) => setSelectedDepartmentId(value === 'all' ? undefined : Number(value))}
+                                                        >
+                                                            <SelectTrigger className="w-full sm:w-[220px]">
+                                                                <SelectValue>
+                                                                    {selectedDepartmentId === undefined ? "All Departments" : departments.find(d => d.id === selectedDepartmentId)?.name}
+                                                                </SelectValue>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Departments</SelectItem>
+                                                                {departments.map(dept => (
+                                                                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                                        {dept.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Existing Status Filter */}
+                                                    <div className="flex flex-col w-full">
+                                                        <Label>Status</Label>
+                                                        <Select
+                                                            value={selectedStatusId === undefined ? "all" : selectedStatusId.toString()}
+                                                            onValueChange={(value) => setSelectedStatusId(value === 'all' ? undefined : Number(value))}
+                                                        >
+                                                            <SelectTrigger className="w-full sm:w-[220px]">
+                                                                <SelectValue>
+                                                                    {selectedStatusId === undefined ? "All Statuses" : statuses.find(s => s.id === selectedStatusId)?.name}
+                                                                </SelectValue>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Statuses</SelectItem>
+                                                                {statuses
+                                                                    .sort((a, b) => a.id - b.id)
+                                                                    .map((status) => (
+                                                                        <SelectItem key={status.id} value={status.id.toString()}>
+                                                                            {status.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Search by ID and Date Buttons */}
+                                                    <div className="flex flex-col sm:flex-row gap-2">
+                                                        <Button
+                                                            variant={searchType === 'id' ? 'default' : 'outline'}
+                                                            onClick={() => handleSearchTypeChange('id')}
+                                                            className="w-full"
+                                                        >
+                                                            Search by ID
+                                                        </Button>
+                                                        <Button
+                                                            variant={searchType === 'date' ? 'default' : 'outline'}
+                                                            onClick={() => handleSearchTypeChange('date')}
+                                                            className="w-full"
+                                                        >
+                                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                                            Search by Date
+                                                        </Button>
+                                                    </div>
+
+                                                    {/* Conditional Rendering based on Search Type */}
+                                                    {searchType === 'id' && (
+                                                        <div className="flex flex-col">
+                                                            <Label>Enter ID</Label>
+                                                            <Input
+                                                                type="search"
+                                                                placeholder="Search by ID..."
+                                                                value={searchQuery}
+                                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                                className="w-full"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {isDatePickerOpen && (
+                                                        <div className="flex flex-col">
+                                                            <Label>Select Date</Label>
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={tempDate}
+                                                                onSelect={setTempDate}
+                                                                className="rounded-md border"
+                                                            />
+                                                            <Button
+                                                                onClick={handleDateChange}
+                                                                className="bg-blue-950 text-white px-4 py-2 rounded-md mt-2 w-full"
+                                                            >
+                                                                Confirm
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <SheetFooter className="flex flex-col gap-2">
+                                                    <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+                                                        Reset Filters and Search
+                                                    </Button>
+                                                    <SheetClose asChild>
+                                                        <Button type="submit" className="bg-blue-950 text-white w-full">
+                                                            Apply Filters
+                                                        </Button>
+                                                    </SheetClose>
+                                                </SheetFooter>
+                                            </SheetContent>
+                                        </Sheet>
+                                        
+                                    </div>
                                     
-                                    {/* Search by Date */}
-                                    <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                variant={selectedDate ? 'default' : 'outline'}  // Highlight if selectedDate is not undefined
-                                                onClick={() => handleSearchTypeChange('date')}
-                                            >
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                Search by Date
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-[425px] p-6 rounded-lg bg-white shadow-lg">
-                                            <DialogTitle className="text-lg font-semibold mb-4">Select Date</DialogTitle>
-                                            <Calendar
-                                                mode="single"
-                                                selected={tempDate}
-                                                onSelect={setTempDate}
-                                                className="rounded-md border"
-                                            />
-                                            <div className="flex justify-end mt-4">
-                                                <Button
-                                                    onClick={() => {
-                                                        handleDateChange();
-                                                    }}
-                                                    className="bg-blue-950 text-white px-4 py-2 rounded-md"
-                                                >
-                                                    Confirm
-                                                </Button>
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
-
-                                    {/* Search by ID Input */}
-                                    <div className="relative ml-auto flex-1 md:grow-0">
-                                        {searchType === 'id' && (
-                                            <>
-                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    type="search"
-                                                    placeholder="Search by ID..."
-                                                    value={searchQuery}
-                                                    onChange={handleSearchChange}
-                                                    className="w-full rounded-lg bg-background pl-8 md:w-[110px] lg:w-[180px]"
-                                                />
-                                            </>
-                                        )}
-                                    </div>
+                                   
                                 </div>
 
                                 {/* Create Order Button - Positioned on the right */}

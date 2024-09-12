@@ -167,9 +167,6 @@ export const insertOrderedParts = async (
     qty: number,
     order_id: number,
     part_id: number,
-    factory_id: number,
-    machine_id: number,
-    factory_section_id: number,
     is_sample_sent_to_office: boolean,
     note: string | null,
 ) => {
@@ -178,11 +175,7 @@ export const insertOrderedParts = async (
         qty,
         order_id,
         part_id,
-        factory_id,
-        machine_id,
-        factory_section_id,
         is_sample_sent_to_office,
-
         note,
     }])
     .select();
