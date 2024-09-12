@@ -66,6 +66,38 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
     return data as unknown as OrderedPart[]
 }
 
+export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: number) => {
+    const { data, error } = await supabase_client
+    .from('order_parts')
+    .select(`
+      unit_cost, 
+      part_purchased_date,
+      part_id,
+      orders(machine_id)
+    `)
+    .eq('orders.machine_id', machine_id)
+    .eq('part_id', part_id)
+    .not('part_purchased_date', 'is', null)
+    .order('part_purchased_date', {ascending:false})
+    .limit(1)
+
+    if (error) {
+        toast.error(error.message);
+        return null; 
+    }
+    if (data && data.length > 0) {
+        const mostRecent = data[0];
+        console.log(data);
+        return {
+            unit_cost: mostRecent.unit_cost,
+            part_purchase_date: mostRecent.part_purchased_date
+        };
+    } else {
+        console.log(data)
+        toast.error("No data found for this machine and part.");
+        return null;
+    }
+};
 
 export const updateApprovedOfficeOrderByID = async (orderedpart_id: number, approved: boolean) => {
         

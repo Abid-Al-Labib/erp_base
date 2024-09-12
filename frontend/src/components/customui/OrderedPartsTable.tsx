@@ -1,4 +1,4 @@
-import { OrderedPart, Status } from "@/types";
+import { Order, OrderedPart, Status } from "@/types";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table"
 import { useEffect, useState } from "react";
 import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
@@ -17,12 +17,12 @@ import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrder
 
 interface OrderedPartsTableProp {
   mode:  "view" | "manage"
-  order_id: number
+  order: Order
   current_status: Status
 }
 
 
-const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, current_status}) => {
+const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current_status}) => {
   const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingTable, setLoadingTable] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
@@ -79,6 +79,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
   
   const refreshPartsTable = async () => {
     try {
+        const order_id = order.id
         const updatedOrderedPartsList = await fetchOrderedPartsByOrderID(order_id)
         if (updatedOrderedPartsList) {
           setOrderedParts(updatedOrderedPartsList)
@@ -161,11 +162,11 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
             <TableBody>
             {orderedParts.map(orderedPart => (                                        
                 <OrderedPartRow key={orderedPart.id}
-                mode="view"
-                orderedPartInfo={orderedPart}
-                current_status={current_status.name}  
-                onOrderedPartUpdate={refreshPartsTable} 
-                />
+              mode="view"
+              orderedPartInfo={orderedPart}
+              current_status={current_status.name}
+              onOrderedPartUpdate={refreshPartsTable} 
+              machine_id={order.machine_id}/>
             ))}
             </TableBody>
         }  
@@ -205,6 +206,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
         <TableHeader>
         <TableRow>
             <TableHead className="whitespace-nowrap">Part</TableHead>
+            <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>
+            <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
@@ -227,11 +230,11 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order_id, curr
             <TableBody>
             {orderedParts.map(orderedPart => (                                        
                 <OrderedPartRow key={orderedPart.id}
-                mode="manage"
-                orderedPartInfo={orderedPart}
-                current_status={current_status.name}
-                onOrderedPartUpdate={refreshPartsTable}   
-                />
+              mode="manage"
+              orderedPartInfo={orderedPart}
+              current_status={current_status.name}
+              onOrderedPartUpdate={refreshPartsTable} 
+              machine_id={order.machine_id}/>
             ))}
             </TableBody>
         }  

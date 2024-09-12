@@ -66,7 +66,7 @@ const ViewOrderPage = () => {
             <div className="w-full mt-4 overflow-x-auto">
               <OrderedPartsTable
                 mode="view"
-                order_id={orders[0].id} 
+                order={orders[0]} 
                 current_status={orders[0].statuses}         
               />
             </div>

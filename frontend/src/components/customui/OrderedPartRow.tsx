@@ -3,13 +3,13 @@ import { TableCell, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import { ExternalLink, MoreHorizontal, Notebook, NotebookPen,  } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Calendar } from "../ui/calendar"
 import { OrderedPart } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
@@ -18,10 +18,11 @@ interface OrderedPartRowProp{
     mode: 'view' | 'manage',
     orderedPartInfo: OrderedPart,
     current_status: string,
+    machine_id: number,
     onOrderedPartUpdate: () => void
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, onOrderedPartUpdate}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, machine_id, onOrderedPartUpdate}) => {
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(new Date())
   const [dateReceived, setDateReceived] = useState<Date | undefined>(new Date())
@@ -33,7 +34,25 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [brand, setBrand] = useState('')
   const [unitCost, setUnitCost] = useState('');
   const [costLoading, setCostLoading] = useState(false);
-  
+  const [lastUnitCost, setLastUnitCost] = useState<number | null>(null);
+  const [lastPurchaseDate, setLastPurchaseDate] = useState<string | null>(null); // assuming date is string
+
+  // useEffect to fetch most recent cost and purchase date
+  useEffect(() => {
+      const fetchData = async () => {
+          if (mode=="manage")
+          {
+            const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
+            if (result) {
+              setLastUnitCost(result.unit_cost);
+              setLastPurchaseDate(result.part_purchase_date);
+            }
+          }
+      };
+
+      fetchData(); // Trigger the fetch when component mounts or dependencies change
+  }, [machine_id, orderedPartInfo.part_id]);
+
   const handleApproveFactory = () => {
     console.log("Factory Approve action triggered");
     const approvePartFromFactory = async() => {
@@ -212,6 +231,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     updateSampleReceived();
   }
 
+  
+
   if(mode==='view'){
     return (
       <TableRow>
@@ -276,6 +297,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     return(
         <TableRow>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{`BDT ${lastUnitCost}` || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>

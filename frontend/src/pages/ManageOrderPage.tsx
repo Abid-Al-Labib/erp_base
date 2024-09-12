@@ -52,7 +52,7 @@ const ManageOrderPage = () => {
       />
       <OrderedPartsTable
         mode="manage"
-        order_id={orders[0].id}
+        order={orders[0]}
         current_status = {orders[0].statuses}
       />
       <div className="flex justify-end">
