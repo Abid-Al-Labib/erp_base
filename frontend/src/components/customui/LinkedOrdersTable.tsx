@@ -80,9 +80,9 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
             <Card x-chunk="dashboard-06-chunk-0" className="mt-5">
                 <CardHeader className="flex justify-between ">
                         <div>
-                            <CardTitle>Linked Orders</CardTitle>
+                            <CardTitle>Past Orders</CardTitle>
                             <CardDescription>
-                                This is a list of orders that are linked to this part.
+                                This is a list of orders where this part was previously purchased.
                             </CardDescription>
                         </div>
                         <div className="ml-auto"> {/* Use ml-auto to push the button to the right */}

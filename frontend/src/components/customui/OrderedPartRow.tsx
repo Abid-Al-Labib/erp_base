@@ -594,7 +594,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                       className="pl-2 pt-1 hover:bg-slate-100"
                       onClick={()=>setIsCostingDialogOpen(true)}
                       >
-                        Costing
+                        Add Quotation
                       </div>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
