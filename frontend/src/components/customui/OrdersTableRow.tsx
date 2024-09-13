@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table";
 import { Link } from 'react-router-dom';
 import { Badge } from '../ui/badge';
-import { deleteStatusByOrderID } from '@/services/OrdersService';
+import { deleteOrderByID } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
 import { convertUtcToBDTime } from '@/services/helper';
@@ -18,7 +18,7 @@ interface OrdersTableRowProps {
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh }) => {
   const handleDeleteOrder = async () => {
     try {
-        await deleteStatusByOrderID(order.id)
+        await deleteOrderByID(order.id)
         onDeleteRefresh()
         toast.success("Order successfully deleted")
     } catch (error) {

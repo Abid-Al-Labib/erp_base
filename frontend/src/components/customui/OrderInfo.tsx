@@ -1,6 +1,7 @@
 import { Order } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Separator } from "../ui/separator"
+import { convertUtcToBDTime } from "@/services/helper"
 
 interface OrderInfoProp {
     order: Order
@@ -24,7 +25,7 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order}) => {
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Created at</span>
-                <span>{order.created_at}</span>
+                <span>{convertUtcToBDTime(order.created_at)}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Created by</span>
