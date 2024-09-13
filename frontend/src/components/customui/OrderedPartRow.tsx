@@ -9,14 +9,16 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
-import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton } from "@/services/ButtonVisibilityHelper"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updateOfficeNoteByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
 import { UpdateStatusByID } from "@/services/OrdersService"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
+import { Textarea } from "../ui/textarea"
+import { profile } from "console"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
@@ -35,6 +37,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [isReceivedDialogOpen, setIsReceivedDialogOpen] = useState(false);
   const [isCostingDialogOpen,setIsCostingDialogOpen] = useState(false);
   const [isReviseBudgetDialogOpen, setIsReviseBudgetDialogOpen] = useState(false)
+  const [isOfficeNoteDialogOpen, setIsOfficeNoteDialogOpen] = useState(false)
   const [vendor, setVendor] = useState(orderedPartInfo.vendor || '');
   const [brand, setBrand] = useState(orderedPartInfo.brand || '')
   const [unitCost, setUnitCost] = useState(orderedPartInfo.unit_cost || '');
@@ -45,6 +48,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [denyBrand, setDenyBrand] = useState(false);
   const [denyVendor, setDenyVendor] = useState(false);
   const [showDenyBudgetPopup, setShowDenyBudgetPopup] = useState(false);
+  const [noteValue, setNoteValue] = useState<string>('');
   const navigate = useNavigate()
   
   const handleNavigation = () => {
@@ -107,6 +111,36 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     };
     approveBudget();
   };
+
+  const handleAddOfficeNote = () => {
+    console.log("adding office note");
+    
+    const addOfficeNote = async (updated_note: string) => {
+      try {
+        await updateOfficeNoteByID(orderedPartInfo.id, updated_note);
+        toast.success("Your note has been added");
+        onOrderedPartUpdate();
+      } catch (error) {
+        toast.error("Something went wrong when adding note");
+      }
+    };
+
+    if (!(noteValue.trim().length>0)) {
+      toast.error("Cannot submit empty message")
+      return
+    } 
+
+    let updated_note: string = orderedPartInfo.office_note || '';
+    if (orderedPartInfo.office_note === null) {
+      updated_note = updated_note + "Name" + ": " + noteValue.trim(); 
+    } else {
+      updated_note = updated_note + "\n" + "Name" + ": " + noteValue.trim(); 
+    }
+    addOfficeNote(updated_note);
+    setNoteValue(''); 
+    setIsOfficeNoteDialogOpen(false)
+  };
+
 
   const handleDenyPart = () => {
     console.log("Deny action triggered");
@@ -174,7 +208,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     const updateCosting = async(brand:string, cost:number, vendor: string) => {
       try {
         setCostLoading(true);
-        await updateCostingByID(orderedPartInfo.id, brand, cost, vendor )
+        await updateCostingByID(orderedPartInfo.id, brand.trim(), cost, vendor.trim() )
         toast.success("Costing for this part is submitted")
         onOrderedPartUpdate();
       } catch (error) {
@@ -185,7 +219,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     }
 
-    if (!vendor || !unitCost || !brand) {
+    if (!(vendor.trim().length>0) || !unitCost || !(brand.trim().length>0)) {
       toast.error('Please fill in all information');
       return;
     }
@@ -325,9 +359,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   <NotebookPen className="hover:cursor-pointer"/>
                 </DialogTrigger>
                   <DialogContent>
-                    <div>
-                      {orderedPartInfo.office_note}
-                    </div>
+                    <DialogTitle>Office Note</DialogTitle>
+                    {orderedPartInfo.office_note.split('\n').map((line, index) => (
+                    <p key={index}>
+                      {line}
+                    </p>
+                   ))}
                   </DialogContent>
               </Dialog>
             ) : '-'
@@ -387,9 +424,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   <NotebookPen className="hover:cursor-pointer"/>
                 </DialogTrigger>
                   <DialogContent>
-                    <div>
-                      {orderedPartInfo.office_note}
-                    </div>
+                    <DialogTitle>Office Note</DialogTitle>
+                    {orderedPartInfo.office_note.split('\n').map((line, index) => (
+                    <p key={index}>
+                      {line}
+                    </p>
+                   ))}
                   </DialogContent>
               </Dialog>
             ) : '-'
@@ -508,7 +548,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                           Deny Part
                         </div>
                       </DialogTrigger>
-                          <DialogContent className="sm:max-w-[425px]">
+                      <DialogContent className="sm:max-w-[425px]">
                               <DialogTitle className="text-red-600">Deny Part</DialogTitle>
                               <div>
                                 Are you sure you want to deny this part?
@@ -519,6 +559,33 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                       </DialogContent>
                     </Dialog>
                 )}
+                {
+                  showOfficeNoteButton(current_status.name) && (
+                    <Dialog open={isOfficeNoteDialogOpen} onOpenChange={setIsOfficeNoteDialogOpen}>
+                      <DialogTrigger>
+                        <div className="pl-2 pt-1 hover:bg-slate-100">Add office note</div>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogTitle>
+                          Office Note
+                        </DialogTitle>
+                        <div className="grid w-full gap-2">
+                          <Label htmlFor="officeNote">Add you note here</Label>
+                          <Textarea
+                            placeholder="Type your note here."
+                            id="officeNote"
+                            value={noteValue} // Bind the text area value to the state
+                            onChange={(e) => setNoteValue(e.target.value)} // Update state on text change
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            This note is only visible to head office
+                          </p>
+                        </div>
+                        <Button onClick={handleAddOfficeNote}>Submit</Button>
+                      </DialogContent>
+                    </Dialog>
+                  )
+                }
                 {
                   showQuotationButton(current_status.name,orderedPartInfo.brand,orderedPartInfo.vendor,orderedPartInfo.unit_cost) && (                
                   <Dialog open={isCostingDialogOpen} onOpenChange={setIsCostingDialogOpen} >
@@ -542,7 +609,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                               type="text" 
                               value={brand}
                               placeholder="Enter brand name"
-                              onChange={(e) => setBrand(e.target.value.trim())}
+                              onChange={(e) => setBrand(e.target.value)}
                             />
                           </div>
                           <div className="grid gap-3">
@@ -552,7 +619,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                               type="text" 
                               value={vendor}
                               placeholder="Enter vendor name"
-                              onChange={(e) => setVendor(e.target.value.trim())}
+                              onChange={(e) => setVendor(e.target.value)}
                             />
                           </div>
                           <div className="grid gap-3">
@@ -562,7 +629,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                               type="number"
                               value={unitCost} 
                               placeholder="Enter the unit cost" 
-                              onChange={(e) => setUnitCost(e.target.value.trim())}
+                              onChange={(e) => setUnitCost(e.target.value)}
                               />
                         </div>
                         </fieldset>

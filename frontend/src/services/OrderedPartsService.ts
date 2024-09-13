@@ -98,6 +98,16 @@ export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: 
     }
 };
 
+export const updateOfficeNoteByID = async(orderedpart_id: number, updated_note: string) => {
+    const {error} =  await supabase_client.from('order_parts').update(
+        {office_note: updated_note}
+    ).eq('id',orderedpart_id)
+
+    if (error) {
+        toast.error(error.message)
+    }
+}
+
 export const updateApprovedOfficeOrderByID = async (orderedpart_id: number, approved: boolean) => {
         
     const { error } = await supabase_client.from('order_parts').update(
