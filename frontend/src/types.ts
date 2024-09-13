@@ -46,27 +46,28 @@ export type OrderedPart = {
 }
 
 export type Order = {
-    id: number;
-    created_at: string;
-    order_note: string;
-    created_by_user_id: number;
-    department_id: number;
+    id: number,
+    created_at: string,
+    order_note: string,
+    created_by_user_id: number,
+    department_id: number,
     factory_id: number,
     machine_id: number,
     factory_section_id: number,
-    current_status_id: number;
-    departments: Department;
-    profiles: Profile;
-    statuses: Status;
+    current_status_id: number,
+    departments: Department,
+    profiles: Profile,
+    statuses: Status,
     machines: Machine,
     factories: Factory,
     factory_sections: FactorySection
 };
 
 export type StatusTracker = {
-    id: number;
-    action_at: string;
-    order_id: number;
-    profiles: Profile;
+    id: number,
+    action_at: string,
+    order_id: number,
+    status_id: number,
+    profiles: Profile,
     statuses: Status
-}
+};

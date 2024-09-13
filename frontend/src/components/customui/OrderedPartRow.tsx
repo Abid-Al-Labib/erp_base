@@ -2,22 +2,26 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import { ExternalLink, MoreHorizontal, Notebook, NotebookPen,  } from "lucide-react"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { useEffect, useState } from "react"
 import { Calendar } from "../ui/calendar"
-import { OrderedPart } from "@/types"
+import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
 import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
-import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton } from "@/services/ButtonVisibilityHelper"
+import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
+import { UpdateStatusByID } from "@/services/OrdersService"
+import { Checkbox } from "../ui/checkbox"
+import { useNavigate } from "react-router-dom"
+import { InsertStatusTracker } from "@/services/StatusTrackerService"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
     orderedPartInfo: OrderedPart,
-    current_status: string,
+    current_status: Status,
     machine_id: number,
     onOrderedPartUpdate: () => void
 }
@@ -29,14 +33,23 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [isPurchasedDialogOpen, setIsPurchasedDialogOpen] = useState(false);
   const [isSentDialogOpen, setIsSentDialogOpen] = useState(false);
   const [isReceivedDialogOpen, setIsReceivedDialogOpen] = useState(false);
-  const [isCostingDialogOpent,setIsCostingDialogOpen] = useState(false);
-  const [vendor, setVendor] = useState('');
-  const [brand, setBrand] = useState('')
-  const [unitCost, setUnitCost] = useState('');
+  const [isCostingDialogOpen,setIsCostingDialogOpen] = useState(false);
+  const [isReviseBudgetDialogOpen, setIsReviseBudgetDialogOpen] = useState(false)
+  const [vendor, setVendor] = useState(orderedPartInfo.vendor || '');
+  const [brand, setBrand] = useState(orderedPartInfo.brand || '')
+  const [unitCost, setUnitCost] = useState(orderedPartInfo.unit_cost || '');
   const [costLoading, setCostLoading] = useState(false);
   const [lastUnitCost, setLastUnitCost] = useState<number | null>(null);
   const [lastPurchaseDate, setLastPurchaseDate] = useState<string | null>(null); // assuming date is string
-
+  const [denyCost, setDenyCost] = useState(false);
+  const [denyBrand, setDenyBrand] = useState(false);
+  const [denyVendor, setDenyVendor] = useState(false);
+  const [showDenyBudgetPopup, setShowDenyBudgetPopup] = useState(false);
+  const navigate = useNavigate()
+  
+  const handleNavigation = () => {
+    navigate('/orders'); 
+  };
   // useEffect to fetch most recent cost and purchase date
   useEffect(() => {
       const fetchData = async () => {
@@ -95,7 +108,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     approveBudget();
   };
 
-  const handleDeny = () => {
+  const handleDenyPart = () => {
     console.log("Deny action triggered");
     const deletingPart = async() => {
       try {
@@ -108,6 +121,54 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     };
     deletingPart();
   };
+
+  const handleReviseBudget = () => {
+    console.log("Denying budget");
+    const revertingStatus = async() => {
+      try {
+        const prevStatus = (current_status.id-1)
+        await UpdateStatusByID(orderedPartInfo.order_id, prevStatus)
+        await InsertStatusTracker((new Date()), orderedPartInfo.order_id, 1, prevStatus)
+        toast.success("Successfully reverted status")
+        onOrderedPartUpdate();
+      } catch (error) {
+        toast.error("Error occured while reverting status")
+      }
+    };
+   
+
+    const updateCosting = async(brand: string | null, cost:number | null, vendor: string | null) => {
+      try {
+        setCostLoading(true);
+        await updateCostingByID(orderedPartInfo.id, brand, cost, vendor )
+        toast.success("Budget has been submitted for revision")
+        onOrderedPartUpdate();
+      } catch (error) {
+        toast.error("Error occured could not complete action");
+      }
+      finally {
+        setCostLoading(false);
+      }
+    }
+    
+    if(denyBrand || denyCost || denyVendor){
+      const newBrand = denyBrand? null : brand;
+      const currentCost = typeof unitCost === 'string' ? parseFloat(unitCost) : unitCost;
+      const newCost = denyCost? null : currentCost
+      const newVendor = denyVendor? null : vendor;
+      
+      updateCosting(newBrand,newCost,newVendor)
+      revertingStatus();
+      setIsReviseBudgetDialogOpen(false)
+      setShowDenyBudgetPopup(true)
+      // setTimeout(() => {
+      //   handleNavigation()
+      // }, 5000);
+    }
+    else{
+      toast.error("You have not selected any category to deny.")
+    }
+  }
 
   const handleUpdateCosting = () => {
     const updateCosting = async(brand:string, cost:number, vendor: string) => {
@@ -128,8 +189,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       toast.error('Please fill in all information');
       return;
     }
-    
-    const numericUnitCost = parseFloat(unitCost);
+
+    const numericUnitCost = typeof unitCost === 'string' ? parseFloat(unitCost) : unitCost;
     if (isNaN(numericUnitCost) || numericUnitCost < 0) {
       toast.error('Cost/Unit cannot be negative or invalid.');
       return;
@@ -297,7 +358,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     return(
         <TableRow>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{`BDT ${lastUnitCost}` || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
@@ -366,32 +427,101 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 { 
-                  showOfficeOrderApproveButton(current_status, orderedPartInfo.approved_office_order) && (
+                  showOfficeOrderApproveButton(current_status.name, orderedPartInfo.approved_office_order) && (
                   <DropdownMenuItem onClick={handleApproveOffice}>
                     Approve from office
                   </DropdownMenuItem>
                 )}
                 { 
-                  showPendingOrderApproveButton(current_status, orderedPartInfo.approved_pending_order) && (
+                  showPendingOrderApproveButton(current_status.name, orderedPartInfo.approved_pending_order) && (
                   <DropdownMenuItem onClick={handleApproveFactory}>
                     Approve from factory
                   </DropdownMenuItem>
                 )}
                 { 
-                  showBudgetApproveButton(current_status, orderedPartInfo.approved_budget) && (
+                  showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
                   <DropdownMenuItem onClick={handleApproveBudget}>
                     Approve Budget
                   </DropdownMenuItem>
                 )}
-                {
-                  showOfficeOrderDenyButton(current_status) && (                
-                  <DropdownMenuItem onClick={handleDeny}>
-                    Deny
-                  </DropdownMenuItem>
+                { 
+                  showReviseBudgetButton(current_status.name, orderedPartInfo.approved_budget) && (
+                    <Dialog open={isReviseBudgetDialogOpen} onOpenChange={setIsReviseBudgetDialogOpen}>
+                      <DialogTrigger asChild>
+                        <div 
+                          className="pl-2 pt-1 hover:bg-slate-100"
+                          onClick={()=>setIsReviseBudgetDialogOpen(true)}  
+                        > 
+                          Revise Budget
+                        </div>
+                      </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                              <DialogTitle className="text-red-600">Revise Budget</DialogTitle>
+                              <p className="text-sm text-muted-foreground">
+                                Checking a box will deny that category
+                              </p>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox id="checkDenyBrand"
+                                  checked={denyBrand}
+                                  onCheckedChange={(checked) => setDenyBrand(!!checked)} 
+                                />
+                                <label
+                                  htmlFor="checkDenyBrand"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  Deny Brand
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox id="checkDenyVendor"
+                                  checked={denyVendor}
+                                  onCheckedChange={(checked) => setDenyVendor(!!checked)} 
+                                />
+                                <label
+                                  htmlFor="checkDenyVendor"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  Deny Vendor
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox id="checkDenyCost"
+                                  checked={denyCost}
+                                  onCheckedChange={(checked) => setDenyCost(!!checked)}  
+                                />
+                                <label
+                                  htmlFor="checkDenyCost"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  Deny Unit Cost
+                                </label>
+                                </div>
+                              <Button onClick={handleReviseBudget}>Confirm</Button>
+                      </DialogContent>
+                    </Dialog>
                 )}
                 {
-                  showQuotationButton(current_status,orderedPartInfo.vendor,orderedPartInfo.unit_cost) && (                
-                  <Dialog open={isCostingDialogOpent} onOpenChange={setIsCostingDialogOpen} >
+                  showOfficeOrderDenyButton(current_status.name) && (                
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <div className="pl-2 pt-1 hover:bg-slate-100" > 
+                          Deny Part
+                        </div>
+                      </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                              <DialogTitle className="text-red-600">Deny Part</DialogTitle>
+                              <div>
+                                Are you sure you want to deny this part?
+                                <br />
+                                It will be removed from this order.
+                              </div>
+                              <Button onClick={handleDenyPart}>Confirm</Button>
+                      </DialogContent>
+                    </Dialog>
+                )}
+                {
+                  showQuotationButton(current_status.name,orderedPartInfo.brand,orderedPartInfo.vendor,orderedPartInfo.unit_cost) && (                
+                  <Dialog open={isCostingDialogOpen} onOpenChange={setIsCostingDialogOpen} >
                     <DialogTrigger asChild>
                       <div 
                       className="pl-2 pt-1 hover:bg-slate-100"
@@ -429,7 +559,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                             <Label htmlFor="unit_cost">Cost/Unit</Label>
                             <Input 
                               id="unit_cost" 
-                              type="number" 
+                              type="number"
+                              value={unitCost} 
                               placeholder="Enter the unit cost" 
                               onChange={(e) => setUnitCost(e.target.value.trim())}
                               />
@@ -443,7 +574,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                 )}
 
                 {
-                  showPurchaseButton(current_status,orderedPartInfo.part_purchased_date) && (
+                  showPurchaseButton(current_status.name,orderedPartInfo.part_purchased_date) && (
                     <Dialog open={isPurchasedDialogOpen} onOpenChange={setIsPurchasedDialogOpen}>
                     <DialogTrigger asChild>
                       <div 
@@ -467,7 +598,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                     </Dialog>
                 )}
                 {
-                  showSentButton(current_status, orderedPartInfo.part_sent_by_office_date) && (
+                  showSentButton(current_status.name, orderedPartInfo.part_sent_by_office_date) && (
                     <Dialog open={isSentDialogOpen} onOpenChange={setIsSentDialogOpen}>
                       <DialogTrigger asChild>
                         <div 
@@ -492,7 +623,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                     </Dialog>
                 )}
                 {
-                  showReceivedButton(current_status, orderedPartInfo.part_received_by_factory_date) && (
+                  showReceivedButton(current_status.name, orderedPartInfo.part_received_by_factory_date) && (
                   <Dialog open={isReceivedDialogOpen} onOpenChange={setIsReceivedDialogOpen}>
                     <DialogTrigger asChild>
                       <div
@@ -524,8 +655,22 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             </DropdownMenuContent>
           </DropdownMenu>
           </TableCell>
+            <Dialog open={showDenyBudgetPopup} onOpenChange={handleNavigation}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="text-red-600">Budget has been sent back for revision</DialogTitle>
+                  <DialogDescription>
+                    <p>Order status is reverted.</p>
+                    <p>You will be moved back to orders page.</p>
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button onClick={handleNavigation}>OK</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
         </TableRow>
-
+        
     )
   }  
 }

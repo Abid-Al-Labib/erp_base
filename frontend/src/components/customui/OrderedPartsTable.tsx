@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { isChangeStatusAllowed } from "@/services/helper";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { UpdateStatusByID } from "@/services/OrdersService";
+import { deleteOrderByID, UpdateStatusByID } from "@/services/OrdersService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
@@ -25,7 +25,8 @@ interface OrderedPartsTableProp {
 const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current_status}) => {
   const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingTable, setLoadingTable] = useState(true);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
+  const [showEmptyOrderPopup, setShowEmptyOrderPopup] = useState(false);
   const [loadingApproval, setLoadingApproval] =useState(false)
   const navigate = useNavigate()
   
@@ -85,22 +86,30 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
           setOrderedParts(updatedOrderedPartsList)
           if(mode==="manage")
           {
-            const statusChange = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
-            if (statusChange){
-              console.log("changing status")
-              try {
-                const next_status_id = (current_status.id+1) 
-                await UpdateStatusByID(order_id,next_status_id)
-                await InsertStatusTracker((new Date()), order_id, 1, next_status_id)
-              } catch (error) {
-                toast.error("Error updating status")
-              }
-              setShowPopup(true);
+            if (updatedOrderedPartsList.length===0){
+              setShowEmptyOrderPopup(true);
+              await deleteOrderByID(order.id) 
               setTimeout(() => {
                 handleNavigation()
               }, 5000);
             }
-            
+            else{
+              const statusChange = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
+              if (statusChange){
+                console.log("changing status")
+                try {
+                  const next_status_id = (current_status.id+1) 
+                  await UpdateStatusByID(order_id,next_status_id)
+                  await InsertStatusTracker((new Date()), order_id, 1, next_status_id)
+                } catch (error) {
+                  toast.error("Error updating status")
+                }
+                setShowActionsCompletedPopup(true);
+                // setTimeout(() => {
+                //   handleNavigation()
+                // }, 5000);
+              }
+            }
           }
         } else {
           toast.error('Ordred parts table could not fetch data');
@@ -164,7 +173,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
                 <OrderedPartRow key={orderedPart.id}
               mode="view"
               orderedPartInfo={orderedPart}
-              current_status={current_status.name}
+              current_status={current_status}
               onOrderedPartUpdate={refreshPartsTable} 
               machine_id={order.machine_id}/>
             ))}
@@ -232,7 +241,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
                 <OrderedPartRow key={orderedPart.id}
               mode="manage"
               orderedPartInfo={orderedPart}
-              current_status={current_status.name}
+              current_status={current_status}
               onOrderedPartUpdate={refreshPartsTable} 
               machine_id={order.machine_id}/>
             ))}
@@ -241,12 +250,26 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
       </Table>
       </CardContent>
       }
-      <Dialog open={showPopup} onOpenChange={handleNavigation}>
+      <Dialog open={showActionsCompletedPopup} onOpenChange={handleNavigation}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="text-green-600">All action completed for current status</DialogTitle>
               <DialogDescription>
                 <p>Order will be moved to next status.</p>
+                <p>You will be moved back to orders page.</p>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={handleNavigation}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+      </Dialog>
+      <Dialog open={showEmptyOrderPopup} onOpenChange={handleNavigation}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-red-600">This order has no parts ordered.</DialogTitle>
+              <DialogDescription>
+                <p>Order will be deleted.</p>
                 <p>You will be moved back to orders page.</p>
               </DialogDescription>
             </DialogHeader>

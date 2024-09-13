@@ -148,7 +148,7 @@ export const UpdateStatusByID = async (orderid: number, status_id:number) => {
     }
 }
 
-export const deleteStatusByOrderID = async (orderid:number) => {
+export const deleteOrderByID = async (orderid:number) => {
     
     const { error } = await supabase_client
     .from('orders')

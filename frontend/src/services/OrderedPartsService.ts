@@ -94,7 +94,6 @@ export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: 
         };
     } else {
         console.log(data)
-        toast.error("No data found for this machine and part.");
         return null;
     }
 };
@@ -141,7 +140,7 @@ export const deleteOrderedPartByID = async (orderedpart_id: number) => {
         
 }
 
-export const updateCostingByID = async (orderedpart_id: number, brand:string, unit_cost: number, vendor: string) => {
+export const updateCostingByID = async (orderedpart_id: number, brand:string | null, unit_cost: number | null, vendor: string | null) => {
     const { error } = await supabase_client.from('order_parts').update(
         { 
             brand: brand,

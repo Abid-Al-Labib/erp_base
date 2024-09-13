@@ -2,29 +2,35 @@ import { OrderedPart, Status, StatusTracker } from "@/types";
 
 export function mergeStatusWithTracker(statuses: Status[],statusTracker: StatusTracker[])
 {
-  const sortedStatuses = statuses.sort((a, b) => a.id - b.id);
-  const sortedStatusTracker = statusTracker.sort((a, b) => a.statuses.id - b.statuses.id);  
-  return sortedStatuses.map((status) => {
-        const trackerItem = sortedStatusTracker.find(
-            (item) => item.statuses.id === status.id
-        );
+  // Step 1: Sort the statusTracker items by status_id in ascending order
+  console.log(statusTracker)
+  const sortedStatusTracker = statusTracker.sort((a, b) => a.status_id - b.status_id);
 
-        if (trackerItem) {
-            return {
-                status: status.name,
-                action_at: trackerItem.action_at,
-                action_by: trackerItem.profiles.name,
-                complete: true,
-            };
-        } else {
-            return {
-                status: status.name,
-                action_at: null,
-                action_by: null,
-                complete: false,
-            };
-        }
-    });
+  // Step 2: Map statusTracker items as completed
+  const completedStatuses = sortedStatusTracker.map(trackerItem => ({
+    status: trackerItem.statuses.name,  // Assuming trackerItem has the 'statuses' field populated
+    action_at: trackerItem.action_at,
+    action_by: trackerItem.profiles.name, // Assuming 'profiles' contains the user's name
+    complete: true,
+  }));
+
+  // Step 3: Get the last status_id from the last statusTracker item (latest one)
+  const lastStatusId = sortedStatusTracker.length > 0 
+    ? sortedStatusTracker[sortedStatusTracker.length - 1].status_id
+    : 0;
+
+  // Step 4: Get all remaining statuses that are incomplete (id > lastStatusId)
+  const incompleteStatuses = statuses
+    .filter(status => status.id > lastStatusId)
+    .map(status => ({
+      status: status.name,
+      action_at: null,
+      action_by: null,
+      complete: false,
+    }));
+
+  // Step 5: Combine completed and incomplete statuses
+  return [...completedStatuses, ...incompleteStatuses];
 }
 
 
@@ -58,7 +64,7 @@ export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_stat
         return ordered_parts.every(part => part.approved_office_order === true);
   
       case "Waiting For Quotation":
-        return ordered_parts.every(part => part.vendor !== null && part.unit_cost !== null);
+        return ordered_parts.every(part => part.vendor !== null && part.unit_cost !== null && part.brand !== null);
   
       case "Budget Released":
         return ordered_parts.every(part => part.approved_budget === true);

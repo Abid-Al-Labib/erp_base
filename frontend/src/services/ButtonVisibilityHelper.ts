@@ -29,14 +29,21 @@ export const showOfficeOrderChangeQtyButton = (status:string): boolean =>{
     return false
 }
 
-export const showQuotationButton = (status: string, vendor: string | null, unit_cost: number | null): boolean => {
-  if (status === "Waiting For Quotation" && vendor === null && unit_cost === null) {
+export const showQuotationButton = (status: string, brand: string | null, vendor: string | null, unit_cost: number | null): boolean => {
+  if ((status === "Waiting For Quotation") && (brand === null || vendor === null || unit_cost === null)) {
     return true;
   }
   return false;
 }
 
 export const showBudgetApproveButton = (status:string, isApproved:boolean): boolean =>{
+    if (status === "Budget Released" && !isApproved) {
+        return true
+    }
+    return false
+}
+
+export const showReviseBudgetButton = (status:string, isApproved:boolean): boolean =>{
     if (status === "Budget Released" && !isApproved) {
         return true
     }

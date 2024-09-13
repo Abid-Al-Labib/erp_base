@@ -9,6 +9,7 @@ export const fetchStatusTrackerByID = async (order_id:number) => {
             id,
             action_at,
             order_id,
+            status_id,
             profiles(
                 *
             ),
@@ -16,7 +17,7 @@ export const fetchStatusTrackerByID = async (order_id:number) => {
                 *
             )
         `
-    ).eq('order_id',order_id)
+    ).eq('order_id',order_id).order("action_at", {ascending: true})
     if (error){
         toast.error(error.message)
     }
