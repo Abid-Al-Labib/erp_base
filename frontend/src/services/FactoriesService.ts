@@ -50,3 +50,46 @@ export const fetchDepartments = async () => {
     }
     return data;
 };
+
+export const fetchStorageParts = async (factoryId: number, storageId: number, partName: string, partId: number) => {
+    let query = supabase_client
+        .from('storage_parts')
+        .select(`
+            id,
+            qty,
+            factory_id,
+            parts (*)
+        `)
+    if (factoryId !== undefined ) {
+        query = query.eq('factory_id', factoryId);
+    }
+    if (storageId !== undefined ) {
+        query = query.eq('id',storageId);
+    }
+    // if (partName) {
+    //     query = query.ilike('parts.name', `%${partName}%`);
+    // }
+
+
+    if (partId !== undefined ) {
+        query = query.eq('part_id', partId);
+    }
+
+    console.log("THIS IS STORAGE ID",);
+    const { data, error } = await query;
+
+    if (error) {
+        console.error('Error fetching parts:', error.message);
+        return [];
+    }
+
+    let filteredData = data;
+
+    if (partName) {
+        filteredData = filteredData.filter((record: any) =>
+            record.parts && record.parts.name.toLowerCase().includes(partName.toLowerCase())
+        );
+    }
+
+    return filteredData;
+};
