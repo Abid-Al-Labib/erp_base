@@ -11,29 +11,29 @@ export type Database = {
     Tables: {
       damaged_parts: {
         Row: {
+          factory_id: number
           id: number
-          machine_id: number
           part_id: number
           qty: number
         }
         Insert: {
+          factory_id: number
           id?: number
-          machine_id: number
           part_id: number
           qty: number
         }
         Update: {
+          factory_id?: number
           id?: number
-          machine_id?: number
           part_id?: number
           qty?: number
         }
         Relationships: [
           {
-            foreignKeyName: "damaged_parts_machine_id_fkey"
-            columns: ["machine_id"]
+            foreignKeyName: "damaged_parts_factory_id_fkey"
+            columns: ["factory_id"]
             isOneToOne: false
-            referencedRelation: "machines"
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
           {
@@ -177,8 +177,10 @@ export type Database = {
           approved_budget: boolean
           approved_office_order: boolean
           approved_pending_order: boolean
+          approved_storage_withdrawal: boolean
           brand: string | null
           id: number
+          in_storage: boolean
           is_sample_received_by_office: boolean
           is_sample_sent_to_office: boolean
           note: string | null
@@ -196,8 +198,10 @@ export type Database = {
           approved_budget?: boolean
           approved_office_order?: boolean
           approved_pending_order?: boolean
+          approved_storage_withdrawal?: boolean
           brand?: string | null
           id?: number
+          in_storage?: boolean
           is_sample_received_by_office?: boolean
           is_sample_sent_to_office?: boolean
           note?: string | null
@@ -215,8 +219,10 @@ export type Database = {
           approved_budget?: boolean
           approved_office_order?: boolean
           approved_pending_order?: boolean
+          approved_storage_withdrawal?: boolean
           brand?: string | null
           id?: number
+          in_storage?: boolean
           is_sample_received_by_office?: boolean
           is_sample_sent_to_office?: boolean
           note?: string | null
@@ -258,6 +264,7 @@ export type Database = {
           id: number
           machine_id: number
           order_note: string | null
+          order_type: string | null
         }
         Insert: {
           created_at?: string
@@ -269,6 +276,7 @@ export type Database = {
           id?: number
           machine_id: number
           order_note?: string | null
+          order_type?: string | null
         }
         Update: {
           created_at?: string
@@ -280,6 +288,7 @@ export type Database = {
           id?: number
           machine_id?: number
           order_note?: string | null
+          order_type?: string | null
         }
         Relationships: [
           {

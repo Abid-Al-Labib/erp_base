@@ -15,6 +15,13 @@ export const showOfficeOrderApproveButton = (status:string, isapproved:boolean):
     return false;
 }
 
+export const showApproveTakingFromStorageButton = (status:string, in_storage: boolean ,isApproved:boolean): boolean =>{
+    if (status === "Order Sent To Head Office" && in_storage && !isApproved) {
+        return true;
+    }
+    return false;
+}
+
 export const showOfficeOrderDenyButton = (status:string): boolean =>{
     if (status === "Order Sent To Head Office") {
         return true;

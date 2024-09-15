@@ -53,6 +53,7 @@ export const fetchOrders = async ({
             factory_id,
             machine_id,
             factory_section_id,
+            order_type,
             departments(*),
             profiles(*),
             statuses(*),
@@ -63,7 +64,7 @@ export const fetchOrders = async ({
             { count: 'exact' }
         )
         .range(from, to)
-        .order('id', { ascending: true });
+        .order('id', { ascending: false });
 
     if (query) {
         queryBuilder = queryBuilder.eq('id', query);
@@ -122,6 +123,7 @@ export const fetchOrderByID = async (order_id:number) => {
             factory_id,
             machine_id,
             factory_section_id,
+            order_type,
             departments(*),
             profiles(*),
             statuses(*),

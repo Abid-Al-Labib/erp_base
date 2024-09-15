@@ -37,11 +37,11 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order}) => {
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Machine</span>
-                <span>{order.machines.number}</span>
+                <span>{order.factories.abbreviation} - {order.factory_sections.name} - {order.machines.number}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Current Status</span>
-                <span>{order.factories.abbreviation} - {order.factory_sections.name} - {order.machines.number}</span>
+                <span>{order.statuses.name}</span>
             </li>
             </ul>
         <Separator className="my-2" />
