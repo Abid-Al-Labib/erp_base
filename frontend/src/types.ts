@@ -6,6 +6,8 @@ export type Department = Tables<"departments">
 export type Status = Tables<"statuses">
 export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
+export type MachinePart = Tables<"machine_parts">
+export type StoragePart = Tables<"storage_parts">
 
 export type Machine = {
     id: number,
@@ -36,6 +38,8 @@ export type OrderedPart = {
     unit_cost: number | null,
     note: string | null,
     office_note: string | null,
+    in_storage: boolean,
+    approved_storage_withdrawal: boolean,
     order_id: number,
     part_id: number,
     approved_pending_order: boolean

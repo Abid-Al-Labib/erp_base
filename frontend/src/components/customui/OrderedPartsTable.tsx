@@ -149,6 +149,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         <TableHeader>
         <TableRow>
             <TableHead className="whitespace-nowrap">Part</TableHead>
+            <TableHead className="whitespace-nowrap">In Storage</TableHead>
+            <TableHead className="whitespace-nowrap">Take from storage</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
@@ -175,6 +177,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               orderedPartInfo={orderedPart}
               current_status={current_status}
               onOrderedPartUpdate={refreshPartsTable} 
+              factory_id={order.factory_id}
               machine_id={order.machine_id}/>
             ))}
             </TableBody>
@@ -215,6 +218,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         <TableHeader>
         <TableRow>
             <TableHead className="whitespace-nowrap">Part</TableHead>
+            <TableHead className="whitespace-nowrap">In Storage</TableHead>
+            <TableHead className="whitespace-nowrap">Take from storage</TableHead>
             <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
@@ -243,6 +248,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               orderedPartInfo={orderedPart}
               current_status={current_status}
               onOrderedPartUpdate={refreshPartsTable} 
+              factory_id={order.factory_id}
               machine_id={order.machine_id}/>
             ))}
             </TableBody>

@@ -17,6 +17,8 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         unit_cost,
         note,
         office_note,
+        in_storage,
+        approved_storage_withdrawal,
         order_id,
         part_id,
         approved_pending_order,
@@ -50,6 +52,8 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         unit_cost,
         note,
         office_note,
+        in_storage,
+        approved_storage_withdrawal,
         order_id,
         part_id,
         approved_pending_order,
@@ -112,6 +116,17 @@ export const updateApprovedOfficeOrderByID = async (orderedpart_id: number, appr
         
     const { error } = await supabase_client.from('order_parts').update(
         { approved_office_order: approved }
+    ).eq('id', orderedpart_id)
+    
+    if (error){
+        toast.error(error.message)
+    }
+}
+
+export const updateApprovedStorageWithdrawalByID = async (orderedpart_id: number, approved: boolean) => {
+        
+    const { error } = await supabase_client.from('order_parts').update(
+        { approved_storage_withdrawal: approved }
     ).eq('id', orderedpart_id)
     
     if (error){

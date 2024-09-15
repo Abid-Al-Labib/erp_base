@@ -56,27 +56,39 @@ export const convertUtcToBDTime = (utcTimestamp: string): string => {
 
 
 export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_status: string): boolean => {
-    switch (current_status) {
-      case "Pending":
+  // Filter parts that have in_storage === false and approved_storage_withdrawal === false
+  const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal));
+  // If there are no parts to check (i.e., all parts are either in storage or have approved storage withdrawal), allow the change
+  
+  
+  switch (current_status) {
+      case "Pending": {
         return ordered_parts.every(part => part.approved_pending_order === true);
-  
-      case "Order Sent To Head Office":
-        return ordered_parts.every(part => part.approved_office_order === true);
-  
-      case "Waiting For Quotation":
-        return ordered_parts.every(part => part.vendor !== null && part.unit_cost !== null && part.brand !== null);
-  
-      case "Budget Released":
-        return ordered_parts.every(part => part.approved_budget === true);
-  
-      case "Waiting For Purchase":
-        return ordered_parts.every(part => part.part_purchased_date !== null);
-  
-      case "Purchase Complete":
-        return ordered_parts.every(part => part.part_sent_by_office_date !== null);
-  
-      case "Parts Sent To Factory":
+      }
+      case "Order Sent To Head Office": {
+        if (partsToCheck.length === 0) return true;  
+        return partsToCheck.every(part => part.approved_office_order === true);
+      }
+      case "Waiting For Quotation": {
+        if (partsToCheck.length === 0) return true;
+        return partsToCheck.every(part => part.vendor !== null && part.unit_cost !== null && part.brand !== null);
+      }
+      case "Budget Released": {
+        if (partsToCheck.length === 0) return true;
+        return partsToCheck.every(part => part.approved_budget === true);
+      }
+      case "Waiting For Purchase": {
+        if (partsToCheck.length === 0) return true;
+        return partsToCheck.every(part => part.part_purchased_date !== null);
+      }
+      case "Purchase Complete": {
+        if (partsToCheck.length === 0) return true;
+        return partsToCheck.every(part => part.part_sent_by_office_date !== null);
+      }
+      case "Parts Sent To Factory": {
         return ordered_parts.every(part => part.part_received_by_factory_date !== null);
+      }
+
       default:
         return false; 
     }

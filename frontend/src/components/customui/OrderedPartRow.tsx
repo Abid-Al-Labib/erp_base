@@ -9,8 +9,8 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateCostingByID, updateOfficeNoteByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
-import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton } from "@/services/ButtonVisibilityHelper"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
 import { UpdateStatusByID } from "@/services/OrdersService"
@@ -18,26 +18,32 @@ import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
-import { profile } from "console"
+import { fetchStoragePartQuantityByFactoryID, upsertStoragePart } from "@/services/StorageService"
+import { upsertMachineParts } from "@/services/MachinePartsService"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
     orderedPartInfo: OrderedPart,
     current_status: Status,
+    factory_id: number
     machine_id: number,
     onOrderedPartUpdate: () => void
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, machine_id, onOrderedPartUpdate}) => {
-  const [datePurchased, setDatePurchased] = useState<Date | undefined>(new Date())
-  const [dateSent, setDateSent] = useState<Date | undefined>(new Date())
-  const [dateReceived, setDateReceived] = useState<Date | undefined>(new Date())
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, onOrderedPartUpdate}) => {
+  const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
+  const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
+  const [dateReceived, setDateReceived] = useState<Date | undefined>(orderedPartInfo.part_received_by_factory_date? new Date(orderedPartInfo.part_received_by_factory_date): new Date())
+  
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false)
   const [isPurchasedDialogOpen, setIsPurchasedDialogOpen] = useState(false);
   const [isSentDialogOpen, setIsSentDialogOpen] = useState(false);
   const [isReceivedDialogOpen, setIsReceivedDialogOpen] = useState(false);
   const [isCostingDialogOpen,setIsCostingDialogOpen] = useState(false);
   const [isReviseBudgetDialogOpen, setIsReviseBudgetDialogOpen] = useState(false)
   const [isOfficeNoteDialogOpen, setIsOfficeNoteDialogOpen] = useState(false)
+  const [isTakeFromStorageDialogOpen, setIsTakeFromStorageDialogOpen] = useState(false)
+
   const [vendor, setVendor] = useState(orderedPartInfo.vendor || '');
   const [brand, setBrand] = useState(orderedPartInfo.brand || '')
   const [unitCost, setUnitCost] = useState(orderedPartInfo.unit_cost || '');
@@ -50,7 +56,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [showDenyBudgetPopup, setShowDenyBudgetPopup] = useState(false);
   const [noteValue, setNoteValue] = useState<string>('');
   const navigate = useNavigate()
-  
+  const [disableTakeStorageRow, setDisableTakeStorageRow] = useState(false);
   const handleNavigation = () => {
     navigate('/orders'); 
   };
@@ -59,6 +65,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       const fetchData = async () => {
           if (mode=="manage")
           {
+            const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && (current_status.name!=="Parts Sent To Factory")
+            setDisableTakeStorageRow(disableRow)
             const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
             if (result) {
               setLastUnitCost(result.unit_cost);
@@ -82,6 +90,43 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     };
     approvePartFromFactory();
+  }
+
+  const handleApproveTakingFromStorage = () => {
+    // console.log(`Headoffice approves taking ${orderedPartInfo.qty} from storage`)
+    const takeFromStorage = async() => {
+      try {
+        const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id, factory_id)
+        console.log(storage_data)
+        if (storage_data)
+        {
+          if (storage_data.length>0)
+          {
+            const new_current_storage_quantity = storage_data[0].qty - orderedPartInfo.qty
+            await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_current_storage_quantity)
+            console.log("updated storage qty")
+            await upsertMachineParts(orderedPartInfo.part_id,machine_id,orderedPartInfo.qty)
+            console.log("updated machine qty")
+            await updateSentDateByID(orderedPartInfo.id, new Date())
+            console.log("updated sent date")
+            await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
+            console.log("approved taking from storage")
+            onOrderedPartUpdate();
+          }
+          else {
+            console.log(`no data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)
+            return null
+          }
+        }
+      } catch (error) {
+        toast.error("Error occured while fetching storage data")
+      }
+    };
+
+    takeFromStorage()
+    setDisableTakeStorageRow(true)
+    setIsTakeFromStorageDialogOpen(false)
+
   }
 
   const handleApproveOffice = () => {
@@ -332,6 +377,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     return (
       <TableRow>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
@@ -393,8 +440,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   }
   else if(mode==="manage"){
     return(
-        <TableRow>
+        <TableRow className={`${
+          disableTakeStorageRow ? 'bg-gray-300 pointer-events-none' : ''
+        } transition duration-200 ease-in-out`}>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
@@ -478,6 +529,35 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                     Approve from factory
                   </DropdownMenuItem>
                 )}
+                {
+                  showApproveTakingFromStorageButton(current_status.name,orderedPartInfo.in_storage,orderedPartInfo.approved_storage_withdrawal) && (
+                    <Dialog open={isTakeFromStorageDialogOpen} onOpenChange={setIsTakeFromStorageDialogOpen}>
+                      <DialogTrigger>
+                        <div 
+                          className="pl-2 pt-1 hover:bg-slate-100"
+                          onClick={()=>setIsTakeFromStorageDialogOpen(true)}
+                        >
+                          Take from storage
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogTitle>
+                          Take from storage Approval
+                        </DialogTitle>
+                        <DialogDescription>
+                          <p className="text-sm text-muted-foreground">
+                              This item exists in storage. Approving this action will adjust storage quantity and cannot be undone.
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                              Do you Approve?
+                          </p>
+                        </DialogDescription>
+
+                        <Button onClick={handleApproveTakingFromStorage}>Approve</Button>
+                      </DialogContent>
+                    </Dialog>
+                )}
+
                 { 
                   showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
                   <DropdownMenuItem onClick={handleApproveBudget}>
@@ -563,7 +643,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   showOfficeNoteButton(current_status.name) && (
                     <Dialog open={isOfficeNoteDialogOpen} onOpenChange={setIsOfficeNoteDialogOpen}>
                       <DialogTrigger>
-                        <div className="pl-2 pt-1 hover:bg-slate-100">Add office note</div>
+                        <div 
+                          className="pl-2 pt-1 hover:bg-slate-100"
+                          onClick={()=>setIsOfficeNoteDialogOpen(true)}
+                        >
+                            Add office note</div>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
                         <DialogTitle>

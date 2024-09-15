@@ -134,8 +134,6 @@ const CreateOrderPage = () => {
     const handleResetOrderParts = () => {
         setQty(-1);
         setPartId(-1);
-        setSelectedFactorySectionId(-1);
-        setSelectedMachineId(-1); 
         setIsSampleSentToOffice(false);
         setNote('');
 
