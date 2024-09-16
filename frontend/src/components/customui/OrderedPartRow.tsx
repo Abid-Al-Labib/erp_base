@@ -535,75 +535,75 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 { 
                   showOfficeOrderApproveButton(current_status.name, orderedPartInfo.approved_office_order) && (
-                    <DropdownMenuItem className="hover:text-green-900" onClick={() => setIsApproveFromOfficeDialogOpen(true)}>
-                      Approve from Office
+                    <DropdownMenuItem onClick={() => setIsApproveFromOfficeDialogOpen(true)}>
+                      <span className="hover:text-green-900">Approve from Office</span>
                     </DropdownMenuItem>
                 )}
                 { 
                   showPendingOrderApproveButton(current_status.name, orderedPartInfo.approved_pending_order) && (
-                    <DropdownMenuItem className="hover:text-green-900" onClick={() => setIsApproveFromFactoryDialogOpen(true)}>
-                      Approve from Factory
+                    <DropdownMenuItem onClick={() => setIsApproveFromFactoryDialogOpen(true)}>
+                      <span className="hover:text-green-900">Approve from Factory</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showApproveTakingFromStorageButton(current_status.name,orderedPartInfo.in_storage,orderedPartInfo.approved_storage_withdrawal) && (
-                    <DropdownMenuItem className="hover:text-green-900" onClick={()=>setIsTakeFromStorageDialogOpen(true)}>
-                      Take from storage
+                    <DropdownMenuItem onClick={()=>setIsTakeFromStorageDialogOpen(true)}>
+                      <span className="hover:text-green-900">Take from storage</span>
                     </DropdownMenuItem>
                 )}
 
                 { 
                   showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
-                    <DropdownMenuItem className="hover:text-green-900" onClick={() => setIsApproveBudgetDialogOpen(true)}>
-                      Approve Budget
+                    <DropdownMenuItem onClick={() => setIsApproveBudgetDialogOpen(true)}>
+                      <span className="hover:text-green-900">Approve Budget</span>
                     </DropdownMenuItem>
                 )}
                 { 
                   showReviseBudgetButton(current_status.name, orderedPartInfo.approved_budget) && (
                     <DropdownMenuItem onClick={()=>setIsReviseBudgetDialogOpen(true)}  >
-                      Revise Budget
+                      <span className="hover:text-red-900">Revise Budget</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showOfficeOrderDenyButton(current_status.name) && (                
-                    <DropdownMenuItem className="hover:text-red-900" onClick={()=>setIsDenyDialogOpen(true)}>
-                      Deny Part
+                    <DropdownMenuItem onClick={()=>setIsDenyDialogOpen(true)}>
+                      <span className="hover:text-red-900">Deny Part</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showOfficeNoteButton(current_status.name) && (
                     <DropdownMenuItem onClick={()=>setIsOfficeNoteDialogOpen(true)}>
-                      Add Office Note
+                      <span>Add Office Note</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showQuotationButton(current_status.name,orderedPartInfo.brand,orderedPartInfo.vendor,orderedPartInfo.unit_cost) && (                
                     <DropdownMenuItem onClick={()=>setIsCostingDialogOpen(true)}>
-                      Add Quotation
+                      <span>Add Quotation</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showPurchaseButton(current_status.name,orderedPartInfo.part_purchased_date) && (
                     <DropdownMenuItem onClick={()=>setIsPurchasedDialogOpen(true)}>
-                      Set Purchase Date
+                      <span>Set Purchase Date</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showSentButton(current_status.name, orderedPartInfo.part_sent_by_office_date) && (
-                    <DropdownMenuItem  onClick={()=> setIsSentDialogOpen(true)}>
-                      Set Sent Date
+                    <DropdownMenuItem onClick={()=> setIsSentDialogOpen(true)}>
+                      <span>Set Sent Date</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showReceivedButton(current_status.name, orderedPartInfo.part_received_by_factory_date) && (
                     <DropdownMenuItem onClick={() => setIsReceivedDialogOpen(true)}>
-                      Set Received Date
+                      <span>Set Received Date</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showSampleReceivedButton(orderedPartInfo.is_sample_sent_to_office,orderedPartInfo.is_sample_received_by_office) && (
                     <DropdownMenuItem onClick={() => setIsSampleReceivedDialogOpen(true)}>
-                      Receive Sample
+                      <span>Receive Sample</span>
                     </DropdownMenuItem>
                 )}
 
