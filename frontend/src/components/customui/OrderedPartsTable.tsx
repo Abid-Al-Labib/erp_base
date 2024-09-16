@@ -28,13 +28,18 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
   const [showEmptyOrderPopup, setShowEmptyOrderPopup] = useState(false);
   const [loadingApproval, setLoadingApproval] =useState(false)
+  const [isApproveAllFactoryDialogOpen, setisApproveAllFactoryDialogOpen] = useState(false)
+  const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false)
+  const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false)
   const navigate = useNavigate()
   
   const handleApproveAllPendingOrder = async () => {
     setLoadingApproval(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
-        return updateApprovedPendingOrderByID(ordered_part.id, true);
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
+          return updateApprovedPendingOrderByID(ordered_part.id, true);
+        }
       });
       await Promise.all(updatePromises);
       toast.success("Approved all parts in the pending order")
@@ -44,13 +49,16 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } finally {
       setLoadingApproval(false)
     }
+    setisApproveAllFactoryDialogOpen(false)
   }
   
   const handleApproveAllOfficeOrder = async () => {
     setLoadingApproval(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
-        return updateApprovedOfficeOrderByID(ordered_part.id, true);
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
+          return updateApprovedOfficeOrderByID(ordered_part.id, true);
+        }
       });
       await Promise.all(updatePromises);
       toast.success("Approved all ordered items from office")
@@ -60,13 +68,16 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } finally {
       setLoadingApproval(false)
     }
+    setisApproveAllOfficeDialogOpen(false)
   }
   
   const handleApproveAllBudgets = async () => {
     setLoadingApproval(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
-        return updateApprovedBudgetByID(ordered_part.id, true);
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
+          return updateApprovedBudgetByID(ordered_part.id, true);
+        }
       });
       await Promise.all(updatePromises);
       toast.success("Approved budgets for all parts")
@@ -76,6 +87,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } finally {
       setLoadingApproval(false)
     }
+    setApproveAllBudgetDialogOpen(false)
   }
   
   const refreshPartsTable = async () => {
@@ -89,9 +101,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             if (updatedOrderedPartsList.length===0){
               setShowEmptyOrderPopup(true);
               await deleteOrderByID(order.id) 
-              setTimeout(() => {
-                handleNavigation()
-              }, 5000);
             }
             else{
               const statusChange = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
@@ -105,9 +114,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
                   toast.error("Error updating status")
                 }
                 setShowActionsCompletedPopup(true);
-                // setTimeout(() => {
-                //   handleNavigation()
-                // }, 5000);
               }
             }
           }
@@ -205,13 +211,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         <CardContent>
         <div className="flex justify-end gap-2 mb-2">
           {showPendingOrderApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={handleApproveAllPendingOrder}>{loadingApproval? "Approving...": "Approve all pending parts"}</Button>
+            <Button disabled={loadingApproval} onClick={()=>setisApproveAllFactoryDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all pending parts"}</Button>
           )}
           {showOfficeOrderApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={handleApproveAllOfficeOrder}>{loadingApproval? "Approving...": "Approve all parts"}</Button>
+            <Button disabled={loadingApproval} onClick={()=>setisApproveAllOfficeDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all parts"}</Button>
           )}
           {showBudgetApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={handleApproveAllBudgets}>{loadingApproval? "Approving...": "Approve all budgets"}</Button>
+            <Button disabled={loadingApproval} onClick={()=>setApproveAllBudgetDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all budgets"}</Button>
           )}
         </div>
         <Table>
@@ -284,7 +290,60 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             </DialogFooter>
           </DialogContent>
       </Dialog>
+
+      <Dialog open={isApproveAllFactoryDialogOpen} onOpenChange={setisApproveAllFactoryDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Approve All
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You are approving all the parts in this pending order. This cannot be undone and you will move to next status.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to approve?
+            </p>
+          </DialogDescription>
+          <Button onClick={handleApproveAllPendingOrder}>Approve</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isApproveAllOfficeDialogOpen} onOpenChange={setisApproveAllOfficeDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Approve All
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You are approving all the parts in this order. This cannot be undone and you will move to next status.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to approve?
+            </p>
+          </DialogDescription>
+          <Button onClick={handleApproveAllOfficeOrder}>Approve</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isApproveAllBudgetDialogOpen} onOpenChange={setApproveAllBudgetDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Approve All 
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You are approving budgets for all parts. Only approve if you are okay with the whole quotation. 
+              This cannot be undone and you will be moved to the next status.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to approve?
+            </p>
+          </DialogDescription>
+          <Button onClick={handleApproveAllBudgets}>Approve</Button>
+        </DialogContent>
+      </Dialog>
       </Card>
+      
     )
   }
   
