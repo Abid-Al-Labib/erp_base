@@ -33,7 +33,9 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
         {order.id}
       </TableCell>
       <TableCell>
-        {order.factories.abbreviation} - {order.factory_sections.name} - {order.machines.number}
+        {order.factory_sections?.name && order.machines?.number
+          ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.number}`
+          : `${order.factories.abbreviation} - Storage`}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {convertUtcToBDTime(order.created_at)}

@@ -7,7 +7,8 @@ import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck} from "lucide-react"
 import { useEffect, useState } from "react"
-import { insertOrder } from "@/services/OrdersService";
+import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
+
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { fetchFactories, fetchFactorySections, fetchMachines, fetchDepartments } from '@/services/FactoriesService';
@@ -48,7 +49,8 @@ interface InputOrder {
     factory_id: number,
     factory_section_id: number,
     machine_id: number,
-    current_status_id: number
+    current_status_id: number,
+    order_type: string,
 }
 
 interface InputOrderedPart {
@@ -91,7 +93,11 @@ const CreateOrderPage = () => {
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
-    const isOrderFormComplete = selectedFactoryId !== -1 && departmentId !== -1 && orderType && selectedFactorySectionId !== -1 && selectedMachineId !== -1 && description.trim();
+    const isOrderFormComplete =
+        selectedFactoryId !== -1 &&
+        departmentId !== -1 &&
+        description.trim() &&
+        (orderType !== 'Machine' || (selectedFactorySectionId !== -1 && selectedMachineId !== -1));
     const [isOrderStarted, setIsOrderStarted] = useState(false);
 
 
@@ -153,10 +159,6 @@ const CreateOrderPage = () => {
                 return;
             }
 
-            if (selectedFactoryId==-1 || departmentId==-1 || !orderType || !description) {
-                toast.error("Please fill out all the fields");
-                return;
-            }
             const createdById = 1; 
             const statusId = 1; 
             const orderData: InputOrder = {
@@ -167,6 +169,8 @@ const CreateOrderPage = () => {
                 factory_section_id: selectedFactorySectionId,
                 machine_id: selectedMachineId,
                 current_status_id: statusId,
+                order_type: orderType,
+
             };
             setTempOrderDetails(orderData);
             setShowPartForm(true);
@@ -205,16 +209,30 @@ const CreateOrderPage = () => {
                 toast.error("No order details to process.");
                 return;
             }
+            let orderResponse;
 
-            const orderResponse = await insertOrder(
-                tempOrderDetails.order_note, 
-                tempOrderDetails.created_by_user_id, 
-                tempOrderDetails.department_id, 
-                tempOrderDetails.factory_id, 
-                tempOrderDetails.factory_section_id, 
-                tempOrderDetails.machine_id,
-                1);
-
+            if (orderType == "Machine)"){
+                orderResponse = await insertOrder(
+                    tempOrderDetails.order_note, 
+                    tempOrderDetails.created_by_user_id, 
+                    tempOrderDetails.department_id, 
+                    tempOrderDetails.factory_id, 
+                    tempOrderDetails.factory_section_id, 
+                    tempOrderDetails.machine_id,
+                    1, //Current Status
+                    tempOrderDetails.order_type,
+                    );
+            }
+            else{
+                orderResponse = await insertOrderStorage(
+                    tempOrderDetails.order_note,
+                    tempOrderDetails.created_by_user_id,
+                    tempOrderDetails.department_id,
+                    tempOrderDetails.factory_id,
+                    1, //Current Status
+                    tempOrderDetails.order_type,
+                );
+            }
             if (orderResponse && orderResponse.length > 0) {
                 const orderId = orderResponse[0].id; 
                 // toast.success(`Order created with ID: ${orderId}, now adding parts...`);

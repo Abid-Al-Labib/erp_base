@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { fetchStorageParts, fetchFactories } from "@/services/FactoriesService";
+import { fetchFactories } from "@/services/FactoriesService";
+import { fetchStorageParts } from "@/services/StorageService";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import StoragePartsTable from "@/components/customui/StoragePartsTable";

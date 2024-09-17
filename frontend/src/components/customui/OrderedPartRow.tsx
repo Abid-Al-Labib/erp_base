@@ -338,6 +338,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         if (dateReceived.getDate()>=dateSent.getDate()){
           try {
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
+            //if order type storage
             toast.success("Part received by factory date set!")
             onOrderedPartUpdate();
           } catch (error) {

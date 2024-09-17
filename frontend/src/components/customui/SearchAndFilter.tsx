@@ -47,7 +47,7 @@ interface Status {
 }
 
 interface FilterConfig {
-    type: 'factory' | 'factorySection' | 'machine' | 'department' | 'status' | 'id' | 'date' | 'storageId' | 'partName' | 'partId';
+    type: 'factory' | 'factorySection' | 'machine' | 'department' | 'status' | 'id' | 'date' | 'storageId' | 'partName' | 'partId' | 'orderType';
     label: string;
 }
 
@@ -83,6 +83,8 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     const [storageIdQuery, setStorageIdQuery] = useState('');
     const [partNameQuery, setPartNameQuery] = useState('');
     const [partIdQuery, setPartIdQuery] = useState('');
+
+    const [selectedOrderType, setSelectedOrderType] = useState<'all' | 'Machine' | 'Storage'>('all');
 
     useEffect(() => {
         // Fetch all necessary data when component mounts
@@ -149,6 +151,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
             storageIdQuery,
             partNameQuery,
             partIdQuery,
+            selectedOrderType,
         };
         onApplyFilters(filters);
     };
@@ -165,6 +168,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
         setStorageIdQuery('');
         setPartNameQuery('');
         setPartIdQuery('');
+        setSelectedOrderType('all');
         onResetFilters();
     };
 
@@ -408,6 +412,36 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                                     </div>
                                 );
                                 
+                            case 'orderType':
+                                return (
+                                    <div className="flex flex-col" key={filter.type}>
+                                        <Label className="mb-2">{filter.label}</Label>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant={selectedOrderType === 'all' ? 'default' : 'outline'}
+                                                onClick={() => setSelectedOrderType('all')}
+                                                className="w-full"
+                                            >
+                                                All
+                                            </Button>
+                                            <Button
+                                                variant={selectedOrderType === 'Machine' ? 'default' : 'outline'}
+                                                onClick={() => setSelectedOrderType('Machine')}
+                                                className="w-full"
+                                            >
+                                                Machine
+                                            </Button>
+                                            <Button
+                                                variant={selectedOrderType === 'Storage' ? 'default' : 'outline'}
+                                                onClick={() => setSelectedOrderType('Storage')}
+                                                className="w-full"
+                                            >
+                                                Storage
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )
+
                             default:
                                 return null;
                         }

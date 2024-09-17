@@ -20,6 +20,7 @@ interface StoragePartsTableProps {
 
 const StoragePartsTable: React.FC<StoragePartsTableProps> = ({ parts, onApplyFilters, onResetFilters }) => {
     return (
+    
         <Card className="mt-5">
             <CardHeader className="flex justify-between">
                 <CardTitle>Storage Parts</CardTitle>
