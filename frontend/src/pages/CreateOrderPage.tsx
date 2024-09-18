@@ -211,7 +211,7 @@ const CreateOrderPage = () => {
             }
             let orderResponse;
 
-            if (orderType == "Machine)"){
+            if (orderType == "Machine"){
                 orderResponse = await insertOrder(
                     tempOrderDetails.order_note, 
                     tempOrderDetails.created_by_user_id, 

@@ -178,7 +178,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               current_status={current_status}
               onOrderedPartUpdate={refreshPartsTable} 
               factory_id={order.factory_id}
-              machine_id={order.machine_id}/>
+              machine_id={order.machine_id}
+              order_type={order.order_type}/>
             ))}
             </TableBody>
         }  
@@ -249,7 +250,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               current_status={current_status}
               onOrderedPartUpdate={refreshPartsTable} 
               factory_id={order.factory_id}
-              machine_id={order.machine_id}/>
+              machine_id={order.machine_id}
+              order_type={order.order_type}/>
             ))}
             </TableBody>
         }  
