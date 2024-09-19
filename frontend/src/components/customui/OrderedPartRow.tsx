@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
-import { upsertMachineParts } from "@/services/MachinePartsService"
+import { upsertMachineParts, addMachinePartQty } from "@/services/MachinePartsService"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
@@ -365,6 +365,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const handleUpdateDatabase = () => {
     if (order_type=="Storage"){
       addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+    }
+    if (order_type == "Machine") {
+      addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
     }
   }
 
