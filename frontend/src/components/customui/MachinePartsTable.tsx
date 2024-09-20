@@ -27,9 +27,9 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ parts, onApplyFil
                 <div className="ml-auto">
                     <SearchAndFilter
                         filterConfig={[
-                            { type: 'factory', label: 'Factory'},
-                            { type: 'factorySection' , label: 'Factory Section'},
-                            { type: 'machine', label: 'Machine' },
+                            // { type: 'factory', label: 'Factory'},
+                            // { type: 'factorySection' , label: 'Factory Section'},
+                            // { type: 'machine', label: 'Machine' },
                             { type: 'partName', label: 'Part Name' },
                             { type: 'partId', label: 'Part ID' },
                         ]}
@@ -43,7 +43,7 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ parts, onApplyFil
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Machine Part ID</TableHead>
+                            {/* <TableHead>Machine Part ID</TableHead> */}
                             <TableHead>Part ID</TableHead>
                             <TableHead>Part Name</TableHead>
                             <TableHead>Quantity</TableHead>
@@ -53,7 +53,7 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ parts, onApplyFil
                     <TableBody>
                         {parts.map((part) => (
                             <TableRow key={part.machinePartId}>
-                                <TableCell>{part.machinePartId}</TableCell>
+                                {/* <TableCell>{part.machinePartId}</TableCell> */}
                                 <TableCell>{part.id}</TableCell>
                                 <TableCell>{part.name}</TableCell>
                                 <TableCell>{part.qty}</TableCell>

@@ -1,38 +1,18 @@
 import { useEffect, useState } from 'react';
 import { fetchParts } from '../services/PartsService';
 import { Link } from "react-router-dom"
-import {
-  Loader2,
-  PlusCircle,
-  Search,
-} from "lucide-react"
-
+import { Loader2, PlusCircle, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-} from "@/components/ui/tabs"
+import { Table, TableBody, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
+import { Tabs, TabsContent,} from "@/components/ui/tabs"
 import PartsTableRow from "@/components/customui/PartsTableRow"
 import NavigationBar from "@/components/customui/NavigationBar"
 import { Part } from '@/types';
 import toast from 'react-hot-toast';
 import { convertUtcToBDTime } from '@/services/helper';
+import SearchAndFilter from "@/components/customui/SearchAndFilter"; // Import the SearchAndFilter component
 
 
 
@@ -41,21 +21,40 @@ const PartsPage = () => {
 
     const [parts,setParts] = useState<Part[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState<any>({});
 
 
-    useEffect(()=>{
+    useEffect(() => {
         const loadParts = async () => {
+            setLoading(true);
             try {
-                const data = await fetchParts();
-                setParts(data);
+                const fetchedParts = await fetchParts(
+                    filters.partIdQuery || undefined,
+                    filters.partNameQuery || undefined
+                );
+                setParts(fetchedParts);
+                if (fetchedParts.length === 0) {
+                    toast.error("No parts found");
+                }
             } catch (error) {
-                toast.error('Failed to fetch parts');
+                toast.error("Failed to fetch parts");
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
         };
+
         loadParts();
-    }, [])
+    }, [filters]);
+
+    if (loading) {
+        return (
+            <div className="flex flex-row justify-center p-5">
+                <Loader2 className="animate-spin" />
+                <span>Loading...</span>
+            </div>
+        );
+    }
+    
     return (
         <>
         <NavigationBar/>
@@ -66,11 +65,15 @@ const PartsPage = () => {
                     <div className="flex items-center">
                     <div className="ml-auto flex items-center gap-2">
                     <div className="relative ml-auto flex-1 md:grow-0">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                        type="search"
-                        placeholder="Search..."
-                        className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                        {/* Add the SearchAndFilter Component for filtering */}
+                        <SearchAndFilter
+                            filterConfig={[
+                                { type: 'partId', label: 'Enter Part ID' },
+                                { type: 'partName', label: 'Enter Part Name' },
+                            ]}
+                            onApplyFilters={setFilters}
+                            onResetFilters={() => setFilters({})}
+                            hideDefaultIdDateSearch={true} // Hides default ID/Date search if not needed
                         />
                     </div>
                         <Link to="/addpart">

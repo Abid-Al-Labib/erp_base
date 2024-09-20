@@ -30,8 +30,8 @@ const StoragePartsTable: React.FC<StoragePartsTableProps> = ({ parts, onApplyFil
                 <div className="ml-auto">   
                     <SearchAndFilter
                         filterConfig={[
-                            { type: 'factory', label: 'Factory' },
-                            { type: 'storageId', label: 'Storage ID' },
+                            // { type: 'factory', label: 'Factory' },
+                            // { type: 'storageId', label: 'Storage ID' },
                             { type: 'partName', label: 'Part Name' },
                             { type: 'partId', label: 'Part ID' },
                         ]}
@@ -45,7 +45,7 @@ const StoragePartsTable: React.FC<StoragePartsTableProps> = ({ parts, onApplyFil
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Storage ID</TableHead>
+                            {/* <TableHead>Storage ID</TableHead> */}
                             <TableHead>Part ID</TableHead>
                             <TableHead>Part Name</TableHead>
                             <TableHead>Quantity</TableHead>
@@ -55,7 +55,7 @@ const StoragePartsTable: React.FC<StoragePartsTableProps> = ({ parts, onApplyFil
                     <TableBody>
                         {parts.map((part) => (
                             <TableRow key={part.storageId}>
-                                <TableCell>{part.storageId}</TableCell>
+                                {/* <TableCell>{part.storageId}</TableCell> */}
                                 <TableCell>{part.id}</TableCell>
                                 <TableCell>{part.name}</TableCell>
                                 <TableCell>{part.qty}</TableCell>

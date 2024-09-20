@@ -7,6 +7,9 @@ import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import StoragePartsTable from "@/components/customui/StoragePartsTable";
 import NavigationBar from "@/components/customui/NavigationBar";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
 
 type StoragePart = {
   storageId: number;
@@ -21,6 +24,26 @@ const StoragePage = () => {
   const [parts, setParts] = useState<StoragePart[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<any>({});
+  const [factories, setFactories] = useState<{ id: number; name: string }[]>([]);
+  const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
+
+    useEffect(() => {
+      // Fetch factories when the component mounts
+      const loadFactories = async () => {
+        try {
+          const fetchedFactories = await fetchFactories();
+          if (fetchedFactories.length > 0) {
+            setFactories(fetchedFactories); // Set factories correctly here
+          } else {
+            toast.error("No factories found");
+          }
+        } catch (error) {
+          toast.error("Failed to load factories");
+        }
+      };
+
+      loadFactories();
+    }, []);
 
   useEffect(() => {
     const loadParts = async () => {
@@ -32,8 +55,7 @@ const StoragePage = () => {
         });
 
         const fetchedParts = await fetchStorageParts(
-          filters.selectedFactoryId || undefined,
-          filters.storageIdQuery || undefined,
+          selectedFactoryId || -1,
           filters.partNameQuery || undefined,
           filters.partIdQuery || undefined
         );
@@ -50,18 +72,18 @@ const StoragePage = () => {
         if (processedParts.length > 0) {
           setParts(processedParts);
         } else {
-          toast.error("No parts found");
+          setParts([]); // Clear parts if no parts are found for the selected factory
         }
       } catch (error) {
         toast.error("Failed to fetch parts");
       } finally {
-        setLoading(false);
+        setLoading(false); // Stop loading after fetching is complete
       }
     };
 
     loadParts();
-  }, [filters]);
-
+  }, [selectedFactoryId, filters, factories]);
+  
   if (loading) {
     return (
       <div className="flex flex-row justify-center p-5">
@@ -76,26 +98,47 @@ const StoragePage = () => {
       <NavigationBar />
       <div className="flex w-full flex-col bg-muted/40 mt-2">
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
+          {/* Factory Selection Dropdown */}
+          <div className="mb-4">
+            <Label className="mb-2">Select Factory</Label>
+            <Select
+              value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
+              onValueChange={(value) => setSelectedFactoryId(value === "" ? undefined : Number(value))}
+            >
+              <SelectTrigger className="w-[220px] mt-2">
+                <SelectValue>
+                  {selectedFactoryId === undefined ? "Select a Factory" : factories.find(f => f.id === selectedFactoryId)?.name}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {factories.map(factory => (
+                  <SelectItem key={factory.id} value={factory.id.toString()}>
+                    {factory.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {parts.length === 0 ? (
             <div>No parts found</div>
           ) : (
             <StoragePartsTable
               parts={parts}
-              onApplyFilters={setFilters} // Filters are managed within StoragePartsTable
+              onApplyFilters={setFilters}
               onResetFilters={() => setFilters({})}
             />
           )}
         </main>
         <div className="flex justify-end">
           <div className="my-3 mx-3">
-            <Link to={'/factories'}>
-              <Button>Back To Factories</Button>
-            </Link>
+
           </div>
         </div>
       </div>
     </>
   );
 };
+
 
 export default StoragePage;

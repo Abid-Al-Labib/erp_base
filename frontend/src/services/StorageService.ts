@@ -3,7 +3,7 @@ import { supabase_client } from "./SupabaseClient";
 import { StoragePart } from "@/types";
 
 
-export const fetchStorageParts = async (factoryId: number, storageId: number, partName: string, partId: number) => {
+export const fetchStorageParts = async (factoryId: number, partName: string, partId: number) => {
     let query = supabase_client
         .from('storage_parts')
         .select(`
@@ -12,12 +12,14 @@ export const fetchStorageParts = async (factoryId: number, storageId: number, pa
             factory_id,
             parts (*)
         `)
+    
+        // console.log(factoryId);
     if (factoryId !== undefined) {
         query = query.eq('factory_id', factoryId);
     }
-    if (storageId !== undefined) {
-        query = query.eq('id', storageId);
-    }
+    // if (storageId !== undefined) {
+    //     query = query.eq('id', storageId);
+    // }
     // if (partName) {
     //     query = query.ilike('parts.name', `%${partName}%`);
     // }
@@ -27,7 +29,7 @@ export const fetchStorageParts = async (factoryId: number, storageId: number, pa
         query = query.eq('part_id', partId);
     }
 
-    console.log("THIS IS STORAGE ID",);
+    // console.log("THIS IS STORAGE ID",);
     const { data, error } = await query;
 
     if (error) {
