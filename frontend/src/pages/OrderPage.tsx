@@ -34,6 +34,7 @@ const OrderPage = () => {
                 factoryId: filters.selectedFactoryId !== -1 ? filters.selectedFactoryId : undefined,
                 factorySectionId: filters.selectedFactorySectionId !== -1 ? filters.selectedFactorySectionId : undefined,
                 machineId: filters.selectedMachineId !== -1 ? filters.selectedMachineId : undefined,
+                orderType: filters.selectedOrderType,
             });
             setOrders(data);
             setCount(count ?? 0);
@@ -82,6 +83,7 @@ const OrderPage = () => {
                                             { type: 'status', label: 'Status' },
                                             { type: 'id', label: 'Enter ID' },
                                             { type: 'date', label: 'Select Date' },
+                                            { type: 'orderType', label: 'Select Order Type'},
                                         ]}
                                         onApplyFilters={handleApplyFilters} // Use the handleApplyFilters callback
                                         onResetFilters={handleResetFilters} // Use the handleResetFilters callback
@@ -111,7 +113,7 @@ const OrderPage = () => {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ID</TableHead>
-                                                    <TableHead>Machine</TableHead>
+                                                    <TableHead>Order Type Machine/Storage</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created at</TableHead>
                                                     <TableHead>Created by user</TableHead>
                                                     <TableHead>Department</TableHead>

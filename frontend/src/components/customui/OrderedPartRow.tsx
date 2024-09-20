@@ -18,8 +18,8 @@ import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
-import { fetchStoragePartQuantityByFactoryID, upsertStoragePart } from "@/services/StorageService"
-import { upsertMachineParts } from "@/services/MachinePartsService"
+import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
+import { upsertMachineParts, addMachinePartQty } from "@/services/MachinePartsService"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
@@ -27,10 +27,11 @@ interface OrderedPartRowProp{
     current_status: Status,
     factory_id: number
     machine_id: number,
+    order_type: string,
     onOrderedPartUpdate: () => void
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, onOrderedPartUpdate}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type, onOrderedPartUpdate}) => {
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
   const [dateReceived, setDateReceived] = useState<Date | undefined>(orderedPartInfo.part_received_by_factory_date? new Date(orderedPartInfo.part_received_by_factory_date): new Date())
@@ -330,6 +331,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     updateSentDate();
     setIsSentDialogOpen(false);
   }
+  
 
   const handleUpdateReceivedDate = () => {
     console.log("Updating received date" + dateReceived);
@@ -338,7 +340,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         if (dateReceived.getDate()>=dateSent.getDate()){
           try {
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
+            //if order type storage
             toast.success("Part received by factory date set!")
+            handleUpdateDatabase();
             onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
@@ -355,6 +359,16 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     }
     updateReceivedDate();
     setIsReceivedDialogOpen(false);
+  }
+
+
+  const handleUpdateDatabase = () => {
+    if (order_type=="Storage"){
+      addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+    }
+    if (order_type == "Machine") {
+      addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+    }
   }
 
   const handleSampleReceived = () => {

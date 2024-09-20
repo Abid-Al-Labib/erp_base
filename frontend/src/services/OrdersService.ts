@@ -12,7 +12,8 @@ export const fetchOrders = async ({
     departmentId,
     factoryId,
     factorySectionId,
-    machineId
+    machineId,
+    orderType,
 }: {
     page: number;
     limit: number;
@@ -23,6 +24,7 @@ export const fetchOrders = async ({
     factoryId?: number;
     factorySectionId?: number;
     machineId?: number;
+    orderType?: string;
 }) => {
 
     console.log(`Fetching orders with parameters: 
@@ -34,7 +36,8 @@ export const fetchOrders = async ({
         Department ID: ${departmentId}, 
         Factory ID: ${factoryId},
         Factory Section ID: ${factorySectionId},
-        Machine ID: ${machineId}`
+        Machine ID: ${machineId},
+        OrderType: ${orderType}`
     );
 
     const from = (page - 1) * limit;
@@ -98,6 +101,11 @@ export const fetchOrders = async ({
     if (machineId) {
         console.log('Fetching orders with machineID ', machineId);
         queryBuilder = queryBuilder.eq('machine_id', machineId);
+    }
+
+    if (orderType && orderType !== 'all') {
+        console.log('Fetching orders with orderType', orderType);
+        queryBuilder = queryBuilder.eq('order_type', orderType);
     }
 
     const { data, error, count } = await queryBuilder;
@@ -170,9 +178,8 @@ export const insertOrder = async (
     factory_id: number,
     factory_section_id: number,
     machine_id: number,
-    current_status_id: number) => {
-
-    
+    current_status_id: number,
+    order_type: string) => {
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -183,6 +190,7 @@ export const insertOrder = async (
             "factory_section_id": factory_section_id,
             "machine_id": machine_id,
             "current_status_id": current_status_id,
+            "order_type": order_type,
         },
         ])
         .select()
@@ -190,6 +198,35 @@ export const insertOrder = async (
     if (error) {
         toast.error("Failed to create order: " + error.message);
         return null; 
+    }
+
+    toast.success("Order successfully created");
+    return data as unknown as Order[];
+};
+
+export const insertOrderStorage = async (
+    order_note: string,
+    created_by_user_id: number,
+    department_id: number,
+    factory_id: number,
+    current_status_id: number,
+    order_type: string) => {
+
+    const { data, error } = await supabase_client.from('orders').insert([
+        {
+            "order_note": order_note,
+            "created_by_user_id": created_by_user_id,
+            "department_id": department_id,
+            "factory_id": factory_id,
+            "current_status_id": current_status_id,
+            "order_type": order_type,
+        },
+    ])
+        .select()
+
+    if (error) {
+        toast.error("Failed to create order: " + error.message);
+        return null;
     }
 
     toast.success("Order successfully created");
