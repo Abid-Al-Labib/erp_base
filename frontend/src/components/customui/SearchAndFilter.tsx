@@ -47,7 +47,7 @@ interface Status {
 }
 
 interface FilterConfig {
-    type: 'factory' | 'factorySection' | 'machine' | 'department' | 'status' | 'id' | 'date';
+    type: 'factory' | 'factorySection' | 'machine' | 'department' | 'status' | 'id' | 'date' | 'storageId' | 'partName' | 'partId' | 'orderType';
     label: string;
 }
 
@@ -55,12 +55,14 @@ interface SearchAndFilterProps {
     filterConfig: FilterConfig[];
     onApplyFilters: (filters: any) => void;
     onResetFilters: () => void;
+    hideDefaultIdDateSearch?: boolean;
 }
 
 const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     filterConfig,
     onApplyFilters,
     onResetFilters,
+    hideDefaultIdDateSearch = false, // Default value is false
 }) => {
     const [factories, setFactories] = useState<Factory[]>([]);
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
@@ -77,6 +79,12 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [tempDate, setTempDate] = useState<Date | undefined>(undefined);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+    const [storageIdQuery, setStorageIdQuery] = useState('');
+    const [partNameQuery, setPartNameQuery] = useState('');
+    const [partIdQuery, setPartIdQuery] = useState('');
+
+    const [selectedOrderType, setSelectedOrderType] = useState<'all' | 'Machine' | 'Storage'>('all');
 
     useEffect(() => {
         // Fetch all necessary data when component mounts
@@ -140,6 +148,10 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
             selectedMachineId: selectedMachineId === -1 ? undefined : selectedMachineId,
             selectedDepartmentId: selectedDepartmentId === -1 ? undefined : selectedDepartmentId,
             selectedStatusId: selectedStatusId === -1 ? undefined : selectedStatusId,
+            storageIdQuery,
+            partNameQuery,
+            partIdQuery,
+            selectedOrderType,
         };
         onApplyFilters(filters);
     };
@@ -153,6 +165,10 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
         setSelectedMachineId(-1);
         setSelectedDepartmentId(-1);
         setSelectedStatusId(-1);
+        setStorageIdQuery('');
+        setPartNameQuery('');
+        setPartIdQuery('');
+        setSelectedOrderType('all');
         onResetFilters();
     };
 
@@ -169,54 +185,59 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
 
                 <div className="grid gap-4 py-4 px-2">
                     {/* Search by ID and Date Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <Button
-                            variant={searchType === 'id' ? 'default' : 'outline'}
-                            onClick={() => handleSearchTypeChange('id')}
-                            className="w-full"
-                        >
-                            Search by ID
-                        </Button>
-                        <Button
-                            variant={searchType === 'date' ? 'default' : 'outline'}
-                            onClick={() => handleSearchTypeChange('date')}
-                            className="w-full"
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            Search by Date
-                        </Button>
-                    </div>
+                    {!hideDefaultIdDateSearch && (
+                        <>
+                            {/* Search by ID and Date Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                    variant={searchType === 'id' ? 'default' : 'outline'}
+                                    onClick={() => handleSearchTypeChange('id')}
+                                    className="w-full"
+                                >
+                                    Search by ID
+                                </Button>
+                                <Button
+                                    variant={searchType === 'date' ? 'default' : 'outline'}
+                                    onClick={() => handleSearchTypeChange('date')}
+                                    className="w-full"
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    Search by Date
+                                </Button>
+                            </div>
 
-                    {/* Conditional Rendering based on Search Type */}
-                    {searchType === 'id' && (
-                        <div className="flex flex-col">
-                            <Label className="mb-2">Enter ID</Label>
-                            <Input
-                                type="search"
-                                placeholder="Search by ID..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full"
-                            />
-                        </div>
-                    )}
+                            {/* Conditional Rendering based on Search Type */}
+                            {searchType === 'id' && (
+                                <div className="flex flex-col">
+                                    <Label className="mb-2">Enter ID</Label>
+                                    <Input
+                                        type="search"
+                                        placeholder="Search by ID..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            )}
 
-                    {searchType === 'date' && isCalendarOpen && (
-                        <div className="flex flex-col">
-                            <Label className="mb-2">Select Date</Label>
-                            <Calendar
-                                mode="single"
-                                selected={tempDate}
-                                onSelect={setTempDate}
-                                className="rounded-md border"
-                            />
-                            <Button
-                                onClick={() => setIsCalendarOpen(false)}
-                                className="bg-blue-950 text-white px-4 py-2 rounded-md mt-2 w-full"
-                            >
-                                Confirm
-                            </Button>
-                        </div>
+                            {searchType === 'date' && isCalendarOpen && (
+                                <div className="flex flex-col">
+                                    <Label className="mb-2">Select Date</Label>
+                                    <Calendar
+                                        mode="single"
+                                        selected={tempDate}
+                                        onSelect={setTempDate}
+                                        className="rounded-md border"
+                                    />
+                                    <Button
+                                        onClick={() => setIsCalendarOpen(false)}
+                                        className="bg-blue-950 text-white px-4 py-2 rounded-md mt-2 w-full"
+                                    >
+                                        Confirm
+                                    </Button>
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {/* Factory, Department, Status, etc. Filters */}
@@ -350,6 +371,77 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                                         </Select>
                                     </div>
                                 );
+
+                            case 'storageId':
+                                return (
+                                    <div className="flex flex-col" key={filter.type}>
+                                        <Label className="mb-2">{filter.label}</Label>
+                                        <Input
+                                            type="search"
+                                            placeholder="Search by Storage ID..."
+                                            value={storageIdQuery}
+                                            onChange={(e) => setStorageIdQuery(e.target.value)}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                );
+                            case 'partName':
+                                return (
+                                    <div className="flex flex-col" key={filter.type}>
+                                        <Label className="mb-2">{filter.label}</Label>
+                                        <Input
+                                            type="search"
+                                            placeholder="Search by Part Name..."
+                                            value={partNameQuery}
+                                            onChange={(e) => setPartNameQuery(e.target.value)}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                );
+                            case 'partId':
+                                return (
+                                    <div className="flex flex-col" key={filter.type}>
+                                        <Label className="mb-2">{filter.label}</Label>
+                                        <Input
+                                            type="search"
+                                            placeholder="Search by Part ID..."
+                                            value={partIdQuery}
+                                            onChange={(e) => setPartIdQuery(e.target.value)}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                );
+                                
+                            case 'orderType':
+                                return (
+                                    <div className="flex flex-col" key={filter.type}>
+                                        <Label className="mb-2">{filter.label}</Label>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant={selectedOrderType === 'all' ? 'default' : 'outline'}
+                                                onClick={() => setSelectedOrderType('all')}
+                                                className="w-full"
+                                            >
+                                                All
+                                            </Button>
+                                            <Button
+                                                variant={selectedOrderType === 'Machine' ? 'default' : 'outline'}
+                                                onClick={() => setSelectedOrderType('Machine')}
+                                                className="w-full"
+                                            >
+                                                Machine
+                                            </Button>
+                                            <Button
+                                                variant={selectedOrderType === 'Storage' ? 'default' : 'outline'}
+                                                onClick={() => setSelectedOrderType('Storage')}
+                                                className="w-full"
+                                            >
+                                                Storage
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )
+
                             default:
                                 return null;
                         }

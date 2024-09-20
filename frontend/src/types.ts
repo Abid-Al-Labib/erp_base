@@ -62,9 +62,10 @@ export type Order = {
     departments: Department,
     profiles: Profile,
     statuses: Status,
-    machines: Machine,
-    factories: Factory,
-    factory_sections: FactorySection
+    machines: Machine | null,
+    factories: Factory, 
+    factory_sections: FactorySection | null
+    order_type: string
 };
 
 export type StatusTracker = {

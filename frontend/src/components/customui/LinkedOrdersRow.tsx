@@ -54,8 +54,9 @@ const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({linkedOrderPart}) => {
       {
         loadingOrder?('-') : (
           <TableCell>
-          {order[0].factories.abbreviation} - {order[0].factory_sections.name} - {order[0].machines.number}
-        </TableCell>
+            {order[0].factory_sections?.name && order[0].machines?.number
+              ? `${order[0].factories.abbreviation} - ${order[0].factory_sections?.name} - ${order[0].machines?.number}`
+              : `${order[0].factories.abbreviation} - Storage`}        </TableCell>
         )
       }
       <TableCell className="hidden md:table-cell">{linkedOrderPart.qty}</TableCell>

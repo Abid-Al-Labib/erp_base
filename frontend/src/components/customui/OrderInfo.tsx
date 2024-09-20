@@ -36,8 +36,14 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order}) => {
                 <span>{order.departments.name}</span>
             </li>
             <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Machine</span>
-                <span>{order.factories.abbreviation} - {order.factory_sections.name} - {order.machines.number}</span>
+                <span className="font-semibold text-muted-foreground">
+                    {order.factory_sections?.name && order.machines?.number ? 'Machine' : 'Order for Storage'}
+                </span>
+                <span>
+                    {order.factory_sections?.name && order.machines?.number
+                        ? `${order.factories.abbreviation} - ${order.factory_sections.name} - ${order.machines.number}`
+                        : `${order.factories.abbreviation}`}
+                </span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Current Status</span>

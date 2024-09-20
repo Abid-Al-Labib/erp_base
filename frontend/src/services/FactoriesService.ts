@@ -50,3 +50,4 @@ export const fetchDepartments = async () => {
     }
     return data;
 };
+
