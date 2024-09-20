@@ -1,11 +1,16 @@
 import NavigationBar from "@/components/customui/NavigationBar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
+import { useAuth } from '@/context/AuthContext'; 
 const HomePage = () => {
+  const profile = useAuth().profile
+
   return (
     <>
     <NavigationBar/>
     <div className="flex h-screen flex-col justify-center items-center">
+      <div>
+        you are logged in as {profile?.email}
+      </div>
       <div className="grid grid-cols-3 gap-10">
           <Card
             className="max-w-xs p-2" x-chunk="charts-01-chunk-3"

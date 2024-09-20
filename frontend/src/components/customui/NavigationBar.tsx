@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
 import {
   CircleUser,
   Menu,
@@ -15,10 +16,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-
+import toast from "react-hot-toast"
+import { supabase_client } from "@/services/SupabaseClient"
+import { useNavigate } from "react-router-dom"
 
 const NavigationBar = () => {
-  return (
+    const navigate = useNavigate()
+    const handleLogout = async () => {
+        const { error } = await supabase_client.auth.signOut()
+        if (error) {
+            toast.error(error.message);
+        }
+        navigate('/login')
+    }
+  
+    const handleProfileButtonClick = async () => {
+        navigate('/profile')
+    }
+    return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-muted px-4 md:px-6">
             <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-base lg:gap-6">
                 <Link
@@ -119,10 +134,9 @@ const NavigationBar = () => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleProfileButtonClick}>Profile</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
