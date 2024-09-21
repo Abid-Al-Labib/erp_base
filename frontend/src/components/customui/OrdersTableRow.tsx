@@ -92,7 +92,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
         <DialogContent className="sm:max-w-[425px]">
                 <DialogTitle className="text-red-600">Delete Part</DialogTitle>
                 <div>
-                  You are about to permanently delet this order.
+                  You are about to permanently delete this order.
                   <br />
                   Are you sure you want to delete this order?
                 </div>
