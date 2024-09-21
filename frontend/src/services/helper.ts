@@ -55,7 +55,7 @@ export const convertUtcToBDTime = (utcTimestamp: string): string => {
 };
 
 
-export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_status: string): boolean => {
+export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
   // Filter parts that have in_storage === false and approved_storage_withdrawal === false
   const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal));
   // If there are no parts to check (i.e., all parts are either in storage or have approved storage withdrawal), allow the change
@@ -63,34 +63,37 @@ export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_stat
   
   switch (current_status) {
       case "Pending": {
-        return ordered_parts.every(part => part.approved_pending_order === true);
+        if (ordered_parts.every(part => part.approved_pending_order === true)) return 2
+        break;
       }
       case "Order Sent To Head Office": {
-        if (partsToCheck.length === 0) return true;  
-        return partsToCheck.every(part => part.approved_office_order === true);
+        if (partsToCheck.length === 0 && ordered_parts.length!==0) return 7;  
+        if (partsToCheck.every(part => part.approved_office_order === true)) return 3
+        break;
       }
       case "Waiting For Quotation": {
-        if (partsToCheck.length === 0) return true;
-        return partsToCheck.every(part => part.vendor !== null && part.unit_cost !== null && part.brand !== null);
+        if (partsToCheck.every(part => part.vendor !== null && part.unit_cost !== null && part.brand !== null)) return 4
+        break;
       }
       case "Budget Released": {
-        if (partsToCheck.length === 0) return true;
-        return partsToCheck.every(part => part.approved_budget === true);
+        if(partsToCheck.every(part => part.approved_budget === true)) return 5
+        break;
       }
       case "Waiting For Purchase": {
-        if (partsToCheck.length === 0) return true;
-        return partsToCheck.every(part => part.part_purchased_date !== null);
+        if(partsToCheck.every(part => part.part_purchased_date !== null)) return 6;
+        break;
       }
-      case "Purchase Complete": {
-        if (partsToCheck.length === 0) return true;
-        return partsToCheck.every(part => part.part_sent_by_office_date !== null);
+      case "Purchase Complete": { 
+        if(partsToCheck.every(part => part.part_sent_by_office_date !== null)) return 7
+        break;
       }
       case "Parts Sent To Factory": {
-        return ordered_parts.every(part => part.part_received_by_factory_date !== null);
+        if(ordered_parts.every(part => part.part_received_by_factory_date !== null)) return 8
+        break;
       }
 
       default:
-        return false; 
+        return -1; 
     }
 };
 

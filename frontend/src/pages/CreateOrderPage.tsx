@@ -16,6 +16,7 @@ import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
+import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
 
 
 
@@ -63,7 +64,9 @@ interface InputOrderedPart {
     factory_section_name: string;
     machine_number: number;
     is_sample_sent_to_office: boolean,
-    note?: string | null; 
+    note?: string | null;
+    in_storage: boolean;
+    approved_storage_withdrawal: boolean;
 }
 
 const CreateOrderPage = () => {
@@ -183,21 +186,49 @@ const CreateOrderPage = () => {
         }
     }
 
-    const handleAddOrderParts = () => {
-        const newOrderedPart = {
-            qty: qty,
-            order_id: 0, // Will be set when the order is created
-            part_id: partId,
-            factory_id: selectedFactoryId,
-            machine_id: selectedMachineId,
-            factory_section_id: selectedFactorySectionId,
-            factory_section_name: selectedFactorySectionName,
-            machine_number: selectedMachineNumber,
-            is_sample_sent_to_office: isSampleSentToOffice ?? false,
-            note: note.trim() || null, 
-        };
-        setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
-        handleResetOrderParts();
+    const handleAddOrderParts = async () => {
+        const storage_data =  await fetchStoragePartQuantityByFactoryID(partId,selectedFactoryId)
+        
+        console.log(storage_data)
+        if (orderType==="Machine" && storage_data.length>0 && storage_data[0].qty>=qty)
+            {
+
+                const newOrderedPart: InputOrderedPart = {
+                    qty: qty,
+                    order_id: 0, // Will be set when the order is created
+                    part_id: partId,
+                    factory_id: selectedFactoryId,
+                    machine_id: selectedMachineId,
+                    factory_section_id: selectedFactorySectionId,
+                    factory_section_name: selectedFactorySectionName,
+                    machine_number: selectedMachineNumber,
+                    is_sample_sent_to_office: isSampleSentToOffice ?? false,
+                    note: note.trim() || null, 
+                    in_storage: true,
+                    approved_storage_withdrawal: false
+                };
+                setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
+                handleResetOrderParts();
+            } 
+        else{
+            const newOrderedPart = {
+                qty: qty,
+                order_id: 0, // Will be set when the order is created
+                part_id: partId,
+                factory_id: selectedFactoryId,
+                machine_id: selectedMachineId,
+                factory_section_id: selectedFactorySectionId,
+                factory_section_name: selectedFactorySectionName,
+                machine_number: selectedMachineNumber,
+                is_sample_sent_to_office: isSampleSentToOffice ?? false,
+                note: note.trim() || null, 
+                in_storage: false,
+                approved_storage_withdrawal: false
+            };
+            setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
+            handleResetOrderParts();
+        }
+
         
     };
 
@@ -244,6 +275,8 @@ const CreateOrderPage = () => {
                         part.part_id,
                         part.is_sample_sent_to_office,
                         part.note || null,
+                        part.in_storage,
+                        part.approved_storage_withdrawal
                     )
                 );
 

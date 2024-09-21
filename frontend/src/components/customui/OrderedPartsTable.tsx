@@ -103,11 +103,10 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               await deleteOrderByID(order.id) 
             }
             else{
-              const statusChange = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
-              if (statusChange){
+              const next_status_id = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
+              if (next_status_id && next_status_id!==-1 ){
                 console.log("changing status")
-                try {
-                  const next_status_id = (current_status.id+1) 
+                try { 
                   await UpdateStatusByID(order_id,next_status_id)
                   await InsertStatusTracker((new Date()), order_id, 1, next_status_id)
                 } catch (error) {

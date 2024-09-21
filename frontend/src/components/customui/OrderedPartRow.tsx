@@ -115,8 +115,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             const new_current_storage_quantity = storage_data[0].qty - orderedPartInfo.qty
             await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_current_storage_quantity)
             console.log("updated storage qty")
-            await addMachinePartQty(orderedPartInfo.part_id,machine_id,orderedPartInfo.qty)
-            console.log("updated machine qty")
             await updateSentDateByID(orderedPartInfo.id, new Date())
             console.log("updated sent date")
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)

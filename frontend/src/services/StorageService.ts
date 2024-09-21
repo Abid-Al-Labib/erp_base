@@ -11,7 +11,7 @@ export const fetchStorageParts = async (factoryId: number, partName: string, par
             qty,
             factory_id,
             parts (*)
-        `)
+        `).order("id", {ascending: true})
     
         // console.log(factoryId);
     if (factoryId !== undefined) {

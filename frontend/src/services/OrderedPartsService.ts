@@ -225,6 +225,8 @@ export const insertOrderedParts = async (
     part_id: number,
     is_sample_sent_to_office: boolean,
     note: string | null,
+    in_storage: boolean,
+    approved_storage_withdrawal: boolean
 ) => {
 
     const { data, error } = await supabase_client.from('order_parts').insert([{
@@ -233,6 +235,8 @@ export const insertOrderedParts = async (
         part_id,
         is_sample_sent_to_office,
         note,
+        in_storage,
+        approved_storage_withdrawal
     }])
     .select();
 
