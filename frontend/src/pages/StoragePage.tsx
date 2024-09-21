@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { fetchFactories } from "@/services/FactoriesService";
 import { fetchStorageParts } from "@/services/StorageService";
 import toast from "react-hot-toast";
@@ -130,11 +128,6 @@ const StoragePage = () => {
             />
           )}
         </main>
-        <div className="flex justify-end">
-          <div className="my-3 mx-3">
-
-          </div>
-        </div>
       </div>
     </>
   );

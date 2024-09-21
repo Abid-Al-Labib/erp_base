@@ -4,7 +4,7 @@ export function mergeStatusWithTracker(statuses: Status[],statusTracker: StatusT
 {
   // Step 1: Sort the statusTracker items by status_id in ascending order
   console.log(statusTracker)
-  const sortedStatusTracker = statusTracker.sort((a, b) => a.status_id - b.status_id);
+  const sortedStatusTracker = statusTracker.sort((a, b) => a.id - b.id);
 
   // Step 2: Map statusTracker items as completed
   const completedStatuses = sortedStatusTracker.map(trackerItem => ({

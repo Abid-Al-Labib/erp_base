@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
-import { upsertMachineParts, addMachinePartQty } from "@/services/MachinePartsService"
+import { addMachinePartQty } from "@/services/MachinePartsService"
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
@@ -72,10 +72,13 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           {
             const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && (current_status.name!=="Parts Sent To Factory")
             setDisableTakeStorageRow(disableRow)
-            const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
-            if (result) {
-              setLastUnitCost(result.unit_cost);
-              setLastPurchaseDate(result.part_purchase_date);
+            if (order_type === "Machine")
+            {
+              const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
+              if (result) {
+                setLastUnitCost(result.unit_cost);
+                setLastPurchaseDate(result.part_purchase_date);
+            }
             }
           }
       };
@@ -112,7 +115,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             const new_current_storage_quantity = storage_data[0].qty - orderedPartInfo.qty
             await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_current_storage_quantity)
             console.log("updated storage qty")
-            await upsertMachineParts(orderedPartInfo.part_id,machine_id,orderedPartInfo.qty)
+            await addMachinePartQty(orderedPartInfo.part_id,machine_id,orderedPartInfo.qty)
             console.log("updated machine qty")
             await updateSentDateByID(orderedPartInfo.id, new Date())
             console.log("updated sent date")
@@ -406,7 +409,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   if(mode==='view'){
     return (
       <TableRow>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
@@ -473,7 +476,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableRow className={`${
           disableTakeStorageRow ? 'bg-gray-300 pointer-events-none' : ''
         } transition duration-200 ease-in-out`}>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
@@ -550,38 +553,38 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                 { 
                   showOfficeOrderApproveButton(current_status.name, orderedPartInfo.approved_office_order) && (
                     <DropdownMenuItem onClick={() => setIsApproveFromOfficeDialogOpen(true)}>
-                      <span className="hover:text-green-900">Approve from Office</span>
+                      <span className="hover:text-green-600">Approve from Office</span>
                     </DropdownMenuItem>
                 )}
                 { 
                   showPendingOrderApproveButton(current_status.name, orderedPartInfo.approved_pending_order) && (
                     <DropdownMenuItem onClick={() => setIsApproveFromFactoryDialogOpen(true)}>
-                      <span className="hover:text-green-900">Approve from Factory</span>
+                      <span className="hover:text-green-600">Approve from Factory</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showApproveTakingFromStorageButton(current_status.name,orderedPartInfo.in_storage,orderedPartInfo.approved_storage_withdrawal) && (
                     <DropdownMenuItem onClick={()=>setIsTakeFromStorageDialogOpen(true)}>
-                      <span className="hover:text-green-900">Take from storage</span>
+                      <span className="hover:text-green-600">Take from storage</span>
                     </DropdownMenuItem>
                 )}
 
                 { 
                   showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
                     <DropdownMenuItem onClick={() => setIsApproveBudgetDialogOpen(true)}>
-                      <span className="hover:text-green-900">Approve Budget</span>
+                      <span className="hover:text-green-600">Approve Budget</span>
                     </DropdownMenuItem>
                 )}
                 { 
                   showReviseBudgetButton(current_status.name, orderedPartInfo.approved_budget) && (
                     <DropdownMenuItem onClick={()=>setIsReviseBudgetDialogOpen(true)}  >
-                      <span className="hover:text-red-900">Revise Budget</span>
+                      <span className="hover:text-red-600">Revise Budget</span>
                     </DropdownMenuItem>
                 )}
                 {
                   showOfficeOrderDenyButton(current_status.name) && (                
                     <DropdownMenuItem onClick={()=>setIsDenyDialogOpen(true)}>
-                      <span className="hover:text-red-900">Deny Part</span>
+                      <span className="hover:text-red-600">Deny Part</span>
                     </DropdownMenuItem>
                 )}
                 {
