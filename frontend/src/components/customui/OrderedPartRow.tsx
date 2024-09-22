@@ -21,6 +21,7 @@ import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
 import { addMachinePartQty } from "@/services/MachinePartsService"
 
+
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
     orderedPartInfo: OrderedPart,
@@ -402,7 +403,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     setIsActionMenuOpen(false);
   }
 
-  
+
 
   if(mode==='view'){
     return (
