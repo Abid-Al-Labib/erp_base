@@ -162,11 +162,10 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Purchased Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Sent To Factory Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Received By Factory</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Sent To Office</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Received By Office</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
             <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
         </TableHeader>
@@ -234,11 +233,10 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Purchased Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Sent To Factory Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Received By Factory</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Sent To Office</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Received By Office</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
             <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
         </TableHeader>
