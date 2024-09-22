@@ -9,7 +9,7 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
@@ -70,7 +70,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       const fetchData = async () => {
           if (mode=="manage")
           {
-            const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && (current_status.name!=="Parts Sent To Factory")
+            const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && orderedPartInfo.qty===0
             setDisableTakeStorageRow(disableRow)
             if (order_type === "Machine")
             {
@@ -112,11 +112,32 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         {
           if (storage_data.length>0)
           {
-            const new_current_storage_quantity = storage_data[0].qty - orderedPartInfo.qty
-            await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_current_storage_quantity)
-            console.log("updated storage qty")
-            await updateSentDateByID(orderedPartInfo.id, new Date())
-            console.log("updated sent date")
+            const current_storage_quantity =  storage_data[0].qty
+            if (current_storage_quantity>=orderedPartInfo.qty){
+              //if there is enough quantity in storage 
+              const new_storage_quantity = current_storage_quantity - orderedPartInfo.qty
+              await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_storage_quantity)
+              console.log("updated storage qty")
+              await updateOrderedPartQtyByID(orderedPartInfo.id,0)
+              console.log("updated ordered part qty")
+              await addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+              console.log("updated machine part qty")
+              await updateSentDateByID(orderedPartInfo.id, new Date())
+              console.log("updated sent date")
+              await updateReceivedByFactoryDateByID(orderedPartInfo.id,new Date())
+              console.log("updated received date")
+              setDisableTakeStorageRow(true)
+            }
+            else{
+              //if storage can't provide the requested quantity
+              const new_orderedpart_qty = orderedPartInfo.qty - current_storage_quantity
+              await upsertStoragePart(orderedPartInfo.part_id,factory_id,0)
+              console.log("updated storage qty")
+              await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
+              console.log("updated ordered part qty")
+              await addMachinePartQty(machine_id,orderedPartInfo.part_id,current_storage_quantity)
+              console.log("updated machine part qty")
+            }
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
             console.log("approved taking from storage")
             onOrderedPartUpdate();
@@ -132,7 +153,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     };
 
     takeFromStorage()
-    setDisableTakeStorageRow(true)
     setIsTakeFromStorageDialogOpen(false)
     setIsActionMenuOpen(false);
   }
@@ -356,7 +376,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
             //if order type storage
             toast.success("Part received by factory date set!")
-            handleUpdateDatabase();
+            if (order_type=="Storage"){
+              addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+            }
+            if (order_type == "Machine") {
+              addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+            }
             onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
@@ -377,14 +402,14 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   }
 
 
-  const handleUpdateDatabase = () => {
-    if (order_type=="Storage"){
-      addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
-    }
-    if (order_type == "Machine") {
-      addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
-    }
-  }
+  // const handleUpdateDatabase = () => {
+  //   if (order_type=="Storage"){
+  //     addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+  //   }
+  //   if (order_type == "Machine") {
+  //     addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+  //   }
+  // }
 
   const handleSampleReceived = () => {
     console.log("Sample received")

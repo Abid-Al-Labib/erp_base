@@ -57,7 +57,7 @@ export const convertUtcToBDTime = (utcTimestamp: string): string => {
 
 export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
   // Filter parts that have in_storage === false and approved_storage_withdrawal === false
-  const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal));
+  const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));
   // If there are no parts to check (i.e., all parts are either in storage or have approved storage withdrawal), allow the change
   
   
@@ -67,7 +67,7 @@ export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_stat
         break;
       }
       case "Order Sent To Head Office": {
-        if (partsToCheck.length === 0 && ordered_parts.length!==0) return 7;  
+        if (partsToCheck.length === 0 && ordered_parts.length!==0) return 8;  
         if (partsToCheck.every(part => part.approved_office_order === true)) return 3
         break;
       }
