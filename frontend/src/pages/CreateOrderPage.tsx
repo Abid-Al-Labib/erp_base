@@ -191,7 +191,7 @@ const CreateOrderPage = () => {
         const storage_data =  await fetchStoragePartQuantityByFactoryID(partId,selectedFactoryId)
         
         console.log(storage_data)
-        if (orderType==="Machine" && storage_data.length>0 && storage_data[0].qty>=qty)
+        if (orderType==="Machine" && storage_data.length>0 && storage_data[0].qty>0)
             {
 
                 const newOrderedPart: InputOrderedPart = {
