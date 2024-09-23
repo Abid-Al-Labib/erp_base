@@ -77,8 +77,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             if (order_type === "Machine")
             {
               const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
-              if (storage_data) {
+              if (storage_data && storage_data.length>0) {
                 setCurrentStorageQty(storage_data[0].qty)
+              }
+              else {
+                console.log(`no storage data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)
+                return null
               }
               const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
               if (result) {
@@ -112,16 +116,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     // console.log(`Headoffice approves taking ${orderedPartInfo.qty} from storage`)
     const takeFromStorage = async() => {
       try {
-        const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id, factory_id)
-        console.log(storage_data)
-        if (storage_data)
+        if (currentStorageQty)
         {
-          if (storage_data.length>0)
-          {
-            const current_storage_quantity =  storage_data[0].qty
-            if (current_storage_quantity>=orderedPartInfo.qty){
+            if (currentStorageQty>=orderedPartInfo.qty){
               //if there is enough quantity in storage 
-              const new_storage_quantity = current_storage_quantity - orderedPartInfo.qty
+              const new_storage_quantity = currentStorageQty - orderedPartInfo.qty
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_storage_quantity)
               setCurrentStorageQty(new_storage_quantity)
               console.log("updated storage qty")
@@ -137,25 +136,20 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             }
             else{
               //if storage can't provide the requested quantity
-              const new_orderedpart_qty = orderedPartInfo.qty - current_storage_quantity
+              const new_orderedpart_qty = orderedPartInfo.qty - currentStorageQty
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,0)
               setCurrentStorageQty(0)
               console.log("updated storage qty")
               await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
               console.log("updated ordered part qty")
-              await addMachinePartQty(machine_id,orderedPartInfo.part_id,current_storage_quantity)
+              await addMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty)
               console.log("updated machine part qty")
             }
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
             console.log("approved taking from storage")
             onOrderedPartUpdate();
           }
-          else {
-            console.log(`no data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)
-            return null
-          }
-        }
-      } catch (error) {
+        } catch (error) {
         toast.error("Error occured while fetching storage data")
       }
     };
