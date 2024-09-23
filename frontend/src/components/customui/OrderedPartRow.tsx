@@ -63,6 +63,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [noteValue, setNoteValue] = useState<string>('');
   const navigate = useNavigate()
   const [disableTakeStorageRow, setDisableTakeStorageRow] = useState(false);
+  const [currentStorageQty,setCurrentStorageQty] = useState<number|null>(null)
   const handleNavigation = () => {
     navigate('/orders'); 
   };
@@ -75,6 +76,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             setDisableTakeStorageRow(disableRow)
             if (order_type === "Machine")
             {
+              const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
+              if (storage_data) {
+                setCurrentStorageQty(storage_data[0].qty)
+              }
               const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
               if (result) {
                 setLastUnitCost(result.unit_cost);
@@ -118,6 +123,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               //if there is enough quantity in storage 
               const new_storage_quantity = current_storage_quantity - orderedPartInfo.qty
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_storage_quantity)
+              setCurrentStorageQty(new_storage_quantity)
               console.log("updated storage qty")
               await updateOrderedPartQtyByID(orderedPartInfo.id,0)
               console.log("updated ordered part qty")
@@ -133,6 +139,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               //if storage can't provide the requested quantity
               const new_orderedpart_qty = orderedPartInfo.qty - current_storage_quantity
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,0)
+              setCurrentStorageQty(0)
               console.log("updated storage qty")
               await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
               console.log("updated ordered part qty")
@@ -502,6 +509,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
+        <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
