@@ -6,7 +6,7 @@ import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck} from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState} from "react"
 import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
 
 import toast from 'react-hot-toast'
@@ -39,7 +39,7 @@ interface FactorySection{
 
 interface Machine {
     id: number;
-    number: number;
+    name: string;
     type: string;
     factory_section_id?: number;
 }
@@ -63,7 +63,7 @@ interface InputOrderedPart {
     machine_id: number;
     factory_section_id: number;
     factory_section_name: string;
-    machine_number: number;
+    machine_name: string;
     is_sample_sent_to_office: boolean,
     note?: string | null;
     in_storage: boolean;
@@ -84,7 +84,7 @@ const CreateOrderPage = () => {
     
     const [machines, setMachines] = useState<Machine[]>([]);
     const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
-    const selectedMachineNumber = Number(machines.find(machine => machine.id === selectedMachineId)?.number || "Select Machine");
+    const selectedMachineName = machines.find(machine => machine.id === selectedMachineId)?.name || "Select Machine"; // updated variable
 
     const [departments, setDepartments] = useState<Department[]>([]);
     const [departmentId, setDepartmentId] = useState<number>(-1);
@@ -202,7 +202,7 @@ const CreateOrderPage = () => {
                     machine_id: selectedMachineId,
                     factory_section_id: selectedFactorySectionId,
                     factory_section_name: selectedFactorySectionName,
-                    machine_number: selectedMachineNumber,
+                    machine_name: selectedMachineName, // updated from machine_number to machine_name
                     is_sample_sent_to_office: isSampleSentToOffice ?? false,
                     note: note.trim() || null, 
                     in_storage: true,
@@ -220,7 +220,7 @@ const CreateOrderPage = () => {
                 machine_id: selectedMachineId,
                 factory_section_id: selectedFactorySectionId,
                 factory_section_name: selectedFactorySectionName,
-                machine_number: selectedMachineNumber,
+                machine_name: selectedMachineName,
                 is_sample_sent_to_office: isSampleSentToOffice ?? false,
                 note: note.trim() || null, 
                 in_storage: false,
@@ -471,44 +471,48 @@ const CreateOrderPage = () => {
                             {orderType !== "Storage" && (
                                 <>
                                     {/* Factory Section Id */}
-                                    <div className="mt-2">
-                                        <Select
-                                            key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
-                                            onValueChange={(value) => handleSelectFactorySection(Number(value))} disabled={isOrderStarted}
-                                        >
-                                            <Label htmlFor="factorySection">Factory Section</Label>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {factorySections.map((section) => (
-                                                    <SelectItem key={section.id} value={section.id.toString()}>
-                                                        {section.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    <Select
+                                        onValueChange={(value) => handleSelectFactorySection(Number(value))}
+                                        disabled={isOrderStarted || selectedFactoryId === -1} // Disabled if no factory is selected
+                                    >
+                                        <Label htmlFor="factorySection">Factory Section</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>
+                                                {selectedFactorySectionId !== -1
+                                                    ? factorySections.find(s => s.id === selectedFactorySectionId)?.name
+                                                    : "Select Section"}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {factorySections.map((section) => (
+                                                <SelectItem key={section.id} value={section.id.toString()}>
+                                                    {section.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
 
                                     {/* Machine Id */}
-                                    <div className="mt-2">
-                                        <Select
-                                            onValueChange={(value) => handleSelectMachine(Number(value))}
-                                            key={`machine-${forceMachineRender}`} disabled={isOrderStarted}
-                                        >
-                                            <Label htmlFor="machine">Machine</Label>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {machines.map((machine) => (
-                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                        {machine.number.toString()}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    <Select
+                                        onValueChange={(value) => handleSelectMachine(Number(value))}
+                                        disabled={isOrderStarted || selectedFactorySectionId === -1} // Disabled if no factory section is selected
+                                    >
+                                        <Label htmlFor="machine">Machine</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>
+                                                {selectedMachineId !== -1
+                                                    ? machines.find(m => m.id === selectedMachineId)?.name
+                                                    : "Select Machine"}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {machines.map((machine) => (
+                                                <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                    {machine.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </>
                             )}
 
@@ -672,7 +676,7 @@ const CreateOrderPage = () => {
                                                 {orderType === "Machine" ? (
                                                     <div className="flex justify-between">
                                                         <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
-                                                        <p><strong>Machine:</strong> {part.machine_number || "Unknown"}</p>
+                                                        <p><strong>Machine:</strong> {part.machine_name || "Unknown"}</p>
                                                     </div>
                                                 ) : (
                                                     <div className="">

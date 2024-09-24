@@ -31,7 +31,7 @@ const MachinePartsPage = () => {
   const [filters, setFilters] = useState<any>({});
   const [factories, setFactories] = useState<{ id: number; name: string }[]>([]);
   const [factorySections, setFactorySections] = useState<{ id: number; name: string }[]>([]);
-  const [machines, setMachines] = useState<{ id: number; number: number }[]>([]);
+  const [machines, setMachines] = useState<{ id: number; name: string }[]>([]);
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
   const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(undefined);
   const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(undefined);
@@ -238,13 +238,13 @@ const MachinePartsPage = () => {
                       <SelectValue>
                         {selectedMachineId === undefined
                           ? "Select a Machine"
-                          : machines.find((m) => m.id === selectedMachineId)?.number}
+                          : machines.find((m) => m.id === selectedMachineId)?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {machines.map((machine) => (
                         <SelectItem key={machine.id} value={machine.id.toString()}>
-                          {machine.number}
+                          {machine.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
