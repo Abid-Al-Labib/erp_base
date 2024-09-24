@@ -10,6 +10,14 @@ export type MachinePart = Tables<"machine_parts">
 export type StoragePart = Tables<"storage_parts">
 export type ApplicationSettings = Tables<"app_settings">
 
+export type DamagedPart = {
+    id: number,
+    part_id: number,
+    factory_id:number,
+    qty:number,
+    parts: Part
+}
+
 export type Machine = {
     id: number,
     name: string,

@@ -94,8 +94,8 @@ const StoragePage = () => {
   return (
     <>
       <NavigationBar />
-      <div className="flex w-full flex-col bg-muted/40 mt-2">
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
+      <div className="flex w-full flex-col bg-muted/40">
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 mt-2">
           {/* Factory Selection Dropdown */}
           <div className="mb-4">
             <Label className="mb-2">Select Factory</Label>
