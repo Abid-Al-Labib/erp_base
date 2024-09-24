@@ -8,7 +8,7 @@ import MachinePartsRow from './MachinePartsRow'; // Import the MachinePartsRow c
 type MachinePart = {
     id: number;
     machine_id: number;
-    machine_number: number;
+    machine_name: string;
     part_id: number;
     part_name: string;
     qty: number;
@@ -19,10 +19,11 @@ interface MachinePartsTableProps {
     MachineParts: MachinePart[];
     onApplyFilters: (filters: any) => void;
     onResetFilters: () => void;
+    onRefresh: () => Promise<void>; // Add this line to include the onRefresh prop
 }
 
-const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onApplyFilters, onResetFilters }) => {
-    console.log(MachineParts);
+const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onApplyFilters, onResetFilters, onRefresh}) => {
+    console.log("Machine Parts of", MachineParts);
 
     return (
         <Card className="mt-5">
@@ -56,7 +57,7 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onA
                     </TableHeader>
                     <TableBody>
                         {MachineParts.map((MachinePart) => (
-                            <MachinePartsRow key={MachinePart.id} MachinePart={MachinePart} />
+                            <MachinePartsRow key={MachinePart.id} MachinePart={MachinePart} onRefresh={onRefresh}/>
                         ))}
                     </TableBody>
                 </Table>
