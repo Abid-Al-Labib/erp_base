@@ -17,9 +17,6 @@ export const fetchDamagedPartsByFactoryID = async (factoryId: number, partName: 
     if (partId) {
         query = query.eq('part_id', partId);
     }
-    if (partName) {
-        query = query.ilike('parts(name)',`%${partName}%`)
-    }
 
     const { data, error } = await query.order("id", {ascending: true});
 
@@ -28,17 +25,15 @@ export const fetchDamagedPartsByFactoryID = async (factoryId: number, partName: 
         return [];
     }
 
-    // let filteredData = data;
+    let filteredData = data;
 
-    // if (partName) {
-    //     filteredData = filteredData.filter((record: any) =>
-    //         record.parts && record.parts.name.toLowerCase().includes(partName.toLowerCase())
-    //     );
-    // }
-
-    // return filteredData;
-
-    return data as unknown as DamagedPart[]
+    if (partName) {
+        filteredData = filteredData.filter((record: any) =>
+            record.parts && record.parts.name.toLowerCase().includes(partName.toLowerCase())
+        );
+    }
+    
+    return filteredData as unknown as DamagedPart[]
 };
 
 
