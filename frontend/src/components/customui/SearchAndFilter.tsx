@@ -5,16 +5,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
 import { fetchMachines } from '@/services/MachineServices';
 import { fetchStatuses } from '@/services/StatusesService';
@@ -36,7 +27,7 @@ interface FactorySection {
 
 interface Machine {
     id: number;
-    number: number;
+    name: string;
     type: string;
     factory_section_id?: number;
 }
@@ -310,14 +301,14 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                                         >
                                             <SelectTrigger className="w-full">
                                                 <SelectValue>
-                                                    {selectedMachineId === -1 ? "All Machines" : machines.find(m => m.id === selectedMachineId)?.number}
+                                                    {selectedMachineId === -1 ? "All Machines" : machines.find(m => m.id === selectedMachineId)?.name}
                                                 </SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">All Machines</SelectItem>
                                                 {machines.map(machine => (
                                                     <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                        {machine.number}
+                                                        {machine.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
