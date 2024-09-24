@@ -83,7 +83,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
           </>
         ) : (
           <Button onClick={() => setIsEditing(true)} className="ml-2">
-            Edit
+            Dispose
           </Button>
         )}
       </TableCell>

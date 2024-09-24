@@ -1,5 +1,6 @@
 import DamagedPartsRow from "@/components/customui/DamagedPartsRow";
 import NavigationBar from "@/components/customui/NavigationBar";
+import SearchAndFilter from "@/components/customui/SearchAndFilter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +17,8 @@ const DamagedPartsPage = () => {
   const [damagedParts, setDamagedParts] = useState<DamagedPart[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [factoryLoading, setFactoryLoading] = useState<boolean>(false);
+  const [filters, setFilters] = useState<any>({});
+
 
   useEffect(() => {
     const loadFactories = async () => {
@@ -33,6 +36,25 @@ const DamagedPartsPage = () => {
     };
     loadFactories(); // Call the function
   }, []);
+
+  useEffect(() => {
+    const filterDamagedParts = async () =>{
+      if (selectedFactoryId)
+        {
+          setLoading(true)
+          try {
+            const damaged_parts_data = await fetchDamagedPartsByFactoryID(selectedFactoryId, filters.partNameQuery, filters.partIdQuery)
+            console.log(damaged_parts_data)
+            setDamagedParts(damaged_parts_data)
+          } catch (error) {
+            toast.error("Could not filter")
+          } finally {
+            setLoading(false)
+          }
+        }
+    }
+    filterDamagedParts()
+  }, [filters])
 
   const LoadDamagedPartsDataByFactoryID = async (factory_id: number, partName: string | null = null, partId: number | null = null) => {
     if (factory_id) {
@@ -55,6 +77,8 @@ const DamagedPartsPage = () => {
     setSelectedFactoryId(factoryid);
     LoadDamagedPartsDataByFactoryID(factoryid);
   };
+
+
 
   return (
     <>
@@ -87,14 +111,23 @@ const DamagedPartsPage = () => {
                 <div className="text-center text-lg">Please select a factory to display data</div>
               ) : loading ? (
                 <div className="text-center">Loading...</div>
-              ) : damagedParts.length === 0 ? (
-                <div className="text-center text-lg">No damaged parts for this factory</div>
               ) : (
                 <div className="overflow-x-auto">
                   <Card x-chunk="dashboard-06-chunk-0">
                     <CardHeader>
                       <CardTitle>Damaged Parts</CardTitle>
                       <CardDescription>A list of damaged parts for the selected factory</CardDescription>
+                      <div className="ml-auto">   
+                          <SearchAndFilter
+                              filterConfig={[
+                                  { type: 'partName', label: 'Part Name' },
+                                  { type: 'partId', label: 'Part ID' },
+                              ]}
+                              onApplyFilters={setFilters}
+                              onResetFilters={() => setFilters({})}
+                              hideDefaultIdDateSearch={true}
+                          />
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <Table>
@@ -109,12 +142,14 @@ const DamagedPartsPage = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {damagedParts.map(damaged_part => (
+                        { damagedParts.length !== 0 &&  
+                          damagedParts.map(damaged_part => (
                             <DamagedPartsRow
                               key={damaged_part.id} // Assuming each damaged part has a unique ID, use it as the key
                               damagedPart={damaged_part}
                             />
-                          ))}
+                          ))
+                        }
                         </TableBody>
                       </Table>
                     </CardContent>
