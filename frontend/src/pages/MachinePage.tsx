@@ -199,10 +199,10 @@ const MachinePartsPage = () => {
   return (
     <>
       <NavigationBar />
-      <div className="flex w-full flex-col bg-muted/40 mt-2">
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40 ">
+        <main className="mt-2 p-4 sm:px-6 sm:py-0">
           {/* Container for selections, running orders, and machine status */}
-          <div className="flex justify-between items-start gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
 
             {/* Selections Section */}
             <div className="flex-none min-w-72 max-w-96 w-1/6"> {/* Roughly 1/6th of the width */}
@@ -306,7 +306,7 @@ const MachinePartsPage = () => {
             </div>
             
             {/* Running Orders Section */}
-            <div className="flex-1 w-4/6 ml-4"> {/* Roughly 4/6th of the width */}
+            <div className="flex-1 w-4/6"> {/* Roughly 4/6th of the width */}
               {runningOrders.length > 0 && (
                 <div className="bg-white p-4 rounded shadow">
                   <h3 className="font-semibold text-2xl mb-2">Running Orders</h3>
@@ -347,8 +347,13 @@ const MachinePartsPage = () => {
             </div>
           </div>
 
-          {MachineParts.length === 0 ? (
-            <div>No parts found</div>
+          {
+            selectedFactoryId === undefined ? (
+              <div className="text-center text-lg">Please select a factory, section, machine to display data</div>
+            ): selectedFactorySectionId === undefined ? (
+              <div className="text-center text-lg">Please select a section and machine to display data</div>
+            ): selectedMachineId === undefined ? (
+            <div  className="text-center text-lg">Please select a machine to display data</div>
           ) : (
             <MachinePartsTable
               MachineParts={MachineParts}

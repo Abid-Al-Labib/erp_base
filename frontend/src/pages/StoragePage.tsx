@@ -94,8 +94,8 @@ const StoragePage = () => {
   return (
     <>
       <NavigationBar />
-      <div className="flex w-full flex-col bg-muted/40">
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 mt-2">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <main className="p-4 sm:px-6 sm:py-0 mt-2">
           {/* Factory Selection Dropdown */}
           <div className="mb-4">
             <Label className="mb-2">Select Factory</Label>
@@ -118,8 +118,8 @@ const StoragePage = () => {
             </Select>
           </div>
 
-          {parts.length === 0 ? (
-            <div>No parts found</div>
+          {selectedFactoryId === undefined ? (
+             <div className="text-center text-lg">Please select a factory to display data</div>
           ) : (
             <StoragePartsTable
               parts={parts}
