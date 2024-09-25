@@ -1,5 +1,6 @@
 import { Profile } from "@/types";
 import { supabase_client } from "./SupabaseClient";
+import toast from "react-hot-toast";
 
 
 export async function getUserProfile(user_id: string) {
@@ -10,7 +11,7 @@ export async function getUserProfile(user_id: string) {
       .single()
 
     if (error) {
-      throw new Error(error.message);
+      toast.error(error.message)
     }
     
     return data as unknown as Profile;

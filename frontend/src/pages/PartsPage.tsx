@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { fetchParts } from '../services/PartsService';
-import { Link } from "react-router-dom"
-import { Loader2, PlusCircle, Search } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Loader2, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
 import { Tabs, TabsContent,} from "@/components/ui/tabs"
 import PartsTableRow from "@/components/customui/PartsTableRow"
@@ -13,7 +12,7 @@ import { Part } from '@/types';
 import toast from 'react-hot-toast';
 import { convertUtcToBDTime } from '@/services/helper';
 import SearchAndFilter from "@/components/customui/SearchAndFilter"; // Import the SearchAndFilter component
-
+import { fetchAppSettings } from '@/services/AppSettingsService';
 
 
 
@@ -22,8 +21,8 @@ const PartsPage = () => {
     const [parts,setParts] = useState<Part[]>([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState<any>({});
-
-
+    const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false)
+    const navigate = useNavigate()
     useEffect(() => {
         const loadParts = async () => {
             setLoading(true);
@@ -43,6 +42,22 @@ const PartsPage = () => {
             }
         };
 
+        const loadAddPartSettings = async () => {
+            try {
+                const settings_data = await fetchAppSettings()
+                if (settings_data) {
+                    settings_data.forEach((setting) => {
+                        if (setting.name === "Add Part") {
+                            setaddPartEnabled(setting.enabled)
+                        }
+                    })
+                }
+            } catch (error) {
+                toast.error("Could not load settings data")
+                setaddPartEnabled(false)
+            }
+        }
+        loadAddPartSettings();
         loadParts();
     }, [filters]);
 
@@ -55,6 +70,10 @@ const PartsPage = () => {
         );
     }
     
+    const handleAddPartButtonClick = () => {
+        navigate("/addpart")
+    }
+
     return (
         <>
         <NavigationBar/>
@@ -76,14 +95,12 @@ const PartsPage = () => {
                             hideDefaultIdDateSearch={true} // Hides default ID/Date search if not needed
                         />
                     </div>
-                        <Link to="/addpart">
-                            <Button size="sm" className="h-8 gap-1 bg-blue-950">
+                            <Button onClick={handleAddPartButtonClick} className="bg-blue-950" disabled={!addPartEnabled}>
                             <PlusCircle className="h-3.5 w-3.5" />
                             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                 Add Part
                             </span>
                             </Button>
-                        </Link>
                     </div>
                     </div>
                     <TabsContent value="all">

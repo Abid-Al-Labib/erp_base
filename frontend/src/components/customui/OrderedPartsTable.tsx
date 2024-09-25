@@ -13,6 +13,7 @@ import { deleteOrderByID, UpdateStatusByID } from "@/services/OrdersService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
+import { useAuth } from "@/context/AuthContext";
 
 
 interface OrderedPartsTableProp {
@@ -23,6 +24,7 @@ interface OrderedPartsTableProp {
 
 
 const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current_status}) => {
+  const profile = useAuth().profile
   const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingTable, setLoadingTable] = useState(true);
   const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
@@ -106,9 +108,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               const next_status_id = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
               if (next_status_id && next_status_id!==-1 ){
                 console.log("changing status")
+                if(!profile){
+                  toast.error("Profile not found")
+                  return
+                }
                 try { 
                   await UpdateStatusByID(order_id,next_status_id)
-                  await InsertStatusTracker((new Date()), order_id, 1, next_status_id)
+                  await InsertStatusTracker((new Date()), order_id, profile.id, next_status_id)
                 } catch (error) {
                   toast.error("Error updating status")
                 }

@@ -20,6 +20,7 @@ import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
 import { addMachinePartQty } from "@/services/MachinePartsService"
+import { useAuth } from "@/context/AuthContext"
 
 
 interface OrderedPartRowProp{
@@ -33,10 +34,10 @@ interface OrderedPartRowProp{
 }
 
 export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type, onOrderedPartUpdate}) => {
+  const profile = useAuth().profile
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
   const [dateReceived, setDateReceived] = useState<Date | undefined>(orderedPartInfo.part_received_by_factory_date? new Date(orderedPartInfo.part_received_by_factory_date): new Date())
-  
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isApproveFromOfficeDialogOpen, setIsApproveFromOfficeDialogOpen] = useState(false);
   const [isApproveFromFactoryDialogOpen, setIsApproveFromFactoryDialogOpen] = useState(false);
@@ -241,10 +242,14 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const handleReviseBudget = () => {
     console.log("Denying budget");
     const revertingStatus = async() => {
+      if (!profile) {
+        toast.error("Profile not found")
+        return
+      }
       try {
         const prevStatus = (current_status.id-1)
         await UpdateStatusByID(orderedPartInfo.order_id, prevStatus)
-        await InsertStatusTracker((new Date()), orderedPartInfo.order_id, 1, prevStatus)
+        await InsertStatusTracker((new Date()), orderedPartInfo.order_id, profile.id, prevStatus)
         toast.success("Successfully reverted status")
         onOrderedPartUpdate();
       } catch (error) {
