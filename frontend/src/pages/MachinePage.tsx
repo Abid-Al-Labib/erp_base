@@ -349,7 +349,7 @@ const MachinePartsPage = () => {
 
           {
             selectedFactoryId === undefined ? (
-              <div className="text-center text-lg">Please select a factory, section, machine to display data</div>
+              <div className="text-center text-lg">Please select a factory, section and machine to display data</div>
             ): selectedFactorySectionId === undefined ? (
               <div className="text-center text-lg">Please select a section and machine to display data</div>
             ): selectedMachineId === undefined ? (
