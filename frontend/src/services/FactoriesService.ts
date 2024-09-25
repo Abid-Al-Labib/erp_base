@@ -1,3 +1,4 @@
+import { Factory } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 
 // Function to fetch all factories
@@ -10,7 +11,7 @@ export const fetchFactories = async () => {
         console.error('Error fetching factories:', error.message);
         return [];
     }
-    return data;
+    return data as unknown as Factory[];
 };
 
 export const fetchFactorySections = async (factoryId: number) => {
@@ -21,19 +22,6 @@ export const fetchFactorySections = async (factoryId: number) => {
 
     if (error) {
         console.error('Error fetching factory sections:', error.message);
-        return [];
-    }
-    return data;
-};
-
-export const fetchMachines = async (factorySectionId: number) => {
-    const { data, error } = await supabase_client
-        .from('machines')
-        .select('id, type, number')  
-        .eq('factory_section_id', factorySectionId);
-
-    if (error) {
-        console.error('Error fetching machines:', error.message);
         return [];
     }
     return data;

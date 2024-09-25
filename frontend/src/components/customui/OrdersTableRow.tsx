@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -9,6 +9,8 @@ import { deleteOrderByID } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
 import { convertUtcToBDTime } from '@/services/helper';
+import { Dialog, DialogTitle, DialogContent } from '../ui/dialog';
+
 
 interface OrdersTableRowProps {
   order: Order
@@ -16,6 +18,7 @@ interface OrdersTableRowProps {
 }
 
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh }) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false) 
   const handleDeleteOrder = async () => {
     try {
         await deleteOrderByID(order.id)
@@ -25,6 +28,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
         toast.error("Failed to delete");
         
     }
+    setIsDeleteDialogOpen(false)
   }
   
   return (
@@ -33,8 +37,8 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
         {order.id}
       </TableCell>
       <TableCell>
-        {order.factory_sections?.name && order.machines?.number
-          ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.number}`
+        {order.factory_sections?.name && order.machines?.name
+          ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`
           : `${order.factories.abbreviation} - Storage`}
       </TableCell>
       <TableCell className="hidden md:table-cell">
@@ -78,13 +82,25 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
                 Manage
               </DropdownMenuItem>
             </Link>
-            <DropdownMenuItem onClick={handleDeleteOrder}>
-              Delete
+            <DropdownMenuItem onClick={()=>setIsDeleteDialogOpen(true)}>
+              <span className='hover:text-red-600'>Delete</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+                <DialogTitle className="text-red-600">Delete Part</DialogTitle>
+                <div>
+                  You are about to permanently delete this order.
+                  <br />
+                  Are you sure you want to delete this order?
+                </div>
+                <Button onClick={handleDeleteOrder}>Delete</Button>
+        </DialogContent>
+      </Dialog>
     </TableRow>
+
   );
 };
 

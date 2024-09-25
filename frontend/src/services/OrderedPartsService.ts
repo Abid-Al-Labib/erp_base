@@ -218,6 +218,17 @@ export const updateReceivedByFactoryDateByID = async (orderedpart_id: number, re
         toast.error(error.message)
     }
 }
+
+export const updateOrderedPartQtyByID =  async (orderedpart_id:number, new_quantity:number) => {
+    const { error } = await supabase_client.from('order_parts').update(
+        { qty: new_quantity }
+    ).eq('id', orderedpart_id)
+    
+    if (error){
+        toast.error(error.message)
+    }
+}
+
 export const insertOrderedParts = async (
     
     qty: number,
@@ -225,6 +236,8 @@ export const insertOrderedParts = async (
     part_id: number,
     is_sample_sent_to_office: boolean,
     note: string | null,
+    in_storage: boolean,
+    approved_storage_withdrawal: boolean
 ) => {
 
     const { data, error } = await supabase_client.from('order_parts').insert([{
@@ -233,6 +246,8 @@ export const insertOrderedParts = async (
         part_id,
         is_sample_sent_to_office,
         note,
+        in_storage,
+        approved_storage_withdrawal
     }])
     .select();
 
@@ -245,3 +260,4 @@ export const insertOrderedParts = async (
     // toast.success("Order part added successfully");
     return data as unknown as OrderedPart[];
 };
+

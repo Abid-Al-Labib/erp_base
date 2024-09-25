@@ -6,16 +6,18 @@ import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck} from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef} from "react"
 import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
 
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { fetchFactories, fetchFactorySections, fetchMachines, fetchDepartments } from '@/services/FactoriesService';
+import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
+import { fetchMachines, setMachineIsRunningById } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
+import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
 
 
 
@@ -37,7 +39,7 @@ interface FactorySection{
 
 interface Machine {
     id: number;
-    number: number;
+    name: string;
     type: string;
     factory_section_id?: number;
 }
@@ -61,9 +63,11 @@ interface InputOrderedPart {
     machine_id: number;
     factory_section_id: number;
     factory_section_name: string;
-    machine_number: number;
+    machine_name: string;
     is_sample_sent_to_office: boolean,
-    note?: string | null; 
+    note?: string | null;
+    in_storage: boolean;
+    approved_storage_withdrawal: boolean;
 }
 
 const CreateOrderPage = () => {
@@ -80,7 +84,7 @@ const CreateOrderPage = () => {
     
     const [machines, setMachines] = useState<Machine[]>([]);
     const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
-    const selectedMachineNumber = Number(machines.find(machine => machine.id === selectedMachineId)?.number || "Select Machine");
+    const selectedMachineName = machines.find(machine => machine.id === selectedMachineId)?.name || "Select Machine"; // updated variable
 
     const [departments, setDepartments] = useState<Department[]>([]);
     const [departmentId, setDepartmentId] = useState<number>(-1);
@@ -113,7 +117,8 @@ const CreateOrderPage = () => {
 
     const [orderedParts, setOrderedParts] = useState<InputOrderedPart[]>([]);
 
-    
+    const partsSectionRef = useRef<HTMLDivElement | null>(null);
+
 
 
     // Order Parts
@@ -153,14 +158,14 @@ const CreateOrderPage = () => {
 
     const handleCreateOrder = async () => {
         setIsSubmitting(true);
-        try{
+        try {
             if (!isOrderFormComplete) {
                 toast.error("Please fill out all required fields");
                 return;
             }
 
-            const createdById = 1; 
-            const statusId = 1; 
+            const createdById = 1;
+            const statusId = 1;
             const orderData: InputOrder = {
                 order_note: description,
                 created_by_user_id: createdById,
@@ -170,10 +175,9 @@ const CreateOrderPage = () => {
                 machine_id: selectedMachineId,
                 current_status_id: statusId,
                 order_type: orderType,
-
             };
             setTempOrderDetails(orderData);
-            setShowPartForm(true);
+            setShowPartForm(true); // This triggers the scroll due to useEffect
             setIsOrderStarted(true);
             toast.success("Order details are set. Please add parts.");
         } catch (error) {
@@ -181,23 +185,52 @@ const CreateOrderPage = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }
+    };
 
-    const handleAddOrderParts = () => {
-        const newOrderedPart = {
-            qty: qty,
-            order_id: 0, // Will be set when the order is created
-            part_id: partId,
-            factory_id: selectedFactoryId,
-            machine_id: selectedMachineId,
-            factory_section_id: selectedFactorySectionId,
-            factory_section_name: selectedFactorySectionName,
-            machine_number: selectedMachineNumber,
-            is_sample_sent_to_office: isSampleSentToOffice ?? false,
-            note: note.trim() || null, 
-        };
-        setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
-        handleResetOrderParts();
+
+    const handleAddOrderParts = async () => {
+        const storage_data =  await fetchStoragePartQuantityByFactoryID(partId,selectedFactoryId)
+        
+        console.log(storage_data)
+        if (orderType==="Machine" && storage_data.length>0 && storage_data[0].qty>0)
+            {
+
+                const newOrderedPart: InputOrderedPart = {
+                    qty: qty,
+                    order_id: 0, // Will be set when the order is created
+                    part_id: partId,
+                    factory_id: selectedFactoryId,
+                    machine_id: selectedMachineId,
+                    factory_section_id: selectedFactorySectionId,
+                    factory_section_name: selectedFactorySectionName,
+                    machine_name: selectedMachineName, // updated from machine_number to machine_name
+                    is_sample_sent_to_office: isSampleSentToOffice ?? false,
+                    note: note.trim() || null, 
+                    in_storage: true,
+                    approved_storage_withdrawal: false
+                };
+                setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
+                handleResetOrderParts();
+            } 
+        else{
+            const newOrderedPart = {
+                qty: qty,
+                order_id: 0, // Will be set when the order is created
+                part_id: partId,
+                factory_id: selectedFactoryId,
+                machine_id: selectedMachineId,
+                factory_section_id: selectedFactorySectionId,
+                factory_section_name: selectedFactorySectionName,
+                machine_name: selectedMachineName,
+                is_sample_sent_to_office: isSampleSentToOffice ?? false,
+                note: note.trim() || null, 
+                in_storage: false,
+                approved_storage_withdrawal: false
+            };
+            setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
+            handleResetOrderParts();
+        }
+
         
     };
 
@@ -244,6 +277,8 @@ const CreateOrderPage = () => {
                         part.part_id,
                         part.is_sample_sent_to_office,
                         part.note || null,
+                        part.in_storage,
+                        part.approved_storage_withdrawal
                     )
                 );
 
@@ -254,6 +289,10 @@ const CreateOrderPage = () => {
                 setOrderedParts([]); 
 
                 await InsertStatusTracker((new Date()), orderId, 1, 1);
+                if (orderType == "Machine") {
+                    setMachineIsRunningById(selectedMachineId,false);
+                }
+
 
             } else {
                 toast.error("Failed to create order.");
@@ -265,24 +304,14 @@ const CreateOrderPage = () => {
         }
 };
     const handleCancelOrder = () => {
-
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
         setOrderType('');
         setDescription('')
         setTempOrderDetails(null);
-        // Navigate('/orders');  
     };
 
-    // const handleResetOrderParts = () => {
-    //     setQty(-1);  
-    //     setPartId(-1); 
-    //     setSelectedMachineId(-1); 
-    //     setSelectedFactorySectionId(-1);
-    //     setIsSampleSentToOffice(false);  
-    //     setNote('');
 
-    // };
 
     const handleRemovePart = (indexToRemove: number) => {
         setOrderedParts(prevParts => prevParts.filter((_, index) => index !== indexToRemove));
@@ -336,6 +365,12 @@ const CreateOrderPage = () => {
 
         loadMachines();
     }, [selectedFactorySectionId]);
+
+    useEffect(() => {
+        if (showPartForm && partsSectionRef.current) {
+            partsSectionRef.current.scrollIntoView({ behavior: 'smooth' }); // Auto-scroll to the parts section
+        }
+    }, [showPartForm]); // Dependency on showPartForm to trigger the scroll
 
     
 
@@ -433,44 +468,48 @@ const CreateOrderPage = () => {
                             {orderType !== "Storage" && (
                                 <>
                                     {/* Factory Section Id */}
-                                    <div className="mt-2">
-                                        <Select
-                                            key={`factory-section-${forceFactorySectionRender}`} // Key prop to force re-rendering
-                                            onValueChange={(value) => handleSelectFactorySection(Number(value))} disabled={isOrderStarted}
-                                        >
-                                            <Label htmlFor="factorySection">Factory Section</Label>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{selectedFactorySectionId !== -1 ? factorySections.find(s => s.id === selectedFactorySectionId)?.name : "Select Section"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {factorySections.map((section) => (
-                                                    <SelectItem key={section.id} value={section.id.toString()}>
-                                                        {section.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    <Select
+                                        onValueChange={(value) => handleSelectFactorySection(Number(value))}
+                                        disabled={isOrderStarted || selectedFactoryId === -1} // Disabled if no factory is selected
+                                    >
+                                        <Label htmlFor="factorySection">Factory Section</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>
+                                                {selectedFactorySectionId !== -1
+                                                    ? factorySections.find(s => s.id === selectedFactorySectionId)?.name
+                                                    : "Select Section"}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {factorySections.map((section) => (
+                                                <SelectItem key={section.id} value={section.id.toString()}>
+                                                    {section.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
 
                                     {/* Machine Id */}
-                                    <div className="mt-2">
-                                        <Select
-                                            onValueChange={(value) => handleSelectMachine(Number(value))}
-                                            key={`machine-${forceMachineRender}`} disabled={isOrderStarted}
-                                        >
-                                            <Label htmlFor="machine">Machine</Label>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{selectedMachineId !== -1 ? machines.find(m => m.id === selectedMachineId)?.number.toString() : "Select Machine"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {machines.map((machine) => (
-                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                        {machine.number.toString()}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    <Select
+                                        onValueChange={(value) => handleSelectMachine(Number(value))}
+                                        disabled={isOrderStarted || selectedFactorySectionId === -1} // Disabled if no factory section is selected
+                                    >
+                                        <Label htmlFor="machine">Machine</Label>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue>
+                                                {selectedMachineId !== -1
+                                                    ? machines.find(m => m.id === selectedMachineId)?.name
+                                                    : "Select Machine"}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {machines.map((machine) => (
+                                                <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                    {machine.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </>
                             )}
 
@@ -523,145 +562,148 @@ const CreateOrderPage = () => {
     
                 {/* PART SELECTION AND DETAILS CARD */}
                 {showPartForm && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Add Parts</CardTitle>
-                            <CardDescription>Start adding parts to your order</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
-                                {/* Left side: Part Selection */}
-                                <div className="space-y-4">
-                                    <div className="mt-2">
-                                        <Select
-                                            key={`part-${forcePartRender}`} // Key prop to force re-rendering
-                                            onValueChange={(value) => handleSelectPart(Number(value))}
-                                            >
-                                            <Label htmlFor="partId">Select Part</Label>
-                                            <SelectTrigger className="w-[220px]">
-                                                <SelectValue>{partId !== -1 ? parts.find(p => p.id === partId)?.name : "Select Part"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {parts.map((part) => (
-                                                    <SelectItem key={part.id} value={part.id.toString()}>
-                                                        {part.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    {/* Selecting Part ID */}
+                    <div ref={partsSectionRef}> {/* Attach the ref directly to the wrapping div */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Add Parts</CardTitle>
+                                <CardDescription>Start adding parts to your order</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
+                                    {/* Left side: Part Selection */}
+                                    <div className="space-y-4">
+                                        <div className="mt-2">
+                                            <Select
+                                                key={`part-${forcePartRender}`} // Key prop to force re-rendering
+                                                onValueChange={(value) => handleSelectPart(Number(value))}
+                                                >
+                                                <Label htmlFor="partId">Select Part</Label>
+                                                <SelectTrigger className="w-[220px]">
+                                                    <SelectValue>{partId !== -1 ? parts.find(p => p.id === partId)?.name : "Select Part"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {parts.map((part) => (
+                                                        <SelectItem key={part.id} value={part.id.toString()}>
+                                                            {part.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        {/* Selecting Part ID */}
 
-    
-                                    {/* Setting QTY */}
-                                    <div className="flex flex-col space-y-2">
-                                        <Label htmlFor="quantity" className="font-medium">Quantity</Label>
-                                        <input
-                                            id="quantity"
-                                            type="number"
-                                            value={qty >= 0 ? qty : ''}
-                                            onChange={e => setQty(Number(e.target.value))}
-                                            placeholder="Enter Quantity"
-                                            className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    
-                                
-
-                                    {/* Sample Sent to Office */}
-                                    <div className="flex items-center gap-2 leading-none">
-                                        <label
-                                            htmlFor="sampleSentToOffice"
-                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                        >
-                                            Is Sample Sent to Office?
-                                        </label>
-                                        <Checkbox
-                                            id="sampleSentToOffice"
-                                            checked={isSampleSentToOffice}
-                                            onCheckedChange={(checked) => setIsSampleSentToOffice(checked === true)}
-                                            className="h-5 w-5 border-gray-300 rounded focus:ring-gray-500 checked:bg-gray-600 checked:border-transparent"
+        
+                                        {/* Setting QTY */}
+                                        <div className="flex flex-col space-y-2">
+                                            <Label htmlFor="quantity" className="font-medium">Quantity</Label>
+                                            <input
+                                                id="quantity"
+                                                type="number"
+                                                value={qty >= 0 ? qty : ''}
+                                                onChange={e => setQty(Number(e.target.value))}
+                                                placeholder="Enter Quantity"
+                                                className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
-                                        <p className="text-sm text-muted-foreground">
-                                            {isSampleSentToOffice ? "Yes" : "No"}
-                                        </p>
-                                    </div>
+                                        </div>
+                                        
+                                    
 
-
-                                    {/* Note */}
-                                    <div className="flex flex-col space-y-2">
-                                        <Label htmlFor="note" className="font-medium">Note (Optional)</Label>
-                                        <Textarea
-                                            id="note"
-                                            value={note || ''}
-                                            onChange={e => setNote(e.target.value)}
-                                            placeholder="Enter any notes"
-                                            className="min-h-24 w-3/4"  
-                                        />
-                                    </div>
-
-                                    <div className="flex justify-start">
-                                        <Button 
-                                            size="sm"
-                                            onClick={handleAddOrderParts}
-                                            disabled={!isAddPartFormComplete}
-                                        >
-                                            <CirclePlus className="h-4 w-4" />
-                                            Add Parts
-                                        </Button>
-                                    </div>
-                                </div>
-    
-                                {/* Right side: List of Added Parts */}
-                                <div className="space-y-4 p-3">
-                                    <h4 className="font-bold mb-2">Added Parts</h4>
-                                    <ul className="space-y-2">
-                                        {orderedParts.map((part, index) => (
-                                            <li key={index} className="relative p-4 border rounded-lg bg-gray-100">
-                                                {/* Top right remove button */}
-                                                <CircleX
-                                                    width="28px"
-                                                    height="22px"
-                                                    className="absolute -top-3 -right-3 cursor-pointer"
-                                                    onClick={() => handleRemovePart(index)}
+                                        {/* Sample Sent to Office */}
+                                        <div className="flex items-center gap-2 leading-none">
+                                            <label
+                                                htmlFor="sampleSentToOffice"
+                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                            >
+                                                Is Sample Sent to Office?
+                                            </label>
+                                            <Checkbox
+                                                id="sampleSentToOffice"
+                                                checked={isSampleSentToOffice}
+                                                onCheckedChange={(checked) => setIsSampleSentToOffice(checked === true)}
+                                                className="h-5 w-5 border-gray-300 rounded focus:ring-gray-500 checked:bg-gray-600 checked:border-transparent"
                                                 />
-                                                {/* Flex container to align Part and Quantity side by side */}
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
-                                                    <p><strong>Quantity:</strong> {part.qty}</p>
-                                                </div>
-                                                {/* Flex container for Factory Section and Machine */}
-                                                {orderType === "Machine" ? (
-                                                    <div className="flex justify-between">
-                                                        <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
-                                                        <p><strong>Machine:</strong> {part.machine_number || "Unknown"}</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="">
-                                                        <p><strong>Order for Storage</strong></p>
-                                                    </div>
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                            {/* Buttons for adding parts and finalizing the order */}
-                            <div className="flex justify-end mt-4">
+                                            <p className="text-sm text-muted-foreground">
+                                                {isSampleSentToOffice ? "Yes" : "No"}
+                                            </p>
+                                        </div>
 
-                                <Link to="/orders">
-                                    <Button
-                                        size="sm"
-                                        onClick={handleFinalCreateOrder}
-                                        disabled={orderedParts.length === 0}
-                                    >
-                                        <CircleCheck className="h-4 w-4" />
-                                        Finalize Order
-                                    </Button>
-                                </Link>
-                            </div>
-                        </CardContent>
-                    </Card>
+
+                                        {/* Note */}
+                                        <div className="flex flex-col space-y-2">
+                                            <Label htmlFor="note" className="font-medium">Note (Optional)</Label>
+                                            <Textarea
+                                                id="note"
+                                                value={note || ''}
+                                                onChange={e => setNote(e.target.value)}
+                                                placeholder="Enter any notes"
+                                                className="min-h-24 w-3/4"  
+                                            />
+                                        </div>
+
+                                        <div className="flex justify-start">
+                                            <Button 
+                                                size="sm"
+                                                onClick={handleAddOrderParts}
+                                                disabled={!isAddPartFormComplete}
+                                            >
+                                                <CirclePlus className="h-4 w-4" />
+                                                Add Parts
+                                            </Button>
+                                        </div>
+                                    </div>
+        
+                                    {/* Right side: List of Added Parts */}
+                                    <div className="space-y-4 p-3">
+                                        <h4 className="font-bold mb-2">Added Parts</h4>
+                                        <ul className="space-y-2">
+                                            {orderedParts.map((part, index) => (
+                                                <li key={index} className="relative p-4 border rounded-lg bg-gray-100">
+                                                    {/* Top right remove button */}
+                                                    <CircleX
+                                                        width="28px"
+                                                        height="22px"
+                                                        className="absolute -top-3 -right-3 cursor-pointer"
+                                                        onClick={() => handleRemovePart(index)}
+                                                    />
+                                                    {/* Flex container to align Part and Quantity side by side */}
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
+                                                        <p><strong>Quantity:</strong> {part.qty}</p>
+                                                    </div>
+                                                    {/* Flex container for Factory Section and Machine */}
+                                                    {orderType === "Machine" ? (
+                                                        <div className="flex justify-between">
+                                                            <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
+                                                            <p><strong>Machine:</strong> {part.machine_name || "Unknown"}</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="">
+                                                            <p><strong>Order for Storage</strong></p>
+                                                        </div>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {/* Buttons for adding parts and finalizing the order */}
+                                <div className="flex justify-end mt-4">
+
+                                    <Link to="/orders">
+                                        <Button
+                                            size="sm"
+                                            onClick={handleFinalCreateOrder}
+                                            disabled={orderedParts.length === 0}
+                                        >
+                                            <CircleCheck className="h-4 w-4" />
+                                            Finalize Order
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
                 )}
             </div>
         </>

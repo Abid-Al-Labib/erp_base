@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          enabled: boolean
+          id: number
+          name: string
+        }
+        Insert: {
+          enabled: boolean
+          id?: number
+          name: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       damaged_parts: {
         Row: {
           factory_id: number
@@ -110,18 +128,21 @@ export type Database = {
           machine_id: number
           part_id: number
           qty: number
+          req_qty: number | null
         }
         Insert: {
           id?: number
           machine_id: number
           part_id: number
           qty: number
+          req_qty?: number | null
         }
         Update: {
           id?: number
           machine_id?: number
           part_id?: number
           qty?: number
+          req_qty?: number | null
         }
         Relationships: [
           {
@@ -145,21 +166,21 @@ export type Database = {
           factory_section_id: number
           id: number
           is_running: boolean
-          number: number
+          name: string
           type: string
         }
         Insert: {
           factory_section_id: number
           id?: number
           is_running: boolean
-          number: number
+          name: string
           type: string
         }
         Update: {
           factory_section_id?: number
           id?: number
           is_running?: boolean
-          number?: number
+          name?: string
           type?: string
         }
         Relationships: [
@@ -260,9 +281,9 @@ export type Database = {
           current_status_id: number
           department_id: number
           factory_id: number
-          factory_section_id: number
+          factory_section_id: number | null
           id: number
-          machine_id: number
+          machine_id: number | null
           order_note: string | null
           order_type: string | null
         }
@@ -272,9 +293,9 @@ export type Database = {
           current_status_id: number
           department_id: number
           factory_id: number
-          factory_section_id: number
+          factory_section_id?: number | null
           id?: number
-          machine_id: number
+          machine_id?: number | null
           order_note?: string | null
           order_type?: string | null
         }
@@ -284,9 +305,9 @@ export type Database = {
           current_status_id?: number
           department_id?: number
           factory_id?: number
-          factory_section_id?: number
+          factory_section_id?: number | null
           id?: number
-          machine_id?: number
+          machine_id?: number | null
           order_note?: string | null
           order_type?: string | null
         }

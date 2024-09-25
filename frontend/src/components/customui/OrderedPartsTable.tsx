@@ -28,13 +28,18 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
   const [showEmptyOrderPopup, setShowEmptyOrderPopup] = useState(false);
   const [loadingApproval, setLoadingApproval] =useState(false)
+  const [isApproveAllFactoryDialogOpen, setisApproveAllFactoryDialogOpen] = useState(false)
+  const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false)
+  const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false)
   const navigate = useNavigate()
   
   const handleApproveAllPendingOrder = async () => {
     setLoadingApproval(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
-        return updateApprovedPendingOrderByID(ordered_part.id, true);
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
+          return updateApprovedPendingOrderByID(ordered_part.id, true);
+        }
       });
       await Promise.all(updatePromises);
       toast.success("Approved all parts in the pending order")
@@ -44,13 +49,16 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } finally {
       setLoadingApproval(false)
     }
+    setisApproveAllFactoryDialogOpen(false)
   }
   
   const handleApproveAllOfficeOrder = async () => {
     setLoadingApproval(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
-        return updateApprovedOfficeOrderByID(ordered_part.id, true);
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
+          return updateApprovedOfficeOrderByID(ordered_part.id, true);
+        }
       });
       await Promise.all(updatePromises);
       toast.success("Approved all ordered items from office")
@@ -60,13 +68,16 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } finally {
       setLoadingApproval(false)
     }
+    setisApproveAllOfficeDialogOpen(false)
   }
   
   const handleApproveAllBudgets = async () => {
     setLoadingApproval(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
-        return updateApprovedBudgetByID(ordered_part.id, true);
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
+          return updateApprovedBudgetByID(ordered_part.id, true);
+        }
       });
       await Promise.all(updatePromises);
       toast.success("Approved budgets for all parts")
@@ -76,6 +87,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } finally {
       setLoadingApproval(false)
     }
+    setApproveAllBudgetDialogOpen(false)
   }
   
   const refreshPartsTable = async () => {
@@ -89,25 +101,18 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             if (updatedOrderedPartsList.length===0){
               setShowEmptyOrderPopup(true);
               await deleteOrderByID(order.id) 
-              setTimeout(() => {
-                handleNavigation()
-              }, 5000);
             }
             else{
-              const statusChange = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
-              if (statusChange){
+              const next_status_id = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
+              if (next_status_id && next_status_id!==-1 ){
                 console.log("changing status")
-                try {
-                  const next_status_id = (current_status.id+1) 
+                try { 
                   await UpdateStatusByID(order_id,next_status_id)
                   await InsertStatusTracker((new Date()), order_id, 1, next_status_id)
                 } catch (error) {
                   toast.error("Error updating status")
                 }
                 setShowActionsCompletedPopup(true);
-                // setTimeout(() => {
-                //   handleNavigation()
-                // }, 5000);
               }
             }
           }
@@ -150,18 +155,17 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         <TableRow>
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
-            <TableHead className="whitespace-nowrap">Take from storage</TableHead>
+            <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Purchased Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Sent To Factory Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Received By Factory</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Sent To Office</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Received By Office</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
             <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
         </TableHeader>
@@ -206,13 +210,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         <CardContent>
         <div className="flex justify-end gap-2 mb-2">
           {showPendingOrderApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={handleApproveAllPendingOrder}>{loadingApproval? "Approving...": "Approve all pending parts"}</Button>
+            <Button disabled={loadingApproval} onClick={()=>setisApproveAllFactoryDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all pending parts"}</Button>
           )}
           {showOfficeOrderApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={handleApproveAllOfficeOrder}>{loadingApproval? "Approving...": "Approve all parts"}</Button>
+            <Button disabled={loadingApproval} onClick={()=>setisApproveAllOfficeDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all parts"}</Button>
           )}
           {showBudgetApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={handleApproveAllBudgets}>{loadingApproval? "Approving...": "Approve all budgets"}</Button>
+            <Button disabled={loadingApproval} onClick={()=>setApproveAllBudgetDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all budgets"}</Button>
           )}
         </div>
         <Table>
@@ -220,7 +224,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         <TableRow>
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
-            <TableHead className="whitespace-nowrap">Take from storage</TableHead>
+            <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
+            <TableHead className="whitespace-nowrap">Current Storage Qty</TableHead>
             <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
@@ -229,11 +234,10 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Purchased Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Sent To Factory Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Part Received By Factory</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Sent To Office</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Sample Received By Office</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
             <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
         </TableHeader>
@@ -286,7 +290,60 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             </DialogFooter>
           </DialogContent>
       </Dialog>
+
+      <Dialog open={isApproveAllFactoryDialogOpen} onOpenChange={setisApproveAllFactoryDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Approve All
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You are approving all the parts in this pending order. This cannot be undone and you will move to next status.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to approve?
+            </p>
+          </DialogDescription>
+          <Button onClick={handleApproveAllPendingOrder}>Approve</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isApproveAllOfficeDialogOpen} onOpenChange={setisApproveAllOfficeDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Approve All
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You are approving all the parts in this order. This cannot be undone and you will move to next status.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to approve?
+            </p>
+          </DialogDescription>
+          <Button onClick={handleApproveAllOfficeOrder}>Approve</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isApproveAllBudgetDialogOpen} onOpenChange={setApproveAllBudgetDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Approve All 
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You are approving budgets for all parts. Only approve if you are okay with the whole quotation. 
+              This cannot be undone and you will be moved to the next status.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to approve?
+            </p>
+          </DialogDescription>
+          <Button onClick={handleApproveAllBudgets}>Approve</Button>
+        </DialogContent>
+      </Dialog>
       </Card>
+      
     )
   }
   

@@ -6,20 +6,18 @@ const HomePage = () => {
 
   return (
     <>
-    <NavigationBar/>
-    <div className="flex h-screen flex-col justify-center items-center">
-      <div>
+      <NavigationBar />
+      <div className="flex h-screen flex-col justify-center items-center">
+
+        <div>
         you are logged in as {profile?.email}
       </div>
-      <div className="grid grid-cols-3 gap-10">
-          <Card
-            className="max-w-xs p-2" x-chunk="charts-01-chunk-3"
-          >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
+          <Card className="max-w-xs p-2">
             <CardHeader>
               <CardTitle>Metric 1</CardTitle>
               <CardDescription>
-                Over the last 7 days, your distance walked and run was 12.5 miles
-                per day.
+                Over the last 7 days, your distance walked and run was 12.5 miles per day.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
@@ -32,14 +30,11 @@ const HomePage = () => {
             </CardContent>
           </Card>
 
-          <Card
-            className="max-w-xs p-2" x-chunk="charts-01-chunk-3"
-          >
+          <Card className="max-w-xs p-2">
             <CardHeader>
               <CardTitle>Metric 2</CardTitle>
               <CardDescription>
-                Over the last 7 days, your distance walked and run was 12.5 miles
-                per day.
+                Over the last 7 days, your distance walked and run was 12.5 miles per day.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
@@ -52,14 +47,11 @@ const HomePage = () => {
             </CardContent>
           </Card>
 
-          <Card
-            className="max-w-xs p-2" x-chunk="charts-01-chunk-3"
-          >
+          <Card className="max-w-xs p-2">
             <CardHeader>
               <CardTitle>Metric 3</CardTitle>
               <CardDescription>
-                Over the last 7 days, your distance walked and run was 12.5 miles
-                per day.
+                Over the last 7 days, your distance walked and run was 12.5 miles per day.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
@@ -71,8 +63,8 @@ const HomePage = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
       </div>
-    </div>
     </>
   )
 }

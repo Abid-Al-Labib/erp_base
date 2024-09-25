@@ -9,7 +9,7 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
@@ -19,7 +19,8 @@ import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
-import { upsertMachineParts, addMachinePartQty } from "@/services/MachinePartsService"
+import { addMachinePartQty } from "@/services/MachinePartsService"
+
 
 interface OrderedPartRowProp{
     mode: 'view' | 'manage',
@@ -36,15 +37,19 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
   const [dateReceived, setDateReceived] = useState<Date | undefined>(orderedPartInfo.part_received_by_factory_date? new Date(orderedPartInfo.part_received_by_factory_date): new Date())
   
-  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false)
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const [isApproveFromOfficeDialogOpen, setIsApproveFromOfficeDialogOpen] = useState(false);
+  const [isApproveFromFactoryDialogOpen, setIsApproveFromFactoryDialogOpen] = useState(false);
+  const [isApproveBudgetDialogOpen, setIsApproveBudgetDialogOpen] = useState(false);
+  const [isSampleReceivedDialogOpen, setIsSampleReceivedDialogOpen] = useState(false);
   const [isPurchasedDialogOpen, setIsPurchasedDialogOpen] = useState(false);
   const [isSentDialogOpen, setIsSentDialogOpen] = useState(false);
   const [isReceivedDialogOpen, setIsReceivedDialogOpen] = useState(false);
   const [isCostingDialogOpen,setIsCostingDialogOpen] = useState(false);
-  const [isReviseBudgetDialogOpen, setIsReviseBudgetDialogOpen] = useState(false)
-  const [isOfficeNoteDialogOpen, setIsOfficeNoteDialogOpen] = useState(false)
-  const [isTakeFromStorageDialogOpen, setIsTakeFromStorageDialogOpen] = useState(false)
-
+  const [isReviseBudgetDialogOpen, setIsReviseBudgetDialogOpen] = useState(false);
+  const [isOfficeNoteDialogOpen, setIsOfficeNoteDialogOpen] = useState(false);
+  const [isTakeFromStorageDialogOpen, setIsTakeFromStorageDialogOpen] = useState(false);
+  const [isDenyDialogOpen, setIsDenyDialogOpen] = useState(false);
   const [vendor, setVendor] = useState(orderedPartInfo.vendor || '');
   const [brand, setBrand] = useState(orderedPartInfo.brand || '')
   const [unitCost, setUnitCost] = useState(orderedPartInfo.unit_cost || '');
@@ -58,6 +63,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [noteValue, setNoteValue] = useState<string>('');
   const navigate = useNavigate()
   const [disableTakeStorageRow, setDisableTakeStorageRow] = useState(false);
+  const [currentStorageQty,setCurrentStorageQty] = useState<number|null>(null)
   const handleNavigation = () => {
     navigate('/orders'); 
   };
@@ -66,12 +72,23 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       const fetchData = async () => {
           if (mode=="manage")
           {
-            const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && (current_status.name!=="Parts Sent To Factory")
+            const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && orderedPartInfo.qty===0
             setDisableTakeStorageRow(disableRow)
-            const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
-            if (result) {
-              setLastUnitCost(result.unit_cost);
-              setLastPurchaseDate(result.part_purchase_date);
+            if (order_type === "Machine")
+            {
+              const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
+              if (storage_data && storage_data.length>0) {
+                setCurrentStorageQty(storage_data[0].qty)
+              }
+              else {
+                console.log(`no storage data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)
+                return null
+              }
+              const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
+              if (result) {
+                setLastUnitCost(result.unit_cost);
+                setLastPurchaseDate(result.part_purchase_date);
+            }
             }
           }
       };
@@ -91,43 +108,55 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     };
     approvePartFromFactory();
+    setIsApproveFromFactoryDialogOpen(false);
+    setIsActionMenuOpen(false);
   }
 
   const handleApproveTakingFromStorage = () => {
     // console.log(`Headoffice approves taking ${orderedPartInfo.qty} from storage`)
     const takeFromStorage = async() => {
       try {
-        const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id, factory_id)
-        console.log(storage_data)
-        if (storage_data)
+        if (currentStorageQty)
         {
-          if (storage_data.length>0)
-          {
-            const new_current_storage_quantity = storage_data[0].qty - orderedPartInfo.qty
-            await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_current_storage_quantity)
-            console.log("updated storage qty")
-            await upsertMachineParts(orderedPartInfo.part_id,machine_id,orderedPartInfo.qty)
-            console.log("updated machine qty")
-            await updateSentDateByID(orderedPartInfo.id, new Date())
-            console.log("updated sent date")
+            if (currentStorageQty>=orderedPartInfo.qty){
+              //if there is enough quantity in storage 
+              const new_storage_quantity = currentStorageQty - orderedPartInfo.qty
+              await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_storage_quantity)
+              setCurrentStorageQty(new_storage_quantity)
+              console.log("updated storage qty")
+              await updateOrderedPartQtyByID(orderedPartInfo.id,0)
+              console.log("updated ordered part qty")
+              await addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+              console.log("updated machine part qty")
+              await updateSentDateByID(orderedPartInfo.id, new Date())
+              console.log("updated sent date")
+              await updateReceivedByFactoryDateByID(orderedPartInfo.id,new Date())
+              console.log("updated received date")
+              setDisableTakeStorageRow(true)
+            }
+            else{
+              //if storage can't provide the requested quantity
+              const new_orderedpart_qty = orderedPartInfo.qty - currentStorageQty
+              await upsertStoragePart(orderedPartInfo.part_id,factory_id,0)
+              setCurrentStorageQty(0)
+              console.log("updated storage qty")
+              await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
+              console.log("updated ordered part qty")
+              await addMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty)
+              console.log("updated machine part qty")
+            }
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
             console.log("approved taking from storage")
             onOrderedPartUpdate();
           }
-          else {
-            console.log(`no data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)
-            return null
-          }
-        }
-      } catch (error) {
+        } catch (error) {
         toast.error("Error occured while fetching storage data")
       }
     };
 
     takeFromStorage()
-    setDisableTakeStorageRow(true)
     setIsTakeFromStorageDialogOpen(false)
-
+    setIsActionMenuOpen(false);
   }
 
   const handleApproveOffice = () => {
@@ -138,10 +167,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         toast.success("Ordered part has been approved!");
         onOrderedPartUpdate();
       } catch (error) {
-        toast.error("Error occured could not complete action");
+        toast.error("Error occured could  not complete action");
       }
     };
     approvePartFromOffice();
+    setIsApproveFromOfficeDialogOpen(false);
+    setIsActionMenuOpen(false);
   };
 
   const handleApproveBudget = () => {
@@ -156,6 +187,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     };
     approveBudget();
+    setIsApproveBudgetDialogOpen(false);
+    setIsActionMenuOpen(false);
   };
 
   const handleAddOfficeNote = () => {
@@ -185,6 +218,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     addOfficeNote(updated_note);
     setNoteValue(''); 
     setIsOfficeNoteDialogOpen(false)
+    setIsActionMenuOpen(false);
   };
 
 
@@ -200,6 +234,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     };
     deletingPart();
+    setIsDenyDialogOpen(false)
+    setIsActionMenuOpen(false);
   };
 
   const handleReviseBudget = () => {
@@ -241,9 +277,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       revertingStatus();
       setIsReviseBudgetDialogOpen(false)
       setShowDenyBudgetPopup(true)
-      // setTimeout(() => {
-      //   handleNavigation()
-      // }, 5000);
     }
     else{
       toast.error("You have not selected any category to deny.")
@@ -281,6 +314,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     setVendor('');
     setUnitCost('');
     setIsCostingDialogOpen(false);
+    setIsActionMenuOpen(false);
   };
 
   const handleUpdatePurchaseDate = () => {
@@ -302,6 +336,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
     updatePurchaseDate();
     setIsPurchasedDialogOpen(false);
+    setIsActionMenuOpen(false);
   }
 
   const handleUpdateSentDate = () => {
@@ -330,6 +365,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
     updateSentDate();
     setIsSentDialogOpen(false);
+    setIsActionMenuOpen(false);
   }
   
 
@@ -342,7 +378,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
             //if order type storage
             toast.success("Part received by factory date set!")
-            handleUpdateDatabase();
+            if (order_type=="Storage"){
+              addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+            }
+            if (order_type == "Machine") {
+              addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+            }
             onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
@@ -359,17 +400,18 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     }
     updateReceivedDate();
     setIsReceivedDialogOpen(false);
+    setIsActionMenuOpen(false);
   }
 
 
-  const handleUpdateDatabase = () => {
-    if (order_type=="Storage"){
-      addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
-    }
-    if (order_type == "Machine") {
-      addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
-    }
-  }
+  // const handleUpdateDatabase = () => {
+  //   if (order_type=="Storage"){
+  //     addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+  //   }
+  //   if (order_type == "Machine") {
+  //     addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+  //   }
+  // }
 
   const handleSampleReceived = () => {
     console.log("Sample received")
@@ -383,14 +425,16 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     };
     updateSampleReceived();
+    setIsSampleReceivedDialogOpen(false);
+    setIsActionMenuOpen(false);
   }
 
-  
+
 
   if(mode==='view'){
     return (
       <TableRow>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
@@ -434,8 +478,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{`${orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'} / ${orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}`}</TableCell>
 
         <TableCell className="md:hidden">
             <Dialog>
@@ -457,9 +500,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableRow className={`${
           disableTakeStorageRow ? 'bg-gray-300 pointer-events-none' : ''
         } transition duration-200 ease-in-out`}>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.parts.name}</TableCell>
+        <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
+        <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
@@ -503,8 +547,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{`${orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'} / ${orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}`}</TableCell>
         <TableCell className="md:hidden">
             <Dialog>
               <DialogTrigger asChild>
@@ -518,303 +561,91 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             </Dialog>
         </TableCell>
           <TableCell>
-          <DropdownMenu>
+          <DropdownMenu open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 aria-haspopup="true"
                 size="icon"
                 variant="ghost"
+                onClick={()=>setIsActionMenuOpen(true)}
               >
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Toggle menu</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent className="grid-cols-1"align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 { 
                   showOfficeOrderApproveButton(current_status.name, orderedPartInfo.approved_office_order) && (
-                  <DropdownMenuItem onClick={handleApproveOffice}>
-                    Approve from office
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsApproveFromOfficeDialogOpen(true)}>
+                      <span className="hover:text-green-600">Approve from Office</span>
+                    </DropdownMenuItem>
                 )}
                 { 
                   showPendingOrderApproveButton(current_status.name, orderedPartInfo.approved_pending_order) && (
-                  <DropdownMenuItem onClick={handleApproveFactory}>
-                    Approve from factory
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsApproveFromFactoryDialogOpen(true)}>
+                      <span className="hover:text-green-600">Approve from Factory</span>
+                    </DropdownMenuItem>
                 )}
                 {
                   showApproveTakingFromStorageButton(current_status.name,orderedPartInfo.in_storage,orderedPartInfo.approved_storage_withdrawal) && (
-                    <Dialog open={isTakeFromStorageDialogOpen} onOpenChange={setIsTakeFromStorageDialogOpen}>
-                      <DialogTrigger>
-                        <div 
-                          className="pl-2 pt-1 hover:bg-slate-100"
-                          onClick={()=>setIsTakeFromStorageDialogOpen(true)}
-                        >
-                          Take from storage
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogTitle>
-                          Take from storage Approval
-                        </DialogTitle>
-                        <DialogDescription>
-                          <p className="text-sm text-muted-foreground">
-                              This item exists in storage. Approving this action will adjust storage quantity and cannot be undone.
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                              Do you Approve?
-                          </p>
-                        </DialogDescription>
-
-                        <Button onClick={handleApproveTakingFromStorage}>Approve</Button>
-                      </DialogContent>
-                    </Dialog>
+                    <DropdownMenuItem onClick={()=>setIsTakeFromStorageDialogOpen(true)}>
+                      <span className="hover:text-green-600">Take from storage</span>
+                    </DropdownMenuItem>
                 )}
 
                 { 
                   showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
-                  <DropdownMenuItem onClick={handleApproveBudget}>
-                    Approve Budget
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsApproveBudgetDialogOpen(true)}>
+                      <span className="hover:text-green-600">Approve Budget</span>
+                    </DropdownMenuItem>
                 )}
                 { 
                   showReviseBudgetButton(current_status.name, orderedPartInfo.approved_budget) && (
-                    <Dialog open={isReviseBudgetDialogOpen} onOpenChange={setIsReviseBudgetDialogOpen}>
-                      <DialogTrigger asChild>
-                        <div 
-                          className="pl-2 pt-1 hover:bg-slate-100"
-                          onClick={()=>setIsReviseBudgetDialogOpen(true)}  
-                        > 
-                          Revise Budget
-                        </div>
-                      </DialogTrigger>
-                          <DialogContent className="sm:max-w-[425px]">
-                              <DialogTitle className="text-red-600">Revise Budget</DialogTitle>
-                              <p className="text-sm text-muted-foreground">
-                                Checking a box will deny that category
-                              </p>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox id="checkDenyBrand"
-                                  checked={denyBrand}
-                                  onCheckedChange={(checked) => setDenyBrand(!!checked)} 
-                                />
-                                <label
-                                  htmlFor="checkDenyBrand"
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  Deny Brand
-                                </label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox id="checkDenyVendor"
-                                  checked={denyVendor}
-                                  onCheckedChange={(checked) => setDenyVendor(!!checked)} 
-                                />
-                                <label
-                                  htmlFor="checkDenyVendor"
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  Deny Vendor
-                                </label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox id="checkDenyCost"
-                                  checked={denyCost}
-                                  onCheckedChange={(checked) => setDenyCost(!!checked)}  
-                                />
-                                <label
-                                  htmlFor="checkDenyCost"
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  Deny Unit Cost
-                                </label>
-                                </div>
-                              <Button onClick={handleReviseBudget}>Confirm</Button>
-                      </DialogContent>
-                    </Dialog>
+                    <DropdownMenuItem onClick={()=>setIsReviseBudgetDialogOpen(true)}  >
+                      <span className="hover:text-red-600">Revise Budget</span>
+                    </DropdownMenuItem>
                 )}
                 {
                   showOfficeOrderDenyButton(current_status.name) && (                
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <div className="pl-2 pt-1 hover:bg-slate-100" > 
-                          Deny Part
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                              <DialogTitle className="text-red-600">Deny Part</DialogTitle>
-                              <div>
-                                Are you sure you want to deny this part?
-                                <br />
-                                It will be removed from this order.
-                              </div>
-                              <Button onClick={handleDenyPart}>Confirm</Button>
-                      </DialogContent>
-                    </Dialog>
+                    <DropdownMenuItem onClick={()=>setIsDenyDialogOpen(true)}>
+                      <span className="hover:text-red-600">Deny Part</span>
+                    </DropdownMenuItem>
                 )}
                 {
                   showOfficeNoteButton(current_status.name) && (
-                    <Dialog open={isOfficeNoteDialogOpen} onOpenChange={setIsOfficeNoteDialogOpen}>
-                      <DialogTrigger>
-                        <div 
-                          className="pl-2 pt-1 hover:bg-slate-100"
-                          onClick={()=>setIsOfficeNoteDialogOpen(true)}
-                        >
-                            Add office note</div>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogTitle>
-                          Office Note
-                        </DialogTitle>
-                        <div className="grid w-full gap-2">
-                          <Label htmlFor="officeNote">Add you note here</Label>
-                          <Textarea
-                            placeholder="Type your note here."
-                            id="officeNote"
-                            value={noteValue} // Bind the text area value to the state
-                            onChange={(e) => setNoteValue(e.target.value)} // Update state on text change
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            This note is only visible to head office
-                          </p>
-                        </div>
-                        <Button onClick={handleAddOfficeNote}>Submit</Button>
-                      </DialogContent>
-                    </Dialog>
-                  )
-                }
+                    <DropdownMenuItem onClick={()=>setIsOfficeNoteDialogOpen(true)}>
+                      <span>Add Office Note</span>
+                    </DropdownMenuItem>
+                )}
                 {
                   showQuotationButton(current_status.name,orderedPartInfo.brand,orderedPartInfo.vendor,orderedPartInfo.unit_cost) && (                
-                  <Dialog open={isCostingDialogOpen} onOpenChange={setIsCostingDialogOpen} >
-                    <DialogTrigger asChild>
-                      <div 
-                      className="pl-2 pt-1 hover:bg-slate-100"
-                      onClick={()=>setIsCostingDialogOpen(true)}
-                      >
-                        Add Quotation
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                        <DialogTitle>
-                          Update Costing
-                        </DialogTitle>
-                        <fieldset className="grid gap-6 rounded-lg border p-4">
-                          <div className="grid gap-3">
-                            <Label htmlFor="brand">Brand</Label>
-                            <Input 
-                              id="brand" 
-                              type="text" 
-                              value={brand}
-                              placeholder="Enter brand name"
-                              onChange={(e) => setBrand(e.target.value)}
-                            />
-                          </div>
-                          <div className="grid gap-3">
-                            <Label htmlFor="vendor">Vendor</Label>
-                            <Input 
-                              id="vendor" 
-                              type="text" 
-                              value={vendor}
-                              placeholder="Enter vendor name"
-                              onChange={(e) => setVendor(e.target.value)}
-                            />
-                          </div>
-                          <div className="grid gap-3">
-                            <Label htmlFor="unit_cost">Cost/Unit</Label>
-                            <Input 
-                              id="unit_cost" 
-                              type="number"
-                              value={unitCost} 
-                              placeholder="Enter the unit cost" 
-                              onChange={(e) => setUnitCost(e.target.value)}
-                              />
-                        </div>
-                        </fieldset>
-                        <Button onClick={handleUpdateCosting} disabled={costLoading}>
-                          {costLoading ? "Updating..." : "Confirm"}
-                        </Button>
-                    </DialogContent>
-                  </Dialog>
+                    <DropdownMenuItem onClick={()=>setIsCostingDialogOpen(true)}>
+                      <span>Add Quotation</span>
+                    </DropdownMenuItem>
                 )}
-
                 {
                   showPurchaseButton(current_status.name,orderedPartInfo.part_purchased_date) && (
-                    <Dialog open={isPurchasedDialogOpen} onOpenChange={setIsPurchasedDialogOpen}>
-                    <DialogTrigger asChild>
-                      <div 
-                      className="pl-2 pt-1 hover:bg-slate-100" 
-                      onClick={()=>setIsPurchasedDialogOpen(true)}>
-                        Part Purchased
-                      </div>
-                    </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                            <DialogTitle>
-                              Date when part was purchased
-                            </DialogTitle>
-                            <Calendar
-                              mode="single"
-                              selected={datePurchased}
-                              onSelect={setDatePurchased}
-                              className="rounded-md border"
-                            />
-                            <Button onClick={handleUpdatePurchaseDate}>Confirm</Button>
-                        </DialogContent>
-                    </Dialog>
+                    <DropdownMenuItem onClick={()=>setIsPurchasedDialogOpen(true)}>
+                      <span>Set Purchase Date</span>
+                    </DropdownMenuItem>
                 )}
                 {
                   showSentButton(current_status.name, orderedPartInfo.part_sent_by_office_date) && (
-                    <Dialog open={isSentDialogOpen} onOpenChange={setIsSentDialogOpen}>
-                      <DialogTrigger asChild>
-                        <div 
-                        className="pl-2 pt-1 hover:bg-slate-100"
-                        onClick={()=> setIsSentDialogOpen(true)}>
-                          Part Sent
-                        </div>
-      
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                          <DialogTitle>
-                            Date when part was sent to factory
-                          </DialogTitle>
-                          <Calendar
-                            mode="single"
-                            selected={dateSent}
-                            onSelect={setDateSent}
-                            className="rounded-md border"
-                          />
-                          <Button onClick={handleUpdateSentDate}>Confirm</Button>
-                      </DialogContent>
-                    </Dialog>
+                    <DropdownMenuItem onClick={()=> setIsSentDialogOpen(true)}>
+                      <span>Set Sent Date</span>
+                    </DropdownMenuItem>
                 )}
                 {
                   showReceivedButton(current_status.name, orderedPartInfo.part_received_by_factory_date) && (
-                  <Dialog open={isReceivedDialogOpen} onOpenChange={setIsReceivedDialogOpen}>
-                    <DialogTrigger asChild>
-                      <div
-                        className="pl-2 pt-1 hover:bg-slate-100"
-                        onClick={() => setIsReceivedDialogOpen(true)}
-                      >
-                        Part Received
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogTitle>Date when part was received at Factory</DialogTitle>
-                      <Calendar
-                        mode="single"
-                        selected={dateReceived}
-                        onSelect={setDateReceived}
-                        className="rounded-md border"
-                      />
-                      <Button onClick={handleUpdateReceivedDate}>Confirm</Button>
-                    </DialogContent>
-                  </Dialog>
+                    <DropdownMenuItem onClick={() => setIsReceivedDialogOpen(true)}>
+                      <span>Set Received Date</span>
+                    </DropdownMenuItem>
                 )}
                 {
                   showSampleReceivedButton(orderedPartInfo.is_sample_sent_to_office,orderedPartInfo.is_sample_received_by_office) && (
-                  <DropdownMenuItem onClick={handleSampleReceived}>
-                    Sample Received
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsSampleReceivedDialogOpen(true)}>
+                      <span>Receive Sample</span>
+                    </DropdownMenuItem>
                 )}
 
             </DropdownMenuContent>
@@ -834,6 +665,249 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            <Dialog open={isSampleReceivedDialogOpen} onOpenChange={setIsSampleReceivedDialogOpen}>
+              <DialogContent>
+                <DialogTitle>
+                  Receive Sample
+                </DialogTitle>
+                <DialogDescription>
+                  <p className="text-sm text-muted-foreground">
+                    Confirming that the sample has been received at head office.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Is the sample received?
+                  </p>
+                </DialogDescription>
+        
+                <Button onClick={handleSampleReceived}>Confirm</Button>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isReceivedDialogOpen} onOpenChange={setIsReceivedDialogOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogTitle>Date when part was received at Factory</DialogTitle>
+                <Calendar
+                  mode="single"
+                  selected={dateReceived}
+                  onSelect={setDateReceived}
+                  className="rounded-md border"
+                />
+                <Button onClick={handleUpdateReceivedDate}>Confirm</Button>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isSentDialogOpen} onOpenChange={setIsSentDialogOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                  <DialogTitle>
+                    Date when part was sent to factory
+                  </DialogTitle>
+                  <Calendar
+                    mode="single"
+                    selected={dateSent}
+                    onSelect={setDateSent}
+                    className="rounded-md border"
+                  />
+                  <Button onClick={handleUpdateSentDate}>Confirm</Button>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isPurchasedDialogOpen} onOpenChange={setIsPurchasedDialogOpen}>
+                  <DialogContent className="sm:max-w-[425px]">
+                      <DialogTitle>
+                        Date when part was purchased
+                      </DialogTitle>
+                      <Calendar
+                        mode="single"
+                        selected={datePurchased}
+                        onSelect={setDatePurchased}
+                        className="rounded-md border"
+                      />
+                      <Button onClick={handleUpdatePurchaseDate}>Confirm</Button>
+                  </DialogContent>
+              </Dialog>
+              <Dialog open={isCostingDialogOpen} onOpenChange={setIsCostingDialogOpen} >
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogTitle>
+                      Update Costing
+                    </DialogTitle>
+                    <fieldset className="grid gap-6 rounded-lg border p-4">
+                      <div className="grid gap-3">
+                        <Label htmlFor="brand">Brand</Label>
+                        <Input 
+                          id="brand" 
+                          type="text" 
+                          value={brand}
+                          placeholder="Enter brand name"
+                          onChange={(e) => setBrand(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-3">
+                        <Label htmlFor="vendor">Vendor</Label>
+                        <Input 
+                          id="vendor" 
+                          type="text" 
+                          value={vendor}
+                          placeholder="Enter vendor name"
+                          onChange={(e) => setVendor(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-3">
+                        <Label htmlFor="unit_cost">Cost/Unit</Label>
+                        <Input 
+                          id="unit_cost" 
+                          type="number"
+                          value={unitCost} 
+                          placeholder="Enter the unit cost" 
+                          onChange={(e) => setUnitCost(e.target.value)}
+                          />
+                    </div>
+                    </fieldset>
+                    <Button onClick={handleUpdateCosting} disabled={costLoading}>
+                      {costLoading ? "Updating..." : "Confirm"}
+                    </Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isOfficeNoteDialogOpen} onOpenChange={setIsOfficeNoteDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogTitle>
+                    Office Note
+                  </DialogTitle>
+                  <div className="grid w-full gap-2">
+                    <Label htmlFor="officeNote">Add you note here</Label>
+                    <Textarea
+                      placeholder="Type your note here."
+                      id="officeNote"
+                      value={noteValue} // Bind the text area value to the state
+                      onChange={(e) => setNoteValue(e.target.value)} // Update state on text change
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      This note is only visible to head office
+                    </p>
+                  </div>
+                  <Button onClick={handleAddOfficeNote}>Submit</Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isDenyDialogOpen} onOpenChange={setIsDenyDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                        <DialogTitle className="text-red-600">Deny Part</DialogTitle>
+                        <div>
+                          Are you sure you want to deny this part?
+                          <br />
+                          It will be removed from this order.
+                        </div>
+                        <Button onClick={handleDenyPart}>Confirm</Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isReviseBudgetDialogOpen} onOpenChange={setIsReviseBudgetDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogTitle className="text-red-600">Revise Budget</DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Checking a box will deny that category
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="checkDenyBrand"
+                            checked={denyBrand}
+                            onCheckedChange={(checked) => setDenyBrand(!!checked)} 
+                          />
+                          <label
+                            htmlFor="checkDenyBrand"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Deny Brand
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="checkDenyVendor"
+                            checked={denyVendor}
+                            onCheckedChange={(checked) => setDenyVendor(!!checked)} 
+                          />
+                          <label
+                            htmlFor="checkDenyVendor"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Deny Vendor
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="checkDenyCost"
+                            checked={denyCost}
+                            onCheckedChange={(checked) => setDenyCost(!!checked)}  
+                          />
+                          <label
+                            htmlFor="checkDenyCost"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Deny Unit Cost
+                          </label>
+                          </div>
+                        <Button onClick={handleReviseBudget}>Confirm</Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isApproveBudgetDialogOpen} onOpenChange={setIsApproveBudgetDialogOpen}>
+                <DialogContent>
+                  <DialogTitle>
+                    Budget Approval
+                  </DialogTitle>
+                  <DialogDescription>
+                    <p className="text-sm text-muted-foreground">
+                      Only approve if you are satisfied with the whole quotation.
+                      Approving cannot be undone and the values will be permanently saved.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Do you Approve?
+                    </p>
+                  </DialogDescription>
+          
+                  <Button onClick={handleApproveBudget}>Approve</Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isTakeFromStorageDialogOpen} onOpenChange={setIsTakeFromStorageDialogOpen}>
+                <DialogContent>
+                  <DialogTitle>
+                    Take from storage Approval
+                  </DialogTitle>
+                  <DialogDescription>
+                    <p className="text-sm text-muted-foreground">
+                        This item exists in storage. Approving this action will adjust storage quantity and cannot be undone.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        Do you Approve?
+                    </p>
+                  </DialogDescription>
+                  <Button onClick={handleApproveTakingFromStorage}>Approve</Button>
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog open={isApproveFromFactoryDialogOpen} onOpenChange={setIsApproveFromFactoryDialogOpen}>
+                <DialogContent>
+                  <DialogTitle>
+                    Approval From Factory
+                  </DialogTitle>
+                  <DialogDescription>
+                    <p className="text-sm text-muted-foreground">
+                      Are you sure you want to approve this part?
+                    </p>
+                  </DialogDescription>
+                  <Button onClick={handleApproveFactory}>Approve</Button>
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog open={isApproveFromOfficeDialogOpen} onOpenChange={setIsApproveFromOfficeDialogOpen}>
+                <DialogContent>
+                  <DialogTitle>
+                    Approval from Office
+                  </DialogTitle>
+                  <DialogDescription>
+                    <p className="text-sm text-muted-foreground">
+                      Are you sure you want to approve this part?
+                    </p>
+                  </DialogDescription>
+          
+                  <Button onClick={handleApproveOffice}>Approve</Button>
+                </DialogContent>
+              </Dialog>
         </TableRow>
         
     )

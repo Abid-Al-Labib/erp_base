@@ -8,10 +8,19 @@ export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
 export type MachinePart = Tables<"machine_parts">
 export type StoragePart = Tables<"storage_parts">
+export type ApplicationSettings = Tables<"app_settings">
+
+export type DamagedPart = {
+    id: number,
+    part_id: number,
+    factory_id:number,
+    qty:number,
+    parts: Part
+}
 
 export type Machine = {
     id: number,
-    number: number,
+    name: string,
     type: string,
     is_running: boolean,
     factory_section_id: number,
