@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 export const fetchMachines = async (factorySectionId: number) => {
     const { data, error } = await supabase_client
         .from('machines')
-        .select('id, type, name')
+        .select('id, type, name, is_running')
         .eq('factory_section_id', factorySectionId);
 
     if (error) {

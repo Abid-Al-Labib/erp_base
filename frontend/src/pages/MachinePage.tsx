@@ -17,6 +17,7 @@ import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import AllMachinesStatus from "@/components/customui/AllMachineStatus";
 
 type MachinePart = {
   id: number;
@@ -301,6 +302,22 @@ const MachinePartsPage = () => {
                       </Select>
                     </div>
                   )}
+                  {/* Reset Button */}
+                  <Button
+                    className="mt-4"
+                    variant="outline"
+                    onClick={() => {
+                      // Reset all fields to their initial state
+                      setSelectedFactoryId(undefined);
+                      setSelectedFactorySectionId(undefined);
+                      setSelectedMachineId(undefined);
+                      setMachineParts([]);
+                      setRunningOrders([]);
+                      setSelectedMachine(undefined);
+                    }}
+                  >
+                    Reset And Show All Statuses
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -342,14 +359,18 @@ const MachinePartsPage = () => {
             </div>
 
             {/* Machine Status Section */}
+            {
+              selectedFactoryId !== undefined ? (
             <div className="flex min-w-44 max-w-lg"> {/* Roughly 1/6th of the width */}
               <MachineStatus machineId={selectedMachineId} />
             </div>
+              ): null
+            }
           </div>
 
           {
             selectedFactoryId === undefined ? (
-              <div className="text-center text-lg">Please select a factory, section and machine to display data</div>
+              <AllMachinesStatus />
             ): selectedFactorySectionId === undefined ? (
               <div className="text-center text-lg">Please select a section and machine to display data</div>
             ): selectedMachineId === undefined ? (
