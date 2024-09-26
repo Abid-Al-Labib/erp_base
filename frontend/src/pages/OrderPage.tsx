@@ -11,6 +11,7 @@ import OrdersTableRow from '@/components/customui/OrdersTableRow';
 import { Order } from '@/types';
 import { fetchOrders } from '@/services/OrdersService';
 import SearchAndFilter from '@/components/customui/SearchAndFilter'; // Import the new component
+import { useAuth } from '@/context/AuthContext';
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -19,7 +20,7 @@ const OrderPage = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [ordersPerPage] = useState(5); // Set the number of orders per page here
     const [count, setCount] = useState(0);
-
+    const profile = useAuth().profile
     const handleApplyFilters = async (filters: any) => {
         console.log('Applied Filters:', filters);
         try {
@@ -91,14 +92,16 @@ const OrderPage = () => {
                                 </div>
 
                                 {/* Create Order Button - Positioned on the right */}
-                                <Link to="/createorder">
-                                    <Button size="sm" className="h-8 gap-1 bg-blue-950">
-                                        <PlusCircle className="h-3.5 w-3.5" />
-                                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                            Create New Order
-                                        </span>
-                                    </Button>
-                                </Link>
+                                { (profile?.permission==='department' || profile?.permission==="admin") &&
+                                    <Link to="/createorder">
+                                        <Button size="sm" className="h-8 gap-1 bg-blue-950">
+                                            <PlusCircle className="h-3.5 w-3.5" />
+                                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                                Create New Order
+                                            </span>
+                                        </Button>
+                                    </Link>
+                                }
                             </div>
                             <TabsContent value="all">
                                 <Card x-chunk="dashboard-06-chunk-0">

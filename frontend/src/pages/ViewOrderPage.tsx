@@ -10,7 +10,7 @@ import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -24,8 +24,8 @@ const ViewOrderPage = () => {
       const order_id = parseInt(id);
       try {
         const data = await fetchOrderByID(order_id);
-        if (data && data.length > 0) {
-          setOrders(data);
+        if (data) {
+          setOrder(data);
         } else {
           toast.error("Order not found");
           navigate("/orders");
@@ -44,7 +44,7 @@ const ViewOrderPage = () => {
     return <div>Loading...</div>; // Add a loading state if necessary
   }
 
-  if (orders.length === 0) {
+  if (!order) {
     toast.error("No order found with this id")
     return <div>No order found</div>; // Handle the case where no orders are returned
   }
@@ -56,18 +56,18 @@ const ViewOrderPage = () => {
           <div className="sm:flex flex-1 gap-2">
             <div className="w-full mt-4">
             <OrderInfo
-              order={orders[0]}
+              order={order}
             />
             </div>
             <div className="mt-4">
-              <StatusTracker order_id={orders[0].id} />
+              <StatusTracker order_id={order.id} />
             </div>
           </div>
             <div className="w-full mt-4 overflow-x-auto">
               <OrderedPartsTable
                 mode="view"
-                order={orders[0]} 
-                current_status={orders[0].statuses}         
+                order={order} 
+                current_status={order.statuses}         
               />
             </div>
           </div>

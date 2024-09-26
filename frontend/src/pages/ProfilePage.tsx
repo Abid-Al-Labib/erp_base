@@ -38,6 +38,24 @@ const ProfilePage = () => {
 
     }
 
+    const loadResetPasswordSettings = async () => {
+        try {
+            const settings_data = await fetchAppSettings()
+            if (settings_data) {
+                settings_data.forEach((setting) => {
+                    if (setting.name === "Reset Password") {
+                        setEnableResetPassword(setting.enabled)
+                        return setting.enabled
+                    }
+                })
+            }
+        } catch (error) {
+            toast.error("Could not load settings data")
+            setEnableResetPassword(false)
+            return false
+        }
+    }
+
     const handleResetPasswordToggle = async (checked: boolean) => {
         try {
             setEnableResetPassword(checked)
@@ -55,15 +73,23 @@ const ProfilePage = () => {
             toast.error("Please enter a new password.")
             return
         }
-
-        const { error } = await supabase_client.auth.updateUser({ password: newPassword })
-
-        if (error) {
-            toast.error(`Error: ${error.message}`)
-        } else {
-            toast.success("Password has been updated successfully.")
-            setNewPassword("") // Clear the input field
+        const resetenabled = await loadResetPasswordSettings()
+        if (resetenabled){
+            const { error } = await supabase_client.auth.updateUser({ password: newPassword })
+            if (error) {
+                toast.error(`Error: ${error.message}`)
+            } else {
+                toast.success("Password has been updated successfully.")
+                setNewPassword("") // Clear the input field
+            }
         }
+        else {
+            toast.error("Reset Password is currently disabled")
+            setNewPassword("") // Clear the input field
+            setCurrentDisplay("General")
+        }
+        
+
     }
 
     useEffect(() => {
@@ -103,12 +129,15 @@ const ProfilePage = () => {
                         >
                             General
                         </div>
-                        <div
-                            className={`p-2 pl-4 hover:font-semibold hover:shadow-md border-b-2 hover:shadow-blue-950 ${currentDisplay === "App Settings" ? 'font-semibold' : ''}`}
-                            onClick={() => setCurrentDisplay("App Settings")}
-                        >
-                            App Settings
-                        </div>
+                        { profile?.permission==='admin' &&
+                            <div
+                                className={`p-2 pl-4 hover:font-semibold hover:shadow-md border-b-2 hover:shadow-blue-950 ${currentDisplay === "App Settings" ? 'font-semibold' : ''}`}
+                                onClick={() => setCurrentDisplay("App Settings")}
+                            >
+                                App Settings
+                            </div>
+                        
+                        }
                         {enableResetPassword && <div
                             className={`p-2 pl-4 hover:font-semibold hover:shadow-md border-b-2 hover:shadow-blue-950 ${currentDisplay === "Reset Password" ? 'font-semibold' : ''}`}
                             onClick={() => setCurrentDisplay("Reset Password")}

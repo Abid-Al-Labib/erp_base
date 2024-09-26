@@ -139,12 +139,12 @@ export const fetchOrderByID = async (order_id:number) => {
             factories(*),
             machines(*)
         `
-    ).eq('id',order_id)
+    ).eq('id',order_id).single()
     if (error){
-        toast.error(error.message)
+        return null
     }
     console.log(data)
-    return data as unknown as Order[];
+    return data as unknown as Order;
 };
 
 export const UpdateStatusByID = async (orderid: number, status_id:number) => {

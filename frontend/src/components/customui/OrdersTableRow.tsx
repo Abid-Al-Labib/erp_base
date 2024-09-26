@@ -8,8 +8,10 @@ import { Badge } from '../ui/badge';
 import { deleteOrderByID } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
-import { convertUtcToBDTime } from '@/services/helper';
+import { convertUtcToBDTime, managePermission } from '@/services/helper';
 import { Dialog, DialogTitle, DialogContent } from '../ui/dialog';
+import { profile } from 'console';
+import { useAuth } from '@/context/AuthContext';
 
 
 interface OrdersTableRowProps {
@@ -19,6 +21,7 @@ interface OrdersTableRowProps {
 
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false) 
+  const profile = useAuth().profile
   const handleDeleteOrder = async () => {
     try {
         await deleteOrderByID(order.id)
@@ -77,14 +80,19 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
                 View
               </DropdownMenuItem>
             </Link>
-            <Link to={`/manageorder/${order.id}`}>
+            { managePermission(order.statuses.name, profile?.permission? profile.permission : "") &&
+              <Link to={`/manageorder/${order.id}`}>
               <DropdownMenuItem>
                 Manage
               </DropdownMenuItem>
-            </Link>
-            <DropdownMenuItem onClick={()=>setIsDeleteDialogOpen(true)}>
-              <span className='hover:text-red-600'>Delete</span>
-            </DropdownMenuItem>
+              </Link>
+            }
+            {
+              profile?.permission==='admin' && 
+              <DropdownMenuItem onClick={()=>setIsDeleteDialogOpen(true)}>
+                <span className='hover:text-red-600'>Delete</span>
+              </DropdownMenuItem>
+            }
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>

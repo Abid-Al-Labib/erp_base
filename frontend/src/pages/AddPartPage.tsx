@@ -6,46 +6,84 @@ import { Textarea } from "../components/ui/textarea"
 import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { CirclePlus, CircleX, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { insertPart } from "@/services/PartsService"
 import toast from 'react-hot-toast'
+import { fetchAppSettings } from "@/services/AppSettingsService"
 
 const AddPartPage = () => {
-    
+    const [addPartEnabled,setAddPartEnabled] = useState(false)
     const [isSubmitting, setisSubmitting] = useState(false);
-    
-    const handleAddPart = async () => {
-        setisSubmitting(true);
-        try{
-            const nameInput = document.getElementById("name") as HTMLInputElement;
-        const unitInput = document.getElementById("unit") as HTMLInputElement;
-        const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
 
-        const name = nameInput.value;
-        const unit = unitInput.value;
-        const description = descriptionInput.value;
-
-            if (!name || !unit || !description) {
-                toast.error("Please fill out all the fields");
-                return;
+    const loadAddPartSettings = async () => {
+        try {
+            const settings_data = await fetchAppSettings()
+            if (settings_data) {
+                settings_data.forEach((setting) => {
+                    if (setting.name === "Add Part") {
+                        setAddPartEnabled(setting.enabled)
+                        return setting.enabled
+                    }
+                })
             }
-
-            const response = await insertPart(name,unit,description)
-            console.log(response)
-            if (response){
-                toast.success("Part Added")
-
-                nameInput.value = "";
-                unitInput.value = "";
-                descriptionInput.value = "";
-            }
-        }catch(error) {
-            toast.error('' + error)
-        } finally {
-            setisSubmitting(false)
-        } 
+        } catch (error) {
+            toast.error("Could not load settings data")
+            setAddPartEnabled(false)
+            return false
+        }
     }
 
+    useEffect(() => {
+        loadAddPartSettings();
+    },[]);
+    const handleAddPart = async () => {
+        const enabled = await loadAddPartSettings();
+        {
+            setisSubmitting(true);
+            try{
+                const nameInput = document.getElementById("name") as HTMLInputElement;
+                const unitInput = document.getElementById("unit") as HTMLInputElement;
+                const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
+    
+                const name = nameInput.value;
+                const unit = unitInput.value;
+                const description = descriptionInput.value;
+    
+                if (!name || !unit || !description) {
+                    toast.error("Please fill out all the fields");
+                    return;
+                }
+                if (enabled)
+                {
+                    const response = await insertPart(name,unit,description)
+                    console.log(response)
+                    if (response){
+                        toast.success("Part Added")
+        
+                        nameInput.value = "";
+                        unitInput.value = "";
+                        descriptionInput.value = "";
+                    }
+                }
+                else
+                {
+                    toast.error("Adding part is currently disabled")
+                }
+            }catch(error) {
+                toast.error('' + error)
+            } finally {
+                setisSubmitting(false)
+            }
+        } 
+         
+    }
+
+
+    if (!addPartEnabled){
+        return (
+            <div className="text-center mt-5">Adding part is currently disabled</div>
+        )
+    }
 
     return (
         <>

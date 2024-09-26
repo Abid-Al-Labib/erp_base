@@ -212,9 +212,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
     let updated_note: string = orderedPartInfo.office_note || '';
     if (orderedPartInfo.office_note === null) {
-      updated_note = updated_note + "Name" + ": " + noteValue.trim(); 
+      updated_note = updated_note + profile?.name + ": " + noteValue.trim(); 
     } else {
-      updated_note = updated_note + "\n" + "Name" + ": " + noteValue.trim(); 
+      updated_note = updated_note + "\n" + profile?.name + ": " + noteValue.trim(); 
     }
     addOfficeNote(updated_note);
     setNoteValue(''); 
