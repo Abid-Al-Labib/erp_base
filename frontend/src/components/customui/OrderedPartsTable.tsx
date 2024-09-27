@@ -13,7 +13,8 @@ import { deleteOrderByID, UpdateStatusByID } from "@/services/OrdersService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
-
+import { updateMachinePartQty } from "@/services/MachinePartsService";
+import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
 
 interface OrderedPartsTableProp {
   mode:  "view" | "manage"
@@ -36,13 +37,33 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const handleApproveAllPendingOrder = async () => {
     setLoadingApproval(true)
     try {
-      const updatePromises = orderedParts.map((ordered_part) => {
-        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
-          return updateApprovedPendingOrderByID(ordered_part.id, true);
+      const updatePromises = orderedParts.map(async (ordered_part) => {
+        const promises = []
+
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)) {
+          promises.push(updateApprovedPendingOrderByID(ordered_part.id, true));
         }
+
+        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)) {
+          promises.push(updateApprovedPendingOrderByID(ordered_part.id, true));
+        }
+        
+        // If order type is "Machine" and the part is not approved, update quantities
+        if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
+          const subtractedParts = await updateMachinePartQty(
+            order.machine_id,
+            ordered_part.part_id,
+            ordered_part.qty,
+            'subtract'
+          ) || 0;
+            promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, subtractedParts));
+          
+        }
+
+        return Promise.all(promises);
       });
       await Promise.all(updatePromises);
-      toast.success("Approved all parts in the pending order")
+      toast.success("Approved all parts in the pending order");
       await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")

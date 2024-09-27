@@ -48,3 +48,41 @@ export const updateDamagePartQuantity = async (factory_id:number, part_id:number
     }
 
 }
+
+export const addDamagePartQuantity = async (factory_id: number, part_id: number, added_quantity: number) => {
+    // Fetch the current quantity for the given factory_id and part_id
+    const { data: currentData, error: fetchError } = await supabase_client
+        .from("damaged_parts")
+        .select("qty")
+        .eq("part_id", part_id)
+        .eq("factory_id", factory_id);
+
+    // Handle error if the fetch fails
+    if (fetchError) {
+        toast.error(fetchError.message);
+        return;
+    }
+
+    // Calculate the updated quantity by adding the new quantity to the current quantity
+    const currentQty = currentData && currentData.length > 0 ? currentData[0].qty : 0;
+    const updatedQuantity = currentQty + added_quantity;
+
+    // Update the damaged part quantity in the database
+    const { error: updateError } = await supabase_client
+        .from("damaged_parts")
+        .upsert(
+            {
+                part_id: part_id,
+                factory_id: factory_id,
+                qty: updatedQuantity,
+            },
+            { onConflict: "part_id, factory_id" } // Ensure conflict is managed correctly
+        );
+
+    // Handle update error if it occurs
+    if (updateError) {
+        toast.error(updateError.message);
+    } else {
+        toast.success("Damaged part quantity updated successfully!");
+    }
+};

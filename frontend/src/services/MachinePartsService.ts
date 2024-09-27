@@ -69,22 +69,23 @@ export const upsertMachineParts = async ( part_id: number, machine_id: number, q
         
 }
 
-export const updateMachinePartQty = async (machine_id: number, part_id: number, new_quantity: number) => {
-    const { error } = await supabase_client
-    .from('storage_parts')
-    .update({ qty: new_quantity })
-    .eq('part_id', part_id).eq('machine_id', machine_id)
+// export const updateMachinePartQty = async (machine_id: number, part_id: number, new_quantity: number) => {
+//     const { error } = await supabase_client
+//     .from('storage_parts')
+//     .update({ qty: new_quantity })
+//     .eq('part_id', part_id).eq('machine_id', machine_id)
 
-    if (error){
-        toast.error(error.message)
-    }
-}
+//     if (error){
+//         toast.error(error.message)
+//     }
+// }
 
-export const addMachinePartQty = async (
+export const updateMachinePartQty = async (
     machine_id: number,
     part_id: number,
-    new_quantity: number
-) => {
+    new_quantity: number,
+    direction: 'add' | 'subtract'
+): Promise<number | void> => {
     // Fetch the current quantity for the given machine_id and part_id
     const { data: currentData, error: fetchError } = await supabase_client
         .from("machine_parts")
@@ -97,10 +98,28 @@ export const addMachinePartQty = async (
         toast.error(fetchError.message);
         return;
     }
-
+    let returnFlag = 0
+    let updatedQuantity = 0
     // Check if data is present and calculate the updated quantity
     const currentQty = currentData && currentData.length > 0 ? currentData[0].qty : 0;
-    const updatedQuantity = currentQty + new_quantity;
+    if(direction == 'subtract') {
+        if (currentQty < new_quantity) {
+            updatedQuantity = new_quantity;
+            returnFlag = currentQty
+            console.log("currentlt", currentQty, "new", updatedQuantity);
+        }
+        if (currentQty == 0){
+            updatedQuantity = 0;
+            returnFlag = 0;
+        }
+        else {
+            updatedQuantity = currentQty - new_quantity;
+            returnFlag = new_quantity;
+        }
+    } else { 
+        //This is for adding new parts
+        updatedQuantity = new_quantity + currentQty;
+    }
 
     // Upsert the new quantity value into the database
     const { error: upsertError } = await supabase_client
@@ -120,6 +139,7 @@ export const addMachinePartQty = async (
     } else {
         toast.success("Machine part quantity updated successfully!");
     }
+    return returnFlag;
 };
 
 export const updateRequiredQuantity = async (partId: number, newCurQty: number, newReqQty: number) => {

@@ -19,8 +19,9 @@ import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
-import { addMachinePartQty } from "@/services/MachinePartsService"
+import { updateMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
+import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
 
 
 interface OrderedPartRowProp{
@@ -103,6 +104,21 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateApprovedPendingOrderByID(orderedPartInfo.id,true)
         toast.success("Ordered part has been approved!");
+
+        //Logic to update storage and machine part quantity
+        if (order_type=="Machine"){
+          const subtractedParts = await updateMachinePartQty(
+            machine_id,
+            orderedPartInfo.part_id,
+            orderedPartInfo.qty,
+            'subtract'
+          ) || 0;
+
+          // Call addDamagePartQuantity only if parts were subtracted
+          addDamagePartQuantity(factory_id, orderedPartInfo.part_id, subtractedParts);
+          
+        }
+
         onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
@@ -127,7 +143,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               console.log("updated storage qty")
               await updateOrderedPartQtyByID(orderedPartInfo.id,0)
               console.log("updated ordered part qty")
-              await addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+              await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty, 'add');
               console.log("updated machine part qty")
               await updateSentDateByID(orderedPartInfo.id, new Date())
               console.log("updated sent date")
@@ -143,7 +159,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               console.log("updated storage qty")
               await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
               console.log("updated ordered part qty")
-              await addMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty)
+              await updateMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty,'add')
               console.log("updated machine part qty")
             }
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
@@ -383,7 +399,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
             }
             if (order_type == "Machine") {
-              addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+              updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'add');
             }
             onOrderedPartUpdate();
           } catch (error) {
@@ -404,16 +420,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     setIsActionMenuOpen(false);
   }
 
-
-  // const handleUpdateDatabase = () => {
-  //   if (order_type=="Storage"){
-  //     addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
-  //   }
-  //   if (order_type == "Machine") {
-  //     addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
-  //   }
-  // }
-
   const handleSampleReceived = () => {
     console.log("Sample received")
     const updateSampleReceived = async () => {
@@ -429,8 +435,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     setIsSampleReceivedDialogOpen(false);
     setIsActionMenuOpen(false);
   }
-
-
 
   if(mode==='view'){
     return (
