@@ -29,7 +29,7 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onA
         <Card className="mt-5">
             <CardHeader className="flex justify-between">
                 <CardTitle>Machine Parts</CardTitle>
-                <CardDescription>This is a list of machine parts.</CardDescription>
+                <CardDescription>A list of all the machine parts in the selected machine</CardDescription>
                 <div className="ml-auto">
                     <SearchAndFilter
                         filterConfig={[

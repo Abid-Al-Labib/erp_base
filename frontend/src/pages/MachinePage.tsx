@@ -57,6 +57,29 @@ const MachinePartsPage = () => {
       // Fetch the machine details and handle null by converting to undefined
       const machine = await fetchMachineById(selectedMachineId);
       setSelectedMachine(machine ?? undefined); // Set the machine details
+      if(selectedMachine){
+        const fetchedParts = await fetchMachineParts(
+          selectedMachineId,
+          filters.partIdQuery || undefined,
+          filters.partNameQuery || undefined
+        );
+
+        const processedParts = fetchedParts.map((record: any) => ({
+          id: record.id,
+          machine_id: record.machine_id,
+          machine_name: record.machines.name ?? "Unknown",
+          part_id: record.parts.id,
+          part_name: record.parts.name,
+          qty: record.qty,
+          req_qty: record.req_qty ?? -1,
+        }));
+
+        setMachineParts(processedParts);
+
+        const runningOrdersData = await fetchRunningOrdersByMachineId(selectedMachineId);
+        setRunningOrders(runningOrdersData);
+
+      }
 
     } catch (error) {
       toast.error("Failed to refresh components");
@@ -351,7 +374,6 @@ const MachinePartsPage = () => {
                         <TableRow>
                           <TableHead className="w-[100px]">Order ID</TableHead>
                           <TableHead>Created At</TableHead>
-                          <TableHead>Order Note</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -364,7 +386,6 @@ const MachinePartsPage = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
-                            <TableCell>{order.order_note}</TableCell>
                             <TableCell>
                               <Badge
                                 className={
