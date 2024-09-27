@@ -21,6 +21,7 @@ import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
 import { addMachinePartQty } from "@/services/MachinePartsService"
 import { useAuth } from "@/context/AuthContext"
+import { Badge } from "../ui/badge"
 
 
 interface OrderedPartRowProp{
@@ -431,8 +432,22 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     return (
       <TableRow>
         <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
+        <TableCell className="whitespace-nowrap">
+          <Badge
+          className={orderedPartInfo.in_storage ? "bg-green-100" : "bg-red-100"}
+          variant="secondary"
+        >
+          {orderedPartInfo.in_storage ? "Yes" : "No"}
+         </Badge>
+        </TableCell>
+        <TableCell className="whitespace-nowrap">
+          <Badge
+            className={orderedPartInfo.approved_storage_withdrawal ? "bg-green-100" : "bg-red-100"}
+            variant="secondary"
+          >
+            {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
+          </Badge>
+        </TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
@@ -497,9 +512,22 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           disableTakeStorageRow ? 'bg-gray-300 pointer-events-none' : ''
         } transition duration-200 ease-in-out`}>
         <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
-        <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
+        <TableCell className="whitespace-nowrap">
+          <Badge
+          className={orderedPartInfo.in_storage ? "bg-green-100" : "bg-red-100"}
+          variant="secondary"
+        >
+          {orderedPartInfo.in_storage ? "Yes" : "No"}
+         </Badge>
+        </TableCell>
+        <TableCell className="whitespace-nowrap">
+          <Badge
+            className={orderedPartInfo.approved_storage_withdrawal ? "bg-green-100" : "bg-red-100"}
+            variant="secondary"
+          >
+            {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
+          </Badge>
+        </TableCell>        <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>

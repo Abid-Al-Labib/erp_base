@@ -17,6 +17,7 @@ import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import AllMachinesStatus from "@/components/customui/AllMachineStatus";
 
 type MachinePart = {
   id: number;
@@ -56,6 +57,29 @@ const MachinePartsPage = () => {
       // Fetch the machine details and handle null by converting to undefined
       const machine = await fetchMachineById(selectedMachineId);
       setSelectedMachine(machine ?? undefined); // Set the machine details
+      if(selectedMachine){
+        const fetchedParts = await fetchMachineParts(
+          selectedMachineId,
+          filters.partIdQuery || undefined,
+          filters.partNameQuery || undefined
+        );
+
+        const processedParts = fetchedParts.map((record: any) => ({
+          id: record.id,
+          machine_id: record.machine_id,
+          machine_name: record.machines.name ?? "Unknown",
+          part_id: record.parts.id,
+          part_name: record.parts.name,
+          qty: record.qty,
+          req_qty: record.req_qty ?? -1,
+        }));
+
+        setMachineParts(processedParts);
+
+        const runningOrdersData = await fetchRunningOrdersByMachineId(selectedMachineId);
+        setRunningOrders(runningOrdersData);
+
+      }
 
     } catch (error) {
       toast.error("Failed to refresh components");
@@ -149,11 +173,24 @@ const MachinePartsPage = () => {
   }, [selectedMachineId, filters]);
 
   // New function to handle machine selection
+
+  const handleRowSelection = (factoryId: number, factorySectionId: number, machineId: number) => {
+    setSelectedFactoryId(factoryId);
+    setSelectedFactorySectionId(factorySectionId);
+    handleSelectMachine(machineId.toString());
+    setMachineParts([]);
+    setRunningOrders([]);
+
+    console.log("Selected Factory:", factoryId);
+    console.log("Selected Factory Section:", factorySectionId);
+    console.log("Selected Machine:", machineId);
+  };
+
   const handleSelectMachine = async (value: string) => {
     const machineId = value == "" ? undefined : Number(value);
 
     
-    setSelectedMachineId(machineId);
+    setSelectedMachineId(undefined);
     setMachineParts([]);
     setRunningOrders([]); // Reset running orders when selecting a new machine
 
@@ -177,13 +214,17 @@ const MachinePartsPage = () => {
         const machine = await fetchMachineById(machineId);
         if (machine) {
           setSelectedMachine(machine);
+          setSelectedMachineId(machineId);
         }
       } catch (error) {
         console.error("Error fetching machine or running orders:", error);
         setSelectedMachine(undefined);
+        setSelectedMachineId(undefined);
+
       }
     } else {
       setSelectedMachine(undefined);
+      setSelectedMachineId(undefined);
     }
   };
 
@@ -301,6 +342,22 @@ const MachinePartsPage = () => {
                       </Select>
                     </div>
                   )}
+                  {/* Reset Button */}
+                  <Button
+                    className="mt-4"
+                    variant="outline"
+                    onClick={() => {
+                      // Reset all fields to their initial state
+                      setSelectedFactoryId(undefined);
+                      setSelectedFactorySectionId(undefined);
+                      setSelectedMachineId(undefined);
+                      setMachineParts([]);
+                      setRunningOrders([]);
+                      setSelectedMachine(undefined);
+                    }}
+                  >
+                    Reset And Show All Statuses
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -317,7 +374,6 @@ const MachinePartsPage = () => {
                         <TableRow>
                           <TableHead className="w-[100px]">Order ID</TableHead>
                           <TableHead>Created At</TableHead>
-                          <TableHead>Order Note</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -330,8 +386,20 @@ const MachinePartsPage = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
-                            <TableCell>{order.order_note}</TableCell>
-                            <TableCell>{order.statuses.name}</TableCell>
+                            <TableCell>
+                              <Badge
+                                className={
+                                  order.statuses.name === "Parts Received"
+                                    ? "bg-green-100"
+                                    : order.statuses.name === "Pending"
+                                      ? "bg-red-100"
+                                      : "bg-orange-100"
+                                }
+                                variant="secondary"
+                              >
+                                {order.statuses.name}
+                              </Badge>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -342,19 +410,30 @@ const MachinePartsPage = () => {
             </div>
 
             {/* Machine Status Section */}
+            {
+              ((selectedFactoryId !== undefined)&&(selectedFactorySectionId !==undefined)&&(selectedMachineId !== undefined) )? (
             <div className="flex min-w-44 max-w-lg"> {/* Roughly 1/6th of the width */}
               <MachineStatus machineId={selectedMachineId} />
             </div>
+              ): null
+            }
           </div>
 
           {
             selectedFactoryId === undefined ? (
-              <div className="text-center text-lg">Please select a factory, section and machine to display data</div>
+              <AllMachinesStatus handleRowSelection={handleRowSelection} />
             ): selectedFactorySectionId === undefined ? (
-              <div className="text-center text-lg">Please select a section and machine to display data</div>
+                <AllMachinesStatus
+                  factoryId={selectedFactoryId}
+                  handleRowSelection={handleRowSelection} // Pass the function to handle row selection
+                />
             ): selectedMachineId === undefined ? (
-            <div  className="text-center text-lg">Please select a machine to display data</div>
-          ) : (
+                <AllMachinesStatus
+                  factoryId={selectedFactoryId}
+                  factorySectionId={selectedFactorySectionId}
+                  handleRowSelection={handleRowSelection} // Pass the function to handle row selection
+                />         
+            ) : (
             <MachinePartsTable
               MachineParts={MachineParts}
               onApplyFilters={setFilters}

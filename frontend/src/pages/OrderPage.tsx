@@ -20,23 +20,31 @@ const OrderPage = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [ordersPerPage] = useState(5); // Set the number of orders per page here
     const [count, setCount] = useState(0);
+    const [filters, setFilters] = useState<any>({});
     const profile = useAuth().profile
-    const handleApplyFilters = async (filters: any) => {
-        console.log('Applied Filters:', filters);
+    const handleApplyFilters = (newFilters: any) => {
+        console.log('Applied Filters:', newFilters);
+        setFilters(newFilters);
+        setCurrentPage(1); // Reset page to 1 when filters are applied
+        fetchOrdersforPage(newFilters, 1);
+    };
+
+    const fetchOrdersforPage = async (appliedFilters = filters, page = currentPage) => {
         try {
             setLoading(true);
             const { data, count } = await fetchOrders({
-                page: currentPage,
+                page,
                 limit: ordersPerPage,
-                query: filters.searchType === 'id' ? filters.searchQuery : '',
-                searchDate: filters.selectedDate,
-                statusId: filters.selectedStatusId !== -1 ? filters.selectedStatusId : undefined,
-                departmentId: filters.selectedDepartmentId !== -1 ? filters.selectedDepartmentId : undefined,
-                factoryId: filters.selectedFactoryId !== -1 ? filters.selectedFactoryId : undefined,
-                factorySectionId: filters.selectedFactorySectionId !== -1 ? filters.selectedFactorySectionId : undefined,
-                machineId: filters.selectedMachineId !== -1 ? filters.selectedMachineId : undefined,
-                orderType: filters.selectedOrderType,
+                query: appliedFilters.searchType === 'id' ? appliedFilters.searchQuery : '',
+                searchDate: appliedFilters.selectedDate,
+                statusId: appliedFilters.selectedStatusId !== -1 ? appliedFilters.selectedStatusId : undefined,
+                departmentId: appliedFilters.selectedDepartmentId !== -1 ? appliedFilters.selectedDepartmentId : undefined,
+                factoryId: appliedFilters.selectedFactoryId !== -1 ? appliedFilters.selectedFactoryId : undefined,
+                factorySectionId: appliedFilters.selectedFactorySectionId !== -1 ? appliedFilters.selectedFactorySectionId : undefined,
+                machineId: appliedFilters.selectedMachineId !== -1 ? appliedFilters.selectedMachineId : undefined,
+                orderType: appliedFilters.selectedOrderType,
             });
+
             setOrders(data);
             setCount(count ?? 0);
             setTotalPages(Math.ceil((count ?? 0) / ordersPerPage));
@@ -49,20 +57,12 @@ const OrderPage = () => {
 
     const handleResetFilters = () => {
         setCurrentPage(1);
-        handleApplyFilters({
-            searchType: 'id',
-            searchQuery: '',
-            selectedDate: undefined,
-            selectedFactoryId: -1,
-            selectedFactorySectionId: -1,
-            selectedMachineId: -1,
-            selectedDepartmentId: -1,
-            selectedStatusId: -1,
-        });
+        setFilters({});
+        fetchOrdersforPage({}); 
     };
 
     useEffect(() => {
-        handleApplyFilters({});
+        fetchOrdersforPage(filters, currentPage);
     }, [currentPage]);
 
     return (
