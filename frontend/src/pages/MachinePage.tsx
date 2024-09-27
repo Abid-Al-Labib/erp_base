@@ -150,11 +150,24 @@ const MachinePartsPage = () => {
   }, [selectedMachineId, filters]);
 
   // New function to handle machine selection
+
+  const handleRowSelection = (factoryId: number, factorySectionId: number, machineId: number) => {
+    setSelectedFactoryId(factoryId);
+    setSelectedFactorySectionId(factorySectionId);
+    handleSelectMachine(machineId.toString());
+    setMachineParts([]);
+    setRunningOrders([]);
+
+    console.log("Selected Factory:", factoryId);
+    console.log("Selected Factory Section:", factorySectionId);
+    console.log("Selected Machine:", machineId);
+  };
+
   const handleSelectMachine = async (value: string) => {
     const machineId = value == "" ? undefined : Number(value);
 
     
-    setSelectedMachineId(machineId);
+    setSelectedMachineId(undefined);
     setMachineParts([]);
     setRunningOrders([]); // Reset running orders when selecting a new machine
 
@@ -178,13 +191,17 @@ const MachinePartsPage = () => {
         const machine = await fetchMachineById(machineId);
         if (machine) {
           setSelectedMachine(machine);
+          setSelectedMachineId(machineId);
         }
       } catch (error) {
         console.error("Error fetching machine or running orders:", error);
         setSelectedMachine(undefined);
+        setSelectedMachineId(undefined);
+
       }
     } else {
       setSelectedMachine(undefined);
+      setSelectedMachineId(undefined);
     }
   };
 
@@ -348,7 +365,20 @@ const MachinePartsPage = () => {
                             </TableCell>
                             <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                             <TableCell>{order.order_note}</TableCell>
-                            <TableCell>{order.statuses.name}</TableCell>
+                            <TableCell>
+                              <Badge
+                                className={
+                                  order.statuses.name === "Parts Received"
+                                    ? "bg-green-100"
+                                    : order.statuses.name === "Pending"
+                                      ? "bg-red-100"
+                                      : "bg-orange-100"
+                                }
+                                variant="secondary"
+                              >
+                                {order.statuses.name}
+                              </Badge>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -360,7 +390,7 @@ const MachinePartsPage = () => {
 
             {/* Machine Status Section */}
             {
-              selectedFactoryId !== undefined ? (
+              ((selectedFactoryId !== undefined)&&(selectedFactorySectionId !==undefined)&&(selectedMachineId !== undefined) )? (
             <div className="flex min-w-44 max-w-lg"> {/* Roughly 1/6th of the width */}
               <MachineStatus machineId={selectedMachineId} />
             </div>
@@ -370,12 +400,19 @@ const MachinePartsPage = () => {
 
           {
             selectedFactoryId === undefined ? (
-              <AllMachinesStatus />
+              <AllMachinesStatus handleRowSelection={handleRowSelection} />
             ): selectedFactorySectionId === undefined ? (
-              <div className="text-center text-lg">Please select a section and machine to display data</div>
+                <AllMachinesStatus
+                  factoryId={selectedFactoryId}
+                  handleRowSelection={handleRowSelection} // Pass the function to handle row selection
+                />
             ): selectedMachineId === undefined ? (
-            <div  className="text-center text-lg">Please select a machine to display data</div>
-          ) : (
+                <AllMachinesStatus
+                  factoryId={selectedFactoryId}
+                  factorySectionId={selectedFactorySectionId}
+                  handleRowSelection={handleRowSelection} // Pass the function to handle row selection
+                />         
+            ) : (
             <MachinePartsTable
               MachineParts={MachineParts}
               onApplyFilters={setFilters}

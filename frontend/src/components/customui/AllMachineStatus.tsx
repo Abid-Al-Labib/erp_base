@@ -27,7 +27,13 @@ interface Machine {
     factory_section_name: string;
 }
 
-const AllMachinesStatus = () => {
+interface AllMachinesStatusProps {
+    factoryId?: number;
+    factorySectionId?: number;
+    handleRowSelection: (factoryId: number, factorySectionId: number, machineId: number) => void; // New prop
+}
+
+const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factorySectionId, handleRowSelection }) => {
     const [factories, setFactories] = useState<Factory[]>([]);
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
@@ -37,19 +43,32 @@ const AllMachinesStatus = () => {
         const fetchAllData = async () => {
             setLoading(true);
             try {
-                // Fetch all factories
-                const fetchedFactories = await fetchFactories();
+                const fetchedFactories = factoryId
+                    ? await fetchFactories().then((factories) => {
+                        return factories.filter((f) => f.id === factoryId);
+                    })
+                    : await fetchFactories();
                 setFactories(fetchedFactories);
 
-                // Fetch all factory sections based on factories
-                const allSections: FactorySection[] = [];
-                for (const factory of fetchedFactories) {
-                    const sections = await fetchFactorySections(factory.id);
-                    allSections.push(...sections);
+                let allSections: FactorySection[] = [];
+                if (factorySectionId && factoryId) {
+                    const section = await fetchFactorySections(factoryId).then((sections) => {
+                        return sections.find((section) => section.id === factorySectionId);
+                    });
+
+                    if (section) {
+                        allSections = [section]; // Directly set the section to the state if found
+                    } else {
+                    }
+                } else {
+                    for (const factory of fetchedFactories) {
+                        const sections = await fetchFactorySections(factory.id);
+                        allSections.push(...sections);
+                    }
                 }
+
                 setFactorySections(allSections);
 
-                // Fetch all machines for each section and add factory and section names
                 const allMachines: Machine[] = [];
                 for (const section of allSections) {
                     const machines = await fetchMachines(section.id);
@@ -71,7 +90,7 @@ const AllMachinesStatus = () => {
         };
 
         fetchAllData();
-    }, []);
+    }, [factoryId, factorySectionId]);
 
     if (loading) {
         return (
@@ -100,7 +119,17 @@ const AllMachinesStatus = () => {
                     </TableHeader>
                     <TableBody>
                         {machines.map((machine) => (
-                            <TableRow key={machine.id}>
+                            <TableRow
+                                key={machine.id}
+                                className="cursor-pointer hover:bg-gray-100" // Adds hover effect
+                                onClick={() =>
+                                    handleRowSelection(
+                                        factories.find((f) => f.name === machine.factory)?.id ?? -1,
+                                        machine.factory_section_id,
+                                        machine.id
+                                    )
+                                }
+                            >
                                 <TableCell>{machine.factory}</TableCell>
                                 <TableCell>{machine.factory_section_name}</TableCell>
                                 <TableCell>{machine.name}</TableCell>
