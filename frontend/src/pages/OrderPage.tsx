@@ -24,14 +24,15 @@ const OrderPage = () => {
     const handleApplyFilters = (newFilters: any) => {
         console.log('Applied Filters:', newFilters);
         setFilters(newFilters);
-        fetchOrdersforPage(newFilters); // Fetch orders with updated filters
+        setCurrentPage(1); // Reset page to 1 when filters are applied
+        fetchOrdersforPage(newFilters, 1);
     };
 
-    const fetchOrdersforPage = async (appliedFilters = filters) => {
+    const fetchOrdersforPage = async (appliedFilters = filters, page = currentPage) => {
         try {
             setLoading(true);
             const { data, count } = await fetchOrders({
-                page: currentPage,
+                page,
                 limit: ordersPerPage,
                 query: appliedFilters.searchType === 'id' ? appliedFilters.searchQuery : '',
                 searchDate: appliedFilters.selectedDate,
@@ -60,7 +61,7 @@ const OrderPage = () => {
     };
 
     useEffect(() => {
-        handleApplyFilters({});
+        fetchOrdersforPage(filters, currentPage);
     }, [currentPage]);
 
     return (
