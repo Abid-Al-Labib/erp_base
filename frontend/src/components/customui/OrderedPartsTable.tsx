@@ -163,11 +163,11 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
@@ -232,14 +232,14 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
             <TableHead className="whitespace-nowrap">Current Storage Qty</TableHead>
-            <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>

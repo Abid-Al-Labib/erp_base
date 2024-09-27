@@ -409,15 +409,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   }
 
 
-  // const handleUpdateDatabase = () => {
-  //   if (order_type=="Storage"){
-  //     addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
-  //   }
-  //   if (order_type == "Machine") {
-  //     addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
-  //   }
-  // }
-
   const handleSampleReceived = () => {
     console.log("Sample received")
     const updateSampleReceived = async () => {
@@ -443,9 +434,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.note?
@@ -461,7 +452,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             ) : '-'
           }
         </TableCell>
-        <TableCell className="hidden md:table-cell">
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.office_note?
             ( <Dialog>
@@ -479,7 +470,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               </Dialog>
             ) : '-'
           }
-        </TableCell>
+        </TableCell>}
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
@@ -509,12 +500,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap">{orderedPartInfo.in_storage? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{orderedPartInfo.approved_storage_withdrawal? "Yes" : "No"}</TableCell>
         <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.note?
@@ -530,7 +521,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             ) : '-'
           }
         </TableCell>
-        <TableCell className="hidden md:table-cell">
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && 
+          <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.office_note?
             ( <Dialog>
@@ -548,7 +540,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               </Dialog>
             ) : '-'
           }
-        </TableCell>
+          </TableCell>
+        }
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
@@ -597,7 +590,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                       <span className="hover:text-green-600">Take from storage</span>
                     </DropdownMenuItem>
                 )}
-
+                {
+                  showOfficeNoteButton(current_status.name) && (
+                    <DropdownMenuItem onClick={()=>setIsOfficeNoteDialogOpen(true)}>
+                      <span>Add Office Note</span>
+                    </DropdownMenuItem>
+                )}
                 { 
                   showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
                     <DropdownMenuItem onClick={() => setIsApproveBudgetDialogOpen(true)}>
@@ -614,12 +612,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   showOfficeOrderDenyButton(current_status.name) && (                
                     <DropdownMenuItem onClick={()=>setIsDenyDialogOpen(true)}>
                       <span className="hover:text-red-600">Deny Part</span>
-                    </DropdownMenuItem>
-                )}
-                {
-                  showOfficeNoteButton(current_status.name) && (
-                    <DropdownMenuItem onClick={()=>setIsOfficeNoteDialogOpen(true)}>
-                      <span>Add Office Note</span>
                     </DropdownMenuItem>
                 )}
                 {

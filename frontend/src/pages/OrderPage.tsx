@@ -108,7 +108,7 @@ const OrderPage = () => {
                                     <CardHeader>
                                         <CardTitle>Order List</CardTitle>
                                         <CardDescription>
-                                            Search and view orders.
+                                            Search, view and manage your orders.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>

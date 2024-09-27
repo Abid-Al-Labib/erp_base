@@ -5,6 +5,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { updateDamagePartQuantity } from "@/services/DamagedGoodsService"; // Assuming you have this service to handle saving
 import { DamagedPart } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 
 interface DamagedPartsRowProp {
   damagedPart: DamagedPart;
@@ -14,7 +15,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [qty, setQty] = useState<number>(damagedPart.qty);
   const [isLoading, setIsLoading] = useState(false); // State for loading spinner
-
+  const profile = useAuth().profile
   const handleUpdate = async () => {
     if (qty===damagedPart.qty) {
         toast.error("There is no change in value to save")
@@ -82,6 +83,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
             </Button>
           </>
         ) : (
+          profile?.permission === 'admin' && 
           <Button onClick={() => setIsEditing(true)} className="ml-2">
             Dispose
           </Button>

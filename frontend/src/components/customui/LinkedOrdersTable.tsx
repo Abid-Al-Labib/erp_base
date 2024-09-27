@@ -4,12 +4,15 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table'
 import LinkedOrdersRow from './LinkedOrdersRow';
 import SearchAndFilter from './SearchAndFilter';
 import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 interface LinkedOrdersTableProps {
     linkedOrderedParts: OrderedPart[];
 }
 
 const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedParts }) => {
+    const profile = useAuth().profile
+    
     const [filters, setFilters] = useState({
         searchQuery: '',
         selectedDate: undefined as Date | undefined,
@@ -108,8 +111,9 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
                                 <TableHead className="hidden md:table-cell">Created at</TableHead>
                                 <TableHead>Machine</TableHead>
                                 <TableHead className="hidden md:table-cell">Qty</TableHead>
-                                <TableHead className="hidden md:table-cell">Unit Cost</TableHead>
-                                <TableHead className="hidden md:table-cell">Vendor</TableHead>
+                                {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="hidden md:table-cell">Brand</TableHead>}
+                                {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="hidden md:table-cell">Unit Cost</TableHead>}
+                                {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="hidden md:table-cell">Vendor</TableHead>}
                                 <TableHead className="hidden md:table-cell">Purchased Date</TableHead>
                                 <TableHead className="hidden md:table-cell">Sent To Factory Date</TableHead>
                                 <TableHead className="hidden md:table-cell">Received By Factory Date</TableHead>
