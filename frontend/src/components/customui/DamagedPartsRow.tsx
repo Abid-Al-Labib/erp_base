@@ -37,11 +37,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
 
   const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQty = Number(e.target.value);
-    if (newQty <= damagedPart.qty) {
-      setQty(newQty);
-    } else {
-      toast.error("You can only lower the quantity.");
-    }
+    setQty(newQty);
   };
 
   return (
@@ -85,7 +81,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
         ) : (
           profile?.permission === 'admin' && 
           <Button onClick={() => setIsEditing(true)} className="ml-2">
-            Dispose
+            Edit
           </Button>
         )}
       </TableCell>
