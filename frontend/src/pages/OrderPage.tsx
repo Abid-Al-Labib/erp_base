@@ -68,7 +68,7 @@ const OrderPage = () => {
     return (
         <>
             <NavigationBar />
-            <div className="flex min-h-screen mt-3 w-full flex-col bg-muted/40">
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
                 <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
                     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                         <Tabs defaultValue="all">
@@ -116,10 +116,11 @@ const OrderPage = () => {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ID</TableHead>
-                                                    <TableHead>Order Type Machine/Storage</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Order for Machine/Storage</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created at</TableHead>
-                                                    <TableHead>Created by user</TableHead>
-                                                    <TableHead>Department</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Created by</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Department</TableHead>
+                                                    <TableHead className="table-cell md:hidden">Info</TableHead>
                                                     <TableHead>Current status</TableHead>
                                                     <TableHead>
                                                         <span className="sr-only">Actions</span>
@@ -148,7 +149,7 @@ const OrderPage = () => {
                                                 Showing <strong>{(currentPage - 1) * ordersPerPage + 1}</strong> to <strong>{Math.min(currentPage * ordersPerPage, count)}</strong> of <strong>{count}</strong> Orders
                                             </span>
 
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 w-[300px] overflow-x-scroll">
                                                 {/* Pagination Buttons */}
                                                 <Button
                                                     size="sm"
