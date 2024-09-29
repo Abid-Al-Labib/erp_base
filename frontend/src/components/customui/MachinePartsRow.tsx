@@ -82,7 +82,7 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefres
                     </>
                 ) : (
                     <Button onClick={() => setIsEditing(true)} className="ml-2">
-                        Set Quantity
+                        Edit
                     </Button>
                 )}
             </TableCell>
