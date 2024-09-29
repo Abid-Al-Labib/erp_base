@@ -18,6 +18,7 @@ import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
+import { Input } from "@/components/ui/input"
 
 
 
@@ -94,6 +95,10 @@ const CreateOrderPage = () => {
     const [description, setDescription] = useState(''); 
     const [note, setNote] = useState(''); 
 
+    const [searchQueryParts, setSearchQueryParts] = useState<string>('');
+    const [isPartsSelectOpen, setIsPartsSelectOpen] = useState(false); 
+    const [isSearchMode, setIsSearchMode] = useState(false);
+
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
@@ -118,6 +123,8 @@ const CreateOrderPage = () => {
     const [orderedParts, setOrderedParts] = useState<InputOrderedPart[]>([]);
 
     const partsSectionRef = useRef<HTMLDivElement | null>(null);
+
+    
 
 
 
@@ -189,6 +196,14 @@ const CreateOrderPage = () => {
 
 
     const handleAddOrderParts = async () => {
+
+        const isPartAlreadyAdded = orderedParts.some(part => part.part_id === partId);
+
+        if (isPartAlreadyAdded) {
+            toast.error('This part has already been added.'); // Show an error message
+            return; // Exit the function to prevent adding the same part
+        }
+
         const storage_data =  await fetchStoragePartQuantityByFactoryID(partId,selectedFactoryId)
         
         console.log(storage_data)
@@ -371,6 +386,18 @@ const CreateOrderPage = () => {
             partsSectionRef.current.scrollIntoView({ behavior: 'smooth' }); // Auto-scroll to the parts section
         }
     }, [showPartForm]); // Dependency on showPartForm to trigger the scroll
+
+
+    useEffect(() => {
+        if (isPartsSelectOpen) {
+            const loadParts = async () => {
+                const fetchedParts = await fetchParts();
+                setParts(fetchedParts);
+            };
+
+            loadParts(); // Refetch parts when the dropdown is opened
+        }
+    }, [isPartsSelectOpen]); // Run when dropdown is opened
 
     
 
@@ -574,19 +601,54 @@ const CreateOrderPage = () => {
                                     <div className="space-y-4">
                                         <div className="mt-2">
                                             <Select
-                                                key={`part-${forcePartRender}`} // Key prop to force re-rendering
+                                                key="part-select"
                                                 onValueChange={(value) => handleSelectPart(Number(value))}
-                                                >
+                                                onOpenChange={(isOpen) => setIsPartsSelectOpen(isOpen)} // Trigger parts reload on open
+                                                value={partId ? partId.toString() : undefined} 
+                                            >
                                                 <Label htmlFor="partId">Select Part</Label>
                                                 <SelectTrigger className="w-[220px]">
-                                                    <SelectValue>{partId !== -1 ? parts.find(p => p.id === partId)?.name : "Select Part"}</SelectValue>
+                                                    <SelectValue>
+                                                        {partId !== -1 ? parts.find((p) => p.id === partId)?.name : "Select Part"}
+                                                    </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {parts.map((part) => (
-                                                        <SelectItem key={part.id} value={part.id.toString()}>
-                                                            {part.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {/* Search box inside the dropdown */}
+                                                    <div className="p-2">
+                                                        <Input
+                                                            placeholder="Search part..."
+                                                            value={searchQueryParts}
+                                                            onChange={(e) => setSearchQueryParts(e.target.value)} // Update the search query
+                                                            className="mb-2 w-full"
+                                                            autoFocus // Maintain focus when typing
+                                                        />
+                                                    </div>
+
+                                                    {/* Create New Part button */}
+                                                    <div className="p-2">
+                                                        <Button
+                                                            size="sm"
+                                                            className="w-full bg-blue-950"
+                                                            onClick={() => window.open('/addpart', '_blank')} // Opens /addpart in a new tab
+                                                        >
+                                                            Create New Part
+                                                        </Button>
+                                                    </div>
+
+                                                    {/* Filtered part options */}
+                                                    {parts
+                                                        .filter((part) =>
+                                                            part.name.toLowerCase().includes(searchQueryParts.toLowerCase())
+                                                        )
+                                                        .map((part) => (
+                                                            <SelectItem 
+                                                                key={part.id} 
+                                                                value={part.id.toString()}
+                                                                disabled={orderedParts.some((p) => p.part_id === part.id)} // Disable parts already added
+                                                                >
+                                                                {part.name}
+                                                            </SelectItem>
+                                                        ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>

@@ -43,11 +43,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)) {
           promises.push(updateApprovedPendingOrderByID(ordered_part.id, true));
         }
-
-        if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)) {
-          promises.push(updateApprovedPendingOrderByID(ordered_part.id, true));
-        }
-        
+   
         // If order type is "Machine" and the part is not approved, update quantities
         if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
           const subtractedParts = await updateMachinePartQty(
