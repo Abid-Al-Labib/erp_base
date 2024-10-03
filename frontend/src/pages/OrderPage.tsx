@@ -12,6 +12,7 @@ import { Order } from '@/types';
 import { fetchOrders } from '@/services/OrdersService';
 import SearchAndFilter from '@/components/customui/SearchAndFilter'; // Import the new component
 import { useAuth } from '@/context/AuthContext';
+import { supabase_client } from '@/services/SupabaseClient';
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -62,9 +63,42 @@ const OrderPage = () => {
     };
 
     useEffect(() => {
+        const channel = supabase_client
+        .channel('order-changes')
+        .on(
+            'postgres_changes',
+            {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+            },
+            () => {
+                console.log("Changes detect, processing realtime")
+                fetchOrdersforPage(filters, currentPage);
+            }
+        )
+        .subscribe()
         fetchOrdersforPage(filters, currentPage);
     }, [currentPage]);
 
+    // useEffect(() => {
+    //     const channel = supabase_client
+    //     .channel('order-changes')
+    //     .on(
+    //         'postgres_changes',
+    //         {
+    //         event: '*',
+    //         schema: 'public',
+    //         table: 'orders'
+    //         },
+    //         () => {
+    //             fetchOrdersforPage(filters, currentPage);
+    //         }
+    //     )
+    //     .subscribe()
+    // }, [supabase_client])
+
+    
     return (
         <>
             <NavigationBar />

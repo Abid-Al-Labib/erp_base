@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { Order } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
 import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
+import { supabase_client } from "@/services/SupabaseClient";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,31 +15,48 @@ const ViewOrderPage = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+
+  const loadOrders = async () => {
+    if (!id || isNaN(parseInt(id))) {
+      toast.error("Invalid order ID");
+      navigate("/orders");
+      return;
+    }
+    const order_id = parseInt(id);
+    try {
+      const data = await fetchOrderByID(order_id);
+      if (data) {
+        setOrder(data);
+      } else {
+        toast.error("Order not found");
+        navigate("/orders");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch order info");
+      navigate("/orders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadOrders = async () => {
-      if (!id || isNaN(parseInt(id))) {
-        toast.error("Invalid order ID");
-        navigate("/orders");
-        return;
-      }
-      const order_id = parseInt(id);
-      try {
-        const data = await fetchOrderByID(order_id);
-        if (data) {
-          setOrder(data);
-        } else {
-          toast.error("Order not found");
-          navigate("/orders");
-        }
-      } catch (error) {
-        toast.error("Failed to fetch order info");
-        navigate("/orders");
-      } finally {
-        setLoading(false);
-      }
-    };
+      const channel = supabase_client
+      .channel('order-changes')
+      .on(
+          'postgres_changes',
+          {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+          },
+          () => {
+              console.log("Changes detect, processing realtime")
+              loadOrders();
+          }
+      )
+      .subscribe()
     loadOrders();
-  }, [id, navigate]);
+  }, [id, navigate,supabase_client]);
 
   if (loading) {
     return <div>Loading...</div>; // Add a loading state if necessary

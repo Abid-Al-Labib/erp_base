@@ -14,6 +14,7 @@ import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
+import { supabase_client } from "@/services/SupabaseClient";
 
 
 interface OrderedPartsTableProp {
@@ -133,9 +134,24 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   }
 
   useEffect(()=>{
+    const channel = supabase_client
+    .channel('order_parts-changes')
+    .on(
+        'postgres_changes',
+        {
+        event: '*',
+        schema: 'public',
+        table: 'order_parts'
+        },
+        () => {
+            console.log("Changes detect, processing realtime")
+            refreshPartsTable()
+        }
+    )
+    .subscribe()
     refreshPartsTable()
     console.log(current_status)
-  },[])
+  },[supabase_client])
 
   const handleNavigation = () => {
     navigate('/orders'); 
