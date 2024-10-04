@@ -31,6 +31,7 @@ const OrderPage = () => {
     };
 
     const fetchOrdersforPage = async (appliedFilters = filters, page = currentPage) => {
+        
         try {
             setLoading(true);
             const { data, count } = await fetchOrders({
@@ -74,7 +75,8 @@ const OrderPage = () => {
             },
             () => {
                 console.log("Changes detect, processing realtime")
-                fetchOrdersforPage(filters, currentPage);
+                // console.log(filters);
+                fetchOrdersforPage();
             }
         )
         .subscribe()
@@ -183,7 +185,7 @@ const OrderPage = () => {
                                                 Showing <strong>{(currentPage - 1) * ordersPerPage + 1}</strong> to <strong>{Math.min(currentPage * ordersPerPage, count)}</strong> of <strong>{count}</strong> Orders
                                             </span>
 
-                                            <div className="flex gap-2 w-[300px] overflow-x-scroll">
+                                            <div className="flex gap-2 overflow-x-auto">
                                                 {/* Pagination Buttons */}
                                                 <Button
                                                     size="sm"
