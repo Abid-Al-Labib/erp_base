@@ -36,23 +36,45 @@ export function mergeStatusWithTracker(statuses: Status[],statusTracker: StatusT
 
 
 export const convertUtcToBDTime = (utcTimestamp: string): string => {
-    // Create a Date object from the UTC timestamp
-    const offset = 0
-    const date = new Date(utcTimestamp);
+  // Parse the UTC timestamp into a Date object
+  const date = new Date(utcTimestamp);
 
-    // Apply the offset in hours
-    const localDate = new Date(date.getTime() + offset * 60 * 60 * 1000);
+  // Check if the Date object is valid
+  if (isNaN(date.getTime())) {
+    throw new Error('Invalid UTC timestamp');
+  }
 
-    // Format the local date and time
-    return localDate.toLocaleString('en-GB', {
-        year: 'numeric', // "2024"
-        month: 'short', // "Aug"
-        day: 'numeric', // "16"
-        // below code commented out as we only need to display date for this system
-        // hour: '2-digit', // "01"
-        // minute: '2-digit', // "21"
-        // hour12: true // Use 12-hour clock format
-    });
+  // Bangladesh is UTC+6, so we add 6 hours to convert UTC to Bangladesh time
+  const bdOffset = 6 * 60 * 60 * 1000;
+  const bdDate = new Date(date.getTime() + bdOffset);
+
+  // Extract the year, month, day, hours, and minutes
+  const year = bdDate.getUTCFullYear();
+  const month = bdDate.toLocaleString('en-GB', { month: 'short' }); // Get the month name in short format (e.g., 'Oct')
+  const day = bdDate.getUTCDate().toString(); // Day of the month
+  const hours = bdDate.getUTCHours().toString().padStart(2, '0'); // Hours in 24-hour format
+  const minutes = bdDate.getUTCMinutes().toString().padStart(2, '0'); // Minutes with leading zero
+
+  // Return the formatted date as '4 Oct 2024, hh:mm'
+  return `${day} ${month} ${year}, ${hours}:${minutes}`;
+};
+
+
+export const convertBDTimeToUtc = (bdTimestamp: string): string => {
+  // Parse the date parts manually
+  const [datePart, timePart] = bdTimestamp.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes, seconds] = timePart.split(':').map(Number);
+
+  // Create a date object using the provided Bangladesh time parts
+  const bdDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+
+  // Bangladesh is UTC+6, so we subtract 6 hours
+  const bdOffset = 6 * 60 * 60 * 1000;
+  const utcDate = new Date(bdDate.getTime() - bdOffset);
+
+  // Return the UTC time in ISO format
+  return utcDate.toISOString();
 };
 
 

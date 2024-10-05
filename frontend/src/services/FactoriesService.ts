@@ -5,7 +5,7 @@ import { supabase_client } from "./SupabaseClient";
 export const fetchFactories = async () => {
     const { data, error } = await supabase_client
         .from('factories')
-        .select('id, name');  
+        .select('id, name, abbreviation');  
 
     if (error) {
         console.error('Error fetching factories:', error.message);

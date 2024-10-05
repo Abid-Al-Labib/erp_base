@@ -20,10 +20,14 @@ const OrderPage = () => {
     const [ordersPerPage] = useState(5); // Set the number of orders per page here
     const [count, setCount] = useState(0);
     const [filters, setFilters] = useState<any>({});
+    const [filterSummary, setFilterSummary] = useState<string>(''); // New state for summary
 
-    const handleApplyFilters = (newFilters: any) => {
+    
+
+    const handleApplyFilters = (newFilters: any, summary: string) => { // Receive the summary
         console.log('Applied Filters:', newFilters);
         setFilters(newFilters);
+        setFilterSummary(summary); // Store the filter summary
         setCurrentPage(1); // Reset page to 1 when filters are applied
         fetchOrdersforPage(newFilters, 1);
     };
@@ -36,6 +40,7 @@ const OrderPage = () => {
                 limit: ordersPerPage,
                 query: appliedFilters.searchType === 'id' ? appliedFilters.searchQuery : '',
                 searchDate: appliedFilters.selectedDate,
+                dateFilterType: appliedFilters.dateFilterType,
                 statusId: appliedFilters.selectedStatusId !== -1 ? appliedFilters.selectedStatusId : undefined,
                 departmentId: appliedFilters.selectedDepartmentId !== -1 ? appliedFilters.selectedDepartmentId : undefined,
                 factoryId: appliedFilters.selectedFactoryId !== -1 ? appliedFilters.selectedFactoryId : undefined,
@@ -72,8 +77,8 @@ const OrderPage = () => {
                     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                         <Tabs defaultValue="all">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    {/* Search & Filter Component */}
+                                <div className="flex items-center gap-2 w-full">
+                                    {/* Search & Filter Button */}
                                     <SearchAndFilter
                                         filterConfig={[
                                             { type: 'factory', label: 'Factory' },
@@ -83,14 +88,19 @@ const OrderPage = () => {
                                             { type: 'status', label: 'Status' },
                                             { type: 'id', label: 'Enter ID' },
                                             { type: 'date', label: 'Select Date' },
-                                            { type: 'orderType', label: 'Select Order Type'},
+                                            { type: 'orderType', label: 'Select Order Type' },
                                         ]}
-                                        onApplyFilters={handleApplyFilters} // Use the handleApplyFilters callback
-                                        onResetFilters={handleResetFilters} // Use the handleResetFilters callback
+                                        onApplyFilters={handleApplyFilters}
+                                        onResetFilters={handleResetFilters}
                                     />
+
+                                    {/* Filter Summary */}
+                                    <span className="text-gray-500 text-ss max-w-[150px] md:max-w-[300px] lg:max-w-[400px] truncate overflow-hidden ml-4">
+                                        {filterSummary}
+                                    </span>
                                 </div>
 
-                                {/* Create Order Button - Positioned on the right */}
+                                {/* Create Order Button */}
                                 <Link to="/createorder">
                                     <Button size="sm" className="h-8 gap-1 bg-blue-950">
                                         <PlusCircle className="h-3.5 w-3.5" />
@@ -132,7 +142,7 @@ const OrderPage = () => {
                                                     {orders.map(order => (
                                                         <OrdersTableRow
                                                             order={order}
-                                                            onDeleteRefresh={() => handleApplyFilters({})}
+                                                            onDeleteRefresh={() => handleApplyFilters({}, '')}
                                                         />
                                                     ))}
                                                 </TableBody>
@@ -145,7 +155,7 @@ const OrderPage = () => {
                                                 Showing <strong>{(currentPage - 1) * ordersPerPage + 1}</strong> to <strong>{Math.min(currentPage * ordersPerPage, count)}</strong> of <strong>{count}</strong> Orders
                                             </span>
 
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 overflow-x-auto">
                                                 {/* Pagination Buttons */}
                                                 <Button
                                                     size="sm"

@@ -4,29 +4,32 @@ import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
 
-export const fetchParts = async (partId?: number, partName?: string) => {
-    let query = supabase_client.from('parts').select('*');
+export const fetchParts = async (partId?: string, partName?: string, page = 1, limit = 10) => {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-    // Apply Part ID filter if provided
-    if (partId !== undefined) {
-        query = query.eq('id', partId);
+    let queryBuilder = supabase_client
+        .from('parts')
+        .select('*', { count: 'exact' })
+        .range(from, to);
+
+    // Apply filters if partId or partName are provided
+    if (partId) {
+        queryBuilder = queryBuilder.eq('id', partId);
     }
 
-    // Apply Part Name filter if provided
     if (partName) {
-        query = query.ilike('name', `%${partName}%`); // Using ilike for case-insensitive search
+        queryBuilder = queryBuilder.ilike('name', `%${partName}%`);
     }
 
-    const { data, error } = await query;
+    const { data, count, error } = await queryBuilder;
 
-    // Handle errors
     if (error) {
-        toast.error(`Error fetching parts: ${error.message}`);
-        return [];
+        throw new Error(error.message);
     }
 
-    return data as Part[];
-}
+    return { data, count };  // Returning data and count directly
+};
 
 export const insertPart = async (name:string, unit:string, description: string) => {
     const { data, error } = await supabase_client.from('parts').insert([

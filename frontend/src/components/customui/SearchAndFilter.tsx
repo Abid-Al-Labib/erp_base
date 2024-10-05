@@ -18,6 +18,7 @@ interface Department {
 interface Factory {
     id: number;
     name: string;
+    abbreviation: string;
 }
 interface FactorySection {
     id: number;
@@ -45,7 +46,7 @@ interface FilterConfig {
 
 interface SearchAndFilterProps {
     filterConfig: FilterConfig[];
-    onApplyFilters: (filters: any) => void;
+    onApplyFilters: (filters: any, summary: string) => void; // Updated to handle two arguments
     onResetFilters: () => void;
     hideDefaultIdDateSearch?: boolean;
 }
@@ -77,6 +78,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     const [partIdQuery, setPartIdQuery] = useState('');
 
     const [selectedOrderType, setSelectedOrderType] = useState<'all' | 'Machine' | 'Storage'>('all');
+    const [dateFilterType, setDateFilterType] = useState<'on' | 'before' | 'after'>('on');
 
     useEffect(() => {
         // Fetch all necessary data when component mounts
@@ -131,10 +133,61 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     };
 
     const handleApplyFilters = () => {
+
+        const summary = [];
+
+        if (searchQuery) {
+            summary.push(`ID: ${searchQuery}`);
+        }
+        
+        // Add a note for Factory
+        if (selectedFactoryId !== -1) {
+            const selectedFactory = factories.find(f => f.id === selectedFactoryId);
+            const factoryAbbreviation = selectedFactory?.abbreviation || selectedFactory?.name || 'All';
+            summary.push(`Factory: ${factoryAbbreviation}`);
+        }
+
+        // Add a note for Factory Section
+        if (selectedFactorySectionId !== -1) {
+            const selectedFactorySection = factorySections.find(fs => fs.id === selectedFactorySectionId)?.name || 'All';
+            summary.push(`Section: ${selectedFactorySection}`);
+        }
+
+        // Add a note for Machine
+        if (selectedMachineId !== -1) {
+            const selectedMachine = machines.find(m => m.id === selectedMachineId)?.name || 'All';
+            summary.push(`Machine: ${selectedMachine}`);
+        }
+
+        // Add a note for Department
+        if (selectedDepartmentId !== -1) {
+            const selectedDepartment = departments.find(d => d.id === selectedDepartmentId)?.name || 'All';
+            summary.push(`Department: ${selectedDepartment}`);
+        }
+
+        // Add a note for Status
+        if (selectedStatusId !== -1) {
+            const selectedStatus = statuses.find(s => s.id === selectedStatusId)?.name || 'All';
+            summary.push(`Status: ${selectedStatus}`);
+        }
+
+        // Add a note for Date with the dateFilterType (on, before, after)
+        if (tempDate) {
+            const dateLabel = dateFilterType === 'on' ? 'On' :
+                dateFilterType === 'before' ? 'Before' : 'After';
+            summary.push(`${dateLabel} Date: ${tempDate.toLocaleDateString()}`);
+        }
+
+        // Add a note for Order Type
+        if (selectedOrderType !== 'all') {
+            summary.push(`Order Type: ${selectedOrderType}`);
+        }
+
         const filters = {
             searchType,
             searchQuery,
             selectedDate: tempDate,
+            dateFilterType, 
             selectedFactoryId: selectedFactoryId === -1 ? undefined : selectedFactoryId,
             selectedFactorySectionId: selectedFactorySectionId === -1 ? undefined : selectedFactorySectionId,
             selectedMachineId: selectedMachineId === -1 ? undefined : selectedMachineId,
@@ -145,7 +198,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
             partIdQuery,
             selectedOrderType,
         };
-        onApplyFilters(filters);
+        onApplyFilters(filters, summary.join(', ')); // Pass the summary as a string
     };
 
     const handleResetFilters = () => {
@@ -221,6 +274,17 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                                         onSelect={setTempDate}
                                         className="rounded-md border"
                                     />
+                                    <div className="flex gap-2 mt-2">
+                                        <Button variant={dateFilterType === 'on' ? 'default' : 'outline'} onClick={() => setDateFilterType('on')}>
+                                            On
+                                        </Button>
+                                        <Button variant={dateFilterType === 'before' ? 'default' : 'outline'} onClick={() => setDateFilterType('before')}>
+                                            Before
+                                        </Button>
+                                        <Button variant={dateFilterType === 'after' ? 'default' : 'outline'} onClick={() => setDateFilterType('after')}>
+                                            After
+                                        </Button>
+                                    </div>
                                     <Button
                                         onClick={() => setIsCalendarOpen(false)}
                                         className="bg-blue-950 text-white px-4 py-2 rounded-md mt-2 w-full"

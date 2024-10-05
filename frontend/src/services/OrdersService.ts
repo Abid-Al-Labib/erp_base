@@ -1,5 +1,6 @@
 import { Order } from "@/types";
 import { supabase_client } from "./SupabaseClient";
+import { convertBDTimeToUtc } from "./helper.ts";
 import toast from "react-hot-toast";
 
 
@@ -8,6 +9,7 @@ export const fetchOrders = async ({
     limit = 10,
     query = '',
     searchDate,
+    dateFilterType, // This is passed along with searchDate
     statusId,
     departmentId,
     factoryId,
@@ -19,6 +21,7 @@ export const fetchOrders = async ({
     limit: number;
     query?: string;
     searchDate?: Date;
+    dateFilterType?: 'on' | 'before' | 'after'; // Define filterType for date filtering
     statusId?: number;
     departmentId?: number;
     factoryId?: number;
@@ -73,10 +76,48 @@ export const fetchOrders = async ({
         queryBuilder = queryBuilder.eq('id', query);
     }
 
-    if (searchDate) {
-        const formattedDate = searchDate.toISOString().split('T')[0];
-        queryBuilder = queryBuilder.gte('created_at', `${formattedDate}T00:00:00.000Z`)
-            .lte('created_at', `${formattedDate}T23:59:59.999Z`);
+    // if (searchDate) {
+    //     const formattedDate = searchDate.toISOString().split('T')[0];
+    //     queryBuilder = queryBuilder.gte('created_at', `${formattedDate}T00:00:00.000Z`)
+    //         .lte('created_at', `${formattedDate}T23:59:59.999Z`);
+    // }
+
+    // if (searchDate) {
+    //     const searchDateStr = searchDate.toISOString().split('T')[0];
+
+    //     // Convert the start of the day in BD time to UTC
+    //     const startOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T00:00:00`);
+
+    //     // Convert the end of the day in BD time to UTC
+    //     const endOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T23:59:59`);
+
+    //     queryBuilder = queryBuilder.gte('created_at', startOfDayUTC)
+    //         .lte('created_at', endOfDayUTC);
+
+    //     console.log('Fetching orders with search date:', startOfDayUTC, 'to', endOfDayUTC);
+    // }
+
+    if (searchDate && dateFilterType) {
+        const searchDateStr = searchDate.toISOString().split('T')[0];
+
+        // Convert to Bangladesh time for start and end of the day
+        const startOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T00:00:00`);
+        const endOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T23:59:59`);
+
+        // Apply date range based on the filter type
+        if (dateFilterType === 'on') {
+            // For "on" date, search within the specific day
+            queryBuilder = queryBuilder.gte('created_at', startOfDayUTC)
+                .lte('created_at', endOfDayUTC);
+        } else if (dateFilterType === 'before') {
+            // For "before" the date, search for all orders before the start of the day
+            queryBuilder = queryBuilder.lte('created_at', startOfDayUTC);
+        } else if (dateFilterType === 'after') {
+            // For "after" the date, search for all orders after the end of the day
+            queryBuilder = queryBuilder.gte('created_at', endOfDayUTC);
+        }
+
+        console.log('Fetching orders with filterType:', dateFilterType, 'search date:', startOfDayUTC, 'to', endOfDayUTC);
     }
 
     if (statusId) {
@@ -114,7 +155,6 @@ export const fetchOrders = async ({
         toast.error(error.message);
         return { data: [], count: 0 };
     }
-
     return { data: data as unknown as Order[], count };
 };
 
