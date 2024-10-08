@@ -57,6 +57,7 @@ const OrderPage = () => {
     };
 
     const handleResetFilters = () => {
+        console.log("Resseting filters by the function")
         setCurrentPage(1);
         setFilters({});
         fetchOrdersforPage({}); 
@@ -73,12 +74,13 @@ const OrderPage = () => {
             table: 'orders'
             },
             () => {
-                console.log("Changes detect, processing realtime")
-                fetchOrdersforPage(filters, currentPage);
+                console.log("Changes detected, processing realtime")
+                fetchOrdersforPage();
             }
         )
         .subscribe()
         fetchOrdersforPage(filters, currentPage);
+        
     }, [currentPage]);
 
     // useEffect(() => {

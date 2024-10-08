@@ -8,6 +8,7 @@ import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { managePermission } from "@/services/helper";
+import { supabase_client } from "@/services/SupabaseClient";
 
 
 const ManageOrderPage = () => {
@@ -17,39 +18,63 @@ const ManageOrderPage = () => {
   const navigate = useNavigate();
   const profile = useAuth().profile
 
+  const loadOrder = async () => {
+    if (!id || isNaN(parseInt(id))) {
+      toast.error("Invalid order ID");
+      navigate("/orders");
+      return;
+    }
+    const order_id = parseInt(id);
+    try {
+      const data = await fetchOrderByID(order_id);
+      console.log(data)
+      if (data) {
+        setOrder(data);
+      } else {
+        toast.error("Order not found");
+        navigate("/orders");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch order info");
+      navigate("/orders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadOrder = async () => {
-      if (!id || isNaN(parseInt(id))) {
-        toast.error("Invalid order ID");
-        navigate("/orders");
-        return;
-      }
-      const order_id = parseInt(id);
-      try {
-        const data = await fetchOrderByID(order_id);
-        console.log(data)
-        if (data) {
-          setOrder(data);
-        } else {
-          toast.error("Order not found");
-          navigate("/orders");
-        }
-      } catch (error) {
-        toast.error("Failed to fetch order info");
-        navigate("/orders");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadOrder();
+    const channel = supabase_client
+        .channel('order-changes')
+        .on(
+            'postgres_changes',
+            {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+            },
+            () => {
+                console.log("Changes detected for order, processing realtime")
+                loadOrder();
+            }
+        )
+        .subscribe()  
+
   }, [id, navigate]);
   
+  useEffect(() => { 
+    loadOrder();
+  }, []);
+
   if (loading) {
     return <div>Loading...</div>; // Add a loading state if necessary
   }
 
+
   if (order){
-    if (profile && profile.permission)
+    if (order.statuses.id === 7){
+      return <div>This order has completed all stages, there is nothing more to manage</div>;
+    }
+    else if (profile && profile.permission)
       {
         if(!managePermission(order.statuses.name,profile.permission)){
           return <div>You are not authorized to access at this stage</div>;

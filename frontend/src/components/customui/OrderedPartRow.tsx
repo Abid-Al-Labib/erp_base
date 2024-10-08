@@ -31,10 +31,9 @@ interface OrderedPartRowProp{
     factory_id: number
     machine_id: number,
     order_type: string,
-    onOrderedPartUpdate: () => void
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type, onOrderedPartUpdate}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type}) => {
   const profile = useAuth().profile
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
@@ -104,7 +103,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateApprovedPendingOrderByID(orderedPartInfo.id,true)
         toast.success("Ordered part has been approved!");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -149,7 +147,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             }
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
             console.log("approved taking from storage")
-            onOrderedPartUpdate();
           }
         } catch (error) {
         toast.error("Error occured while fetching storage data")
@@ -167,7 +164,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateApprovedOfficeOrderByID(orderedPartInfo.id,true)
         toast.success("Ordered part has been approved!");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could  not complete action");
       }
@@ -183,7 +179,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateApprovedBudgetByID(orderedPartInfo.id, true);
         toast.success("The budget for this part has been approved!");
-        onOrderedPartUpdate();
+
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -200,7 +196,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateOfficeNoteByID(orderedPartInfo.id, updated_note);
         toast.success("Your note has been added");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Something went wrong when adding note");
       }
@@ -230,7 +225,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await deleteOrderedPartByID(orderedPartInfo.id)
         toast.success("Successfully removed this part from the order");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -252,7 +246,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         await UpdateStatusByID(orderedPartInfo.order_id, prevStatus)
         await InsertStatusTracker((new Date()), orderedPartInfo.order_id, profile.id, prevStatus)
         toast.success("Successfully reverted status")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured while reverting status")
       }
@@ -264,7 +257,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         setCostLoading(true);
         await updateCostingByID(orderedPartInfo.id, brand, cost, vendor )
         toast.success("Budget has been submitted for revision")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -295,7 +287,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         setCostLoading(true);
         await updateCostingByID(orderedPartInfo.id, brand.trim(), cost, vendor.trim() )
         toast.success("Costing for this part is submitted")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -330,7 +321,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         try {
           await updatePurchasedDateByID(orderedPartInfo.id, datePurchased)
           toast.success("Part purchased date set!")
-          onOrderedPartUpdate();
         } catch (error) {
           toast.error("Error occured could not complete action");
         }
@@ -353,7 +343,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           try {
             await updateSentDateByID(orderedPartInfo.id, dateSent)
             toast.success("Part sent to office date set!")
-            onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
           } 
@@ -390,7 +379,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             if (order_type == "Machine") {
               addMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
             }
-            onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
           } 
@@ -416,7 +404,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateSampleReceivedByID(orderedPartInfo.id, true);
         toast.success("Updated sample received status")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }

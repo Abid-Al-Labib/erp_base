@@ -1,7 +1,7 @@
-import { Order, OrderedPart, Status } from "@/types";
+import { Order, OrderedPart, Profile, Status } from "@/types";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table"
 import { useEffect, useState } from "react";
-import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
+import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateMultipleApprovedPendingOrderByIDs, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import OrderedPartRow from "./OrderedPartRow";
@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { isChangeStatusAllowed } from "@/services/helper";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { deleteOrderByID, UpdateStatusByID } from "@/services/OrdersService";
-import { InsertStatusTracker } from "@/services/StatusTrackerService";
+import { deleteOrderByID, fetchOrderByID, UpdateStatusByID } from "@/services/OrdersService";
+import { fetchLastStatusTrackerByOrderID, fetchStatusTrackerByID, InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
+import { fetchStatusByID } from "@/services/StatusesService";
 
 
 interface OrderedPartsTableProp {
@@ -35,7 +36,10 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false)
   const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false)
   const navigate = useNavigate()
-  
+
+  const [runCount, setRunCount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleApproveAllPendingOrder = async () => {
     setLoadingApproval(true)
     try {
@@ -46,7 +50,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
       });
       await Promise.all(updatePromises);
       toast.success("Approved all parts in the pending order")
-      await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
@@ -65,7 +68,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
       });
       await Promise.all(updatePromises);
       toast.success("Approved all ordered items from office")
-      await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
@@ -84,7 +86,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
       });
       await Promise.all(updatePromises);
       toast.success("Approved budgets for all parts")
-      await refreshPartsTable()
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
@@ -93,45 +94,91 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     setApproveAllBudgetDialogOpen(false)
   }
   
-  const refreshPartsTable = async () => {
-    try {
-        const order_id = order.id
-        const updatedOrderedPartsList = await fetchOrderedPartsByOrderID(order_id)
-        if (updatedOrderedPartsList) {
-          setOrderedParts(updatedOrderedPartsList)
-          if(mode==="manage")
-          {
-            if (updatedOrderedPartsList.length===0){
-              setShowEmptyOrderPopup(true);
-              await deleteOrderByID(order.id) 
-            }
-            else{
-              const next_status_id = isChangeStatusAllowed(updatedOrderedPartsList,current_status.name)
-              if (next_status_id && next_status_id!==-1 ){
-                console.log("changing status")
-                if(!profile){
-                  toast.error("Profile not found")
-                  return
-                }
-                try { 
-                  await UpdateStatusByID(order_id,next_status_id)
-                  await InsertStatusTracker((new Date()), order_id, profile.id, next_status_id)
-                } catch (error) {
-                  toast.error("Error updating status")
-                }
-                setShowActionsCompletedPopup(true);
-              }
-            }
+ const deleteEmptyOrder = async () => {
+    if(mode==="manage")
+      {
+          setShowEmptyOrderPopup(true);
+          try {
+            await deleteOrderByID(order.id) 
+          } catch (error) {
+            toast.error("Could not delete order by id")
           }
-        } else {
-          toast.error('Ordred parts table could not fetch data');
-        }
-    } catch (error) {
-      toast.error('Ordred parts table could not fetch data');
-    } finally{
-      setLoadingTable(false);
-    } 
+
+      }
   }
+
+const loadOrderedParts = async () => {
+    try {
+      setLoadingTable(true)
+      const order_id = order.id
+      const orderedPartsList = await fetchOrderedPartsByOrderID(order_id)
+      if (orderedPartsList) {
+        setOrderedParts(orderedPartsList)
+        if (orderedPartsList.length===0){
+          await deleteEmptyOrder()
+        }
+        return orderedPartsList
+      }
+      else {
+        toast.error("Could not load ordered parts for this order")
+      }
+    } catch (error) {
+      toast.error("Error loading parts")
+    } finally {
+      setLoadingTable(false);
+    }
+  }
+
+const manageOrderStatus = async () => {
+  const updatedOrderedParts = await loadOrderedParts()
+  if (mode === "manage" && updatedOrderedParts)
+  {
+    console.log("managing:",updatedOrderedParts)
+    const next_status_id = isChangeStatusAllowed(updatedOrderedParts,current_status.name)
+    console.log("current status id: ", current_status.id)
+    console.log("next status id: ",next_status_id)
+    if (next_status_id && next_status_id!==-1 && current_status.id !== next_status_id){
+      console.log("changing status")
+      if(!profile){
+        toast.error("Profile not found")
+        return
+      }
+      try { 
+        console.log("updating status and inserting to status tracker")
+        await UpdateStatusByID(order.id,next_status_id)
+        await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
+      } catch (error) {
+        toast.error("Error updating status")
+      }
+      setShowActionsCompletedPopup(true);
+    }
+  }
+}
+
+const handleOrderManagement = async () => {
+    if (runCount > 0 && !isProcessing) {
+      setIsProcessing(true)
+      await manageOrderStatus();
+      setRunCount(0);
+      setIsProcessing(false) // Reset the count after running
+    }
+    else{
+      return;
+    }
+};
+
+  // useEffect to monitor and process the queue
+  useEffect( () => {
+    handleOrderManagement();
+}, [runCount, isProcessing]);
+
+  const handleChanges = async (payload: any) => {
+    console.log(isProcessing)
+    if (!isProcessing) {
+    setRunCount(prevCount => prevCount + 1);
+  }
+  };
+  
 
   useEffect(()=>{
     const channel = supabase_client
@@ -142,17 +189,15 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
         event: '*',
         schema: 'public',
         table: 'order_parts'
-        },
-        () => {
-            console.log("Changes detect, processing realtime")
-            refreshPartsTable()
-        }
+        },handleChanges
     )
     .subscribe()
-    refreshPartsTable()
-    console.log(current_status)
-  },[supabase_client])
+  },[])
 
+  useEffect(()=>{
+    loadOrderedParts()
+  },[])
+  
   const handleNavigation = () => {
     navigate('/orders'); 
   };
@@ -202,7 +247,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               mode="view"
               orderedPartInfo={orderedPart}
               current_status={current_status}
-              onOrderedPartUpdate={refreshPartsTable} 
               factory_id={order.factory_id}
               machine_id={order.machine_id}
               order_type={order.order_type}/>
@@ -274,7 +318,6 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
               mode="manage"
               orderedPartInfo={orderedPart}
               current_status={current_status}
-              onOrderedPartUpdate={refreshPartsTable} 
               factory_id={order.factory_id}
               machine_id={order.machine_id}
               order_type={order.order_type}/>
