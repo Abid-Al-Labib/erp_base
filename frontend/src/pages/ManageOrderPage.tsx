@@ -71,8 +71,8 @@ const ManageOrderPage = () => {
 
 
   if (order){
-    if (order.statuses.id === 7){
-      return <div>This order has completed all stages, there is nothing more to manage</div>;
+    if (order.statuses.name === "Parts Received"){
+      navigate("/orders");
     }
     else if (profile && profile.permission)
       {

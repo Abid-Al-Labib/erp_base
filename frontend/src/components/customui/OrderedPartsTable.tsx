@@ -1,7 +1,7 @@
-import { Order, OrderedPart, Profile, Status } from "@/types";
+import { Order, OrderedPart, Status } from "@/types";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table"
 import { useEffect, useState } from "react";
-import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateMultipleApprovedPendingOrderByIDs, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
+import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import OrderedPartRow from "./OrderedPartRow";
@@ -9,13 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { isChangeStatusAllowed } from "@/services/helper";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { deleteOrderByID, fetchOrderByID, UpdateStatusByID } from "@/services/OrdersService";
-import { fetchLastStatusTrackerByOrderID, fetchStatusTrackerByID, InsertStatusTracker } from "@/services/StatusTrackerService";
+import { deleteOrderByID, UpdateStatusByID } from "@/services/OrdersService";
+import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
-import { fetchStatusByID } from "@/services/StatusesService";
 
 
 interface OrderedPartsTableProp {
