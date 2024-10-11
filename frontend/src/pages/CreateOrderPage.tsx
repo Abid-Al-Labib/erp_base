@@ -18,6 +18,7 @@ import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
+import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
 
 
@@ -73,6 +74,7 @@ interface InputOrderedPart {
 
 const CreateOrderPage = () => {
 
+    const profile = useAuth().profile
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [factories, setFactories] = useState<Factory[]>([]);
@@ -171,7 +173,12 @@ const CreateOrderPage = () => {
                 return;
             }
 
-            const createdById = 1;
+            if (!profile){
+                toast.error("No profile found")
+                return
+            }
+
+            const createdById=profile.id;
             const statusId = 1;
             const orderData: InputOrder = {
                 order_note: description,
@@ -187,6 +194,8 @@ const CreateOrderPage = () => {
             setShowPartForm(true); // This triggers the scroll due to useEffect
             setIsOrderStarted(true);
             toast.success("Order details are set. Please add parts.");
+
+
         } catch (error) {
             toast.error('Error preparing order: ' + error);
         } finally {
@@ -256,6 +265,10 @@ const CreateOrderPage = () => {
             if (!tempOrderDetails) {
                 toast.error("No order details to process.");
                 return;
+            }
+            if (!profile){
+                toast.error("No profile found")
+                return
             }
             let orderResponse;
 

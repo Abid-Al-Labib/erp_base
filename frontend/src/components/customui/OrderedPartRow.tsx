@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
+import { useAuth } from "@/context/AuthContext"
 import { updateMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
@@ -31,14 +32,13 @@ interface OrderedPartRowProp{
     factory_id: number
     machine_id: number,
     order_type: string,
-    onOrderedPartUpdate: () => void
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type, onOrderedPartUpdate}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type}) => {
+  const profile = useAuth().profile
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
   const [dateReceived, setDateReceived] = useState<Date | undefined>(orderedPartInfo.part_received_by_factory_date? new Date(orderedPartInfo.part_received_by_factory_date): new Date())
-  
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isApproveFromOfficeDialogOpen, setIsApproveFromOfficeDialogOpen] = useState(false);
   const [isApproveFromFactoryDialogOpen, setIsApproveFromFactoryDialogOpen] = useState(false);
@@ -118,8 +118,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           addDamagePartQuantity(factory_id, orderedPartInfo.part_id, subtractedParts);
           
         }
-
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -164,7 +162,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             }
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
             console.log("approved taking from storage")
-            onOrderedPartUpdate();
           }
         } catch (error) {
         toast.error("Error occured while fetching storage data")
@@ -182,7 +179,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateApprovedOfficeOrderByID(orderedPartInfo.id,true)
         toast.success("Ordered part has been approved!");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could  not complete action");
       }
@@ -198,7 +194,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateApprovedBudgetByID(orderedPartInfo.id, true);
         toast.success("The budget for this part has been approved!");
-        onOrderedPartUpdate();
+
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -215,7 +211,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await updateOfficeNoteByID(orderedPartInfo.id, updated_note);
         toast.success("Your note has been added");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Something went wrong when adding note");
       }
@@ -228,9 +223,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
     let updated_note: string = orderedPartInfo.office_note || '';
     if (orderedPartInfo.office_note === null) {
-      updated_note = updated_note + "Name" + ": " + noteValue.trim(); 
+      updated_note = updated_note + profile?.name + ": " + noteValue.trim(); 
     } else {
-      updated_note = updated_note + "\n" + "Name" + ": " + noteValue.trim(); 
+      updated_note = updated_note + "\n" + profile?.name + ": " + noteValue.trim(); 
     }
     addOfficeNote(updated_note);
     setNoteValue(''); 
@@ -245,7 +240,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       try {
         await deleteOrderedPartByID(orderedPartInfo.id)
         toast.success("Successfully removed this part from the order");
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -258,12 +252,15 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const handleReviseBudget = () => {
     console.log("Denying budget");
     const revertingStatus = async() => {
+      if (!profile) {
+        toast.error("Profile not found")
+        return
+      }
       try {
         const prevStatus = (current_status.id-1)
         await UpdateStatusByID(orderedPartInfo.order_id, prevStatus)
-        await InsertStatusTracker((new Date()), orderedPartInfo.order_id, 1, prevStatus)
+        await InsertStatusTracker((new Date()), orderedPartInfo.order_id, profile.id, prevStatus)
         toast.success("Successfully reverted status")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured while reverting status")
       }
@@ -275,7 +272,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         setCostLoading(true);
         await updateCostingByID(orderedPartInfo.id, brand, cost, vendor )
         toast.success("Budget has been submitted for revision")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -306,7 +302,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         setCostLoading(true);
         await updateCostingByID(orderedPartInfo.id, brand.trim(), cost, vendor.trim() )
         toast.success("Costing for this part is submitted")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -341,7 +336,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         try {
           await updatePurchasedDateByID(orderedPartInfo.id, datePurchased)
           toast.success("Part purchased date set!")
-          onOrderedPartUpdate();
         } catch (error) {
           toast.error("Error occured could not complete action");
         }
@@ -364,7 +358,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           try {
             await updateSentDateByID(orderedPartInfo.id, dateSent)
             toast.success("Part sent to office date set!")
-            onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
           } 
@@ -401,7 +394,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             if (order_type == "Machine") {
               updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'add');
             }
-            onOrderedPartUpdate();
           } catch (error) {
             toast.error("Error occured could not complete action");
           } 
@@ -420,13 +412,13 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     setIsActionMenuOpen(false);
   }
 
+
   const handleSampleReceived = () => {
     console.log("Sample received")
     const updateSampleReceived = async () => {
       try {
         await updateSampleReceivedByID(orderedPartInfo.id, true);
         toast.success("Updated sample received status")
-        onOrderedPartUpdate();
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -457,9 +449,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           </Badge>
         </TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.note?
@@ -475,7 +467,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             ) : '-'
           }
         </TableCell>
-        <TableCell className="hidden md:table-cell">
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.office_note?
             ( <Dialog>
@@ -493,7 +485,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               </Dialog>
             ) : '-'
           }
-        </TableCell>
+        </TableCell>}
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
@@ -535,13 +527,14 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           >
             {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
           </Badge>
-        </TableCell>        <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
+        </TableCell>        
+        <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
+        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.note?
@@ -557,7 +550,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             ) : '-'
           }
         </TableCell>
-        <TableCell className="hidden md:table-cell">
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && 
+          <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.office_note?
             ( <Dialog>
@@ -575,7 +569,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               </Dialog>
             ) : '-'
           }
-        </TableCell>
+          </TableCell>
+        }
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? convertUtcToBDTime(orderedPartInfo.part_purchased_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date? convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date) : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date) : '-'}</TableCell>
@@ -624,7 +619,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                       <span className="hover:text-green-600">Take from storage</span>
                     </DropdownMenuItem>
                 )}
-
+                {
+                  showOfficeNoteButton(current_status.name) && (
+                    <DropdownMenuItem onClick={()=>setIsOfficeNoteDialogOpen(true)}>
+                      <span>Add Office Note</span>
+                    </DropdownMenuItem>
+                )}
                 { 
                   showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
                     <DropdownMenuItem onClick={() => setIsApproveBudgetDialogOpen(true)}>
@@ -641,12 +641,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   showOfficeOrderDenyButton(current_status.name) && (                
                     <DropdownMenuItem onClick={()=>setIsDenyDialogOpen(true)}>
                       <span className="hover:text-red-600">Deny Part</span>
-                    </DropdownMenuItem>
-                )}
-                {
-                  showOfficeNoteButton(current_status.name) && (
-                    <DropdownMenuItem onClick={()=>setIsOfficeNoteDialogOpen(true)}>
-                      <span>Add Office Note</span>
                     </DropdownMenuItem>
                 )}
                 {

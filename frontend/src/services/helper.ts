@@ -123,85 +123,67 @@ export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_stat
 export const managePermission = (status: string, role: string): boolean => {
     switch (status) {
       case "Pending":
-        if (role === "xyz") {
+        if (role === "admin") {
           return true;
-        } else if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
+        } else if (role === "directorTechnical") {
           return true;
         }
         break;
   
       case "Order Sent To Head Office":
-        if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
+        if (role === "admin") {
           return true;
         }
         break;
   
       case "Waiting For Quotation":
-        if (role === "xyz") {
+        if (role === "finance") {
           return true;
-        } else if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
+        } else if (role === "admin") {
           return true;
         }
         break;
   
       case "Budget Released":
-        if (role === "xyz") {
+        if (role === "admin") {
           return true;
-        } else if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
-          return true;
-        }
+        } 
         break;
   
       case "Waiting For Purchase":
-        if (role === "xyz") {
+        if (role === "admin") {
           return true;
-        } else if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
+        } else if (role === "finance") {
           return true;
         }
         break;
   
       case "Purchase Complete":
-        if (role === "xyz") {
+        if (role === "admin") {
           return true;
-        } else if (role === "xyz") {
+        } else if (role === "finance") {
           return true;
-        } else if (role === "xyz") {
-          return true;
-        }
+        } 
         break;
   
       case "Parts Sent To Factory":
-        if (role === "xyz") {
+        if (role === "admin") {
           return true;
-        } else if (role === "xyz") {
+        } else if (role === "department") {
           return true;
-        } else if (role === "xyz") {
+        } else if (role === "directorTechnical") {
           return true;
+        } else if (role === "finance") {
+        return true;
         }
         break;
   
       case "Parts Received":
-        if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
-          return true;
-        } else if (role === "xyz") {
-          return true;
-        }
+        return false
         break;
-  
+      
+
+
       default:
         return false;
     }

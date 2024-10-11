@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { fetchStatuses } from "@/services/StatusesService";
 import { fetchStatusTrackerByID } from "@/services/StatusTrackerService";
 import { mergeStatusWithTracker } from "@/services/helper";
+import { supabase_client } from "@/services/SupabaseClient";
 
 interface StatusTrackerProp {
   order_id: number;
@@ -15,14 +16,30 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({order_id}) => {
     
     const [mergedStatuses, setMergedStatuses] = useState<StatusTrackerItemProp[]>([]);
 
-    useEffect(()=>{
-      const fetchData = async () => {
-        const allStatuses = await fetchStatuses();
-        const statusTracker = await fetchStatusTrackerByID(order_id);
-        const merged = mergeStatusWithTracker(allStatuses,statusTracker);
-        setMergedStatuses(merged);
+    const fetchData = async () => {
+      const allStatuses = await fetchStatuses();
+      const statusTracker = await fetchStatusTrackerByID(order_id);
+      const merged = mergeStatusWithTracker(allStatuses,statusTracker);
+      setMergedStatuses(merged);
     };
-    fetchData();},[order_id]);
+    useEffect(()=>{
+      const channel = supabase_client
+      .channel('status_tracker-changes')
+      .on(
+          'postgres_changes',
+          {
+          event: '*',
+          schema: 'public',
+          table: 'status_tracker'
+          },
+          () => {
+              console.log("Changes detect, processing realtime")
+              fetchData();
+          }
+      )
+      .subscribe()
+      fetchData();
+    },[supabase_client]);
 
     return (
     <Card className="overflow-hidden overflow-y-scroll h-[60vh]" x-chunk="dashboard-05-chunk-4">

@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { convertUtcToBDTime } from '@/services/helper';
@@ -8,30 +9,40 @@ interface OrderedPartInfoProp {
 }
 
 const OrderedPartInfo: React.FC<OrderedPartInfoProp> = ({ orderedPart }) => {
+  const profile = useAuth().profile
+  
   return (
     <Card className="sm:col-span-2 pt-2 h-[50vh] overflow-y-scroll" x-chunk="dashboard-ordered-part-popup">
       <CardContent>
         <ul className="grid gap-3">
           <li className="flex items-center justify-between">
             <span className="font-semibold text-muted-foreground">Part</span>
-            <span>{orderedPart.parts.name || '-'}</span>
+            <span><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPart.part_id}`}>{orderedPart.parts.name}</a></span>
           </li>
           <li className="flex items-center justify-between">
             <span className="font-semibold text-muted-foreground">Quantity</span>
             <span>{orderedPart.qty || '-'}</span>
           </li>
-          <li className="flex items-center justify-between">
-            <span className="font-semibold text-muted-foreground">Brand</span>
-            <span>{orderedPart.brand || '-'}</span>
+          {(profile?.permission === 'admin' || profile?.permission=== 'finance') &&
+            <li className="flex items-center justify-between">
+              <span className="font-semibold text-muted-foreground">Brand</span>
+              <span>{orderedPart.brand || '-'}</span>
           </li>
-          <li className="flex items-center justify-between">
-            <span className="font-semibold text-muted-foreground">Vendor</span>
-            <span>{orderedPart.vendor || '-'}</span>
+          }
+          {(profile?.permission === 'admin' || profile?.permission=== 'finance') &&
+            <li className="flex items-center justify-between">
+              <span className="font-semibold text-muted-foreground">Vendor</span>
+              <span>{orderedPart.vendor || '-'}</span>
           </li>
-          <li className="flex items-center justify-between">
-            <span className="font-semibold text-muted-foreground">Cost/Unit</span>
-            <span>{orderedPart.unit_cost ? `BDT ${orderedPart.unit_cost}` : '-'}</span>
-          </li>
+          }
+          {
+            (profile?.permission === 'admin' || profile?.permission=== 'finance') &&
+            <li className="flex items-center justify-between">
+              <span className="font-semibold text-muted-foreground">Cost/Unit</span>
+              <span>{orderedPart.unit_cost ? `BDT ${orderedPart.unit_cost}` : '-'}</span>
+            </li>
+          }
+
           <Separator className="my-2" />
           <li className="flex items-center justify-between">
             <span className="font-semibold text-muted-foreground">Sample Sent to Office</span>
@@ -58,8 +69,9 @@ const OrderedPartInfo: React.FC<OrderedPartInfoProp> = ({ orderedPart }) => {
             <span className="font-semibold text-muted-foreground">Note</span>
             <div>{orderedPart.note || '-'}</div>
           <Separator className="my-2" />
-          <span className="font-semibold text-muted-foreground">Office Note</span>
-          <div>{orderedPart.note || '-'}</div>
+          {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <span className="font-semibold text-muted-foreground">Office Note</span>}
+          {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <div>{orderedPart.note || '-'}</div>}
+
         </ul>
       </CardContent>
     </Card>

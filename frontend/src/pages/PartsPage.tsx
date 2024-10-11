@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { fetchParts } from '../services/PartsService';
-import { Link } from "react-router-dom"
-import { Loader2, PlusCircle, Search } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Loader2, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
 import { Tabs, TabsContent,} from "@/components/ui/tabs"
 import PartsTableRow from "@/components/customui/PartsTableRow"
@@ -13,12 +12,12 @@ import { Part } from '@/types';
 import toast from 'react-hot-toast';
 import { convertUtcToBDTime } from '@/services/helper';
 import SearchAndFilter from "@/components/customui/SearchAndFilter"; // Import the SearchAndFilter component
-
+import { fetchAppSettings } from '@/services/AppSettingsService';
 
 
 
 const PartsPage = () => {
-
+    
     const [parts,setParts] = useState<Part[]>([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState<any>({});
@@ -26,7 +25,9 @@ const PartsPage = () => {
     const [totalPages, setTotalPages] = useState(1);     // Track total pages
     const [partsPerPage] = useState(10);                 // Set number of parts per page
     const [totalCount, setTotalCount] = useState(0);     // Track total number of parts
-
+    const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false)
+    const navigate = useNavigate()
+    
     const handleApplyFilters = (newFilters: any) => {
         setFilters(newFilters);
         setCurrentPage(1);  // Reset page to 1 when filters are applied
@@ -66,7 +67,30 @@ const PartsPage = () => {
         fetchPartsForPage(filters, currentPage);  // Re-fetch parts when the page changes
     }, [currentPage]);
 
+    useEffect(() => {
+        const loadAddPartSettings = async () => {
+            try {
+                const settings_data = await fetchAppSettings()
+                if (settings_data) {
+                    settings_data.forEach((setting) => {
+                        if (setting.name === "Add Part") {
+                            setaddPartEnabled(setting.enabled)
+                        }
+                    })
+                }
+            } catch (error) {
+                toast.error("Could not load settings data")
+                setaddPartEnabled(false)
+            }
+        }
+        loadAddPartSettings();
+    }, []);
+
     
+    const handleAddPartButtonClick = () => {
+        navigate("/addpart")
+    }
+
     return (
         <>
         <NavigationBar/>
@@ -74,6 +98,7 @@ const PartsPage = () => {
             <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
                 <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                 <Tabs defaultValue="all">
+
                     <div className="flex items-center justify-between">
                         {/* Left-aligned Search & Filter Button */}
                         <div className="flex items-center">
@@ -89,15 +114,13 @@ const PartsPage = () => {
                         </div>
 
                         {/* Right-aligned Add Part Button */}
-                        <div className="flex items-center gap-2">
-                            <Link to="/addpart">
-                                <Button size="sm" className="h-8 gap-1 bg-blue-950">
-                                    <PlusCircle className="h-3.5 w-3.5" />
-                                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                        Add Part
-                                    </span>
-                                </Button>
-                            </Link>
+                        <div>
+                            <Button onClick={handleAddPartButtonClick} className="bg-blue-950" disabled={!addPartEnabled}>
+                            <PlusCircle className="h-3.5 w-3.5" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                Add Part
+                            </span>
+                            </Button>
                         </div>
                     </div>
                     <TabsContent value="all">

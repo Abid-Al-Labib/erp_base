@@ -11,6 +11,8 @@ import OrdersTableRow from '@/components/customui/OrdersTableRow';
 import { Order } from '@/types';
 import { fetchOrders } from '@/services/OrdersService';
 import SearchAndFilter from '@/components/customui/SearchAndFilter'; // Import the new component
+import { useAuth } from '@/context/AuthContext';
+import { supabase_client } from '@/services/SupabaseClient';
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -21,8 +23,7 @@ const OrderPage = () => {
     const [count, setCount] = useState(0);
     const [filters, setFilters] = useState<any>({});
     const [filterSummary, setFilterSummary] = useState<string>(''); // New state for summary
-
-    
+    const profile = useAuth().profile
 
     const handleApplyFilters = (newFilters: any, summary: string) => { // Receive the summary
         console.log('Applied Filters:', newFilters);
@@ -33,6 +34,7 @@ const OrderPage = () => {
     };
 
     const fetchOrdersforPage = async (appliedFilters = filters, page = currentPage) => {
+        
         try {
             setLoading(true);
             const { data, count } = await fetchOrders({
@@ -60,19 +62,54 @@ const OrderPage = () => {
     };
 
     const handleResetFilters = () => {
+        console.log("Resseting filters by the function")
         setCurrentPage(1);
         setFilters({});
         fetchOrdersforPage({}); 
     };
 
     useEffect(() => {
+        const channel = supabase_client
+        .channel('order-changes')
+        .on(
+            'postgres_changes',
+            {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+            },
+            () => {
+                console.log("Changes detected, processing realtime")
+                fetchOrdersforPage();
+            }
+        )
+        .subscribe()
         fetchOrdersforPage(filters, currentPage);
+        
     }, [currentPage]);
 
+    // useEffect(() => {
+    //     const channel = supabase_client
+    //     .channel('order-changes')
+    //     .on(
+    //         'postgres_changes',
+    //         {
+    //         event: '*',
+    //         schema: 'public',
+    //         table: 'orders'
+    //         },
+    //         () => {
+    //             fetchOrdersforPage(filters, currentPage);
+    //         }
+    //     )
+    //     .subscribe()
+    // }, [supabase_client])
+
+    
     return (
         <>
             <NavigationBar />
-            <div className="flex min-h-screen mt-3 w-full flex-col bg-muted/40">
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
                 <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
                     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                         <Tabs defaultValue="all">
@@ -100,22 +137,24 @@ const OrderPage = () => {
                                     </span>
                                 </div>
 
-                                {/* Create Order Button */}
-                                <Link to="/createorder">
-                                    <Button size="sm" className="h-8 gap-1 bg-blue-950">
-                                        <PlusCircle className="h-3.5 w-3.5" />
-                                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                            Create New Order
-                                        </span>
-                                    </Button>
-                                </Link>
+                                {/* Create Order Button - Positioned on the right */}
+                                { (profile?.permission==='department' || profile?.permission==="admin") &&
+                                    <Link to="/createorder">
+                                        <Button size="sm" className="h-8 gap-1 bg-blue-950">
+                                            <PlusCircle className="h-3.5 w-3.5" />
+                                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                                Create New Order
+                                            </span>
+                                        </Button>
+                                    </Link>
+                                }
                             </div>
                             <TabsContent value="all">
                                 <Card x-chunk="dashboard-06-chunk-0">
                                     <CardHeader>
                                         <CardTitle>Order List</CardTitle>
                                         <CardDescription>
-                                            Search and view orders.
+                                            Search, view and manage your orders.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>
@@ -123,10 +162,11 @@ const OrderPage = () => {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ID</TableHead>
-                                                    <TableHead>Order Type Machine/Storage</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Order for Machine/Storage</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created at</TableHead>
-                                                    <TableHead>Created by user</TableHead>
-                                                    <TableHead>Department</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Created by</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Department</TableHead>
+                                                    <TableHead className="table-cell md:hidden">Info</TableHead>
                                                     <TableHead>Current status</TableHead>
                                                     <TableHead>
                                                         <span className="sr-only">Actions</span>

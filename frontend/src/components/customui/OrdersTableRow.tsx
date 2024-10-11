@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreHorizontal } from "lucide-react";
+import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { TableCell, TableRow } from "../ui/table";
@@ -8,8 +8,10 @@ import { Badge } from '../ui/badge';
 import { deleteOrderByID } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
-import { convertUtcToBDTime } from '@/services/helper';
-import { Dialog, DialogTitle, DialogContent } from '../ui/dialog';
+import { convertUtcToBDTime, managePermission } from '@/services/helper';
+import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
+import { profile } from 'console';
+import { useAuth } from '@/context/AuthContext';
 
 
 interface OrdersTableRowProps {
@@ -19,6 +21,7 @@ interface OrdersTableRowProps {
 
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false) 
+  const profile = useAuth().profile
   const handleDeleteOrder = async () => {
     try {
         await deleteOrderByID(order.id)
@@ -36,7 +39,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       <TableCell className="font-medium">
         {order.id}
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         {order.factory_sections?.name && order.machines?.name
           ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`
           : `${order.factories.abbreviation} - Storage`}
@@ -44,11 +47,42 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       <TableCell className="hidden md:table-cell">
         {convertUtcToBDTime(order.created_at)}
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         {order.profiles.name}
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         {order.departments.name}
+      </TableCell>
+      <TableCell className="table-cell md:hidden">
+        <Dialog>
+          <DialogTrigger><ExternalLink className="hover:cursor-pointer"/></DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Order information</DialogTitle>
+              <DialogDescription>
+              <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Order for Machine/Storage</span>
+                <span> {order.factory_sections?.name && order.machines?.name
+                    ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`
+                    : `${order.factories.abbreviation} - Storage`}
+                </span>
+              </li>              
+              <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Created At</span>
+                <span> {convertUtcToBDTime(order.created_at)} </span>
+              </li>              
+              <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Created by</span>
+                <span>{order.profiles.name}</span>
+              </li>              
+              <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Department</span>
+                <span> {order.departments.name}</span>
+              </li>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       </TableCell>
       <TableCell>
       <Badge
@@ -77,14 +111,19 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
                 View
               </DropdownMenuItem>
             </Link>
-            <Link to={`/manageorder/${order.id}`}>
+            { managePermission(order.statuses.name, profile?.permission? profile.permission : "") &&
+              <Link to={`/manageorder/${order.id}`}>
               <DropdownMenuItem>
                 Manage
               </DropdownMenuItem>
-            </Link>
-            <DropdownMenuItem onClick={()=>setIsDeleteDialogOpen(true)}>
-              <span className='hover:text-red-600'>Delete</span>
-            </DropdownMenuItem>
+              </Link>
+            }
+            {
+              profile?.permission==='admin' && 
+              <DropdownMenuItem onClick={()=>setIsDeleteDialogOpen(true)}>
+                <span className='hover:text-red-600'>Delete</span>
+              </DropdownMenuItem>
+            }
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
