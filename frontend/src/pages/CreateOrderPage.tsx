@@ -116,7 +116,7 @@ const CreateOrderPage = () => {
     useEffect(() => {
         const loadParts = async () => {
             const fetchedParts = await fetchParts();
-            setParts(fetchedParts);
+            setParts(fetchedParts.data);
         };
     
         loadParts();
@@ -405,7 +405,7 @@ const CreateOrderPage = () => {
         if (isPartsSelectOpen) {
             const loadParts = async () => {
                 const fetchedParts = await fetchParts();
-                setParts(fetchedParts);
+                setParts(fetchedParts.data);
             };
 
             loadParts(); // Refetch parts when the dropdown is opened
