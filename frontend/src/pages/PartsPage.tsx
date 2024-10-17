@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchParts } from '../services/PartsService';
+import { fetchPageParts } from '../services/PartsService';
 import { useNavigate } from "react-router-dom"
 import { Loader2, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ const PartsPage = () => {
     const fetchPartsForPage = async (appliedFilters = filters, page = currentPage) => {
         try {
             setLoading(true);
-            const { data: fetchedParts, count } = await fetchParts(
+            const { data: fetchedParts, count } = await fetchPageParts(
                 appliedFilters.partIdQuery || undefined,
                 appliedFilters.partNameQuery || undefined,
                 page,

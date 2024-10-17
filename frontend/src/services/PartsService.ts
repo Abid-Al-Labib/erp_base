@@ -4,7 +4,7 @@ import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
 
-export const fetchParts = async (partId?: string, partName?: string, page = 1, limit = 10) => {
+export const fetchPageParts = async (partId?: string, partName?: string, page = 1, limit = 10) => {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -30,6 +30,17 @@ export const fetchParts = async (partId?: string, partName?: string, page = 1, l
 
     return { data, count };  // Returning data and count directly
 };
+
+export const fetchAllParts = async () => {
+    const { data, error } = await supabase_client.from('parts').select('*');
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return { data };  // Returning data and count directly
+};
+
 
 export const insertPart = async (name:string, unit:string, description: string) => {
     const { data, error } = await supabase_client.from('parts').insert([
