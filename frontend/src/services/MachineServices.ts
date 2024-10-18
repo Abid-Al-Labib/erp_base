@@ -47,3 +47,31 @@ export const setMachineIsRunningById = async (machineId: number, isRunning: bool
     toast.success('Machine status updated successfully!'); // Optional: Show success message
     return data;
 };
+
+export const fetchMetricRunningMachines = async () => {
+    const { count, error } = await supabase_client
+        .from('machines')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_running','true')
+
+    if (error) {
+        console.error('Error fetching metric for running machines', error.message);
+        return null;
+    }
+
+    return count;
+};
+
+export const fetchMetricNotRunningMachines = async () => {
+    const { count, error } = await supabase_client
+        .from('machines')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_running','false')
+
+    if (error) {
+        console.error('Error fetching metric for not running machines:', error.message);
+        return null;
+    }
+    
+    return count;
+};

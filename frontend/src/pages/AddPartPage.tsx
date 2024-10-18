@@ -19,12 +19,13 @@ const AddPartPage = () => {
         try {
             const settings_data = await fetchAppSettings()
             if (settings_data) {
-                settings_data.forEach((setting) => {
-                    if (setting.name === "Add Part") {
-                        setAddPartEnabled(setting.enabled)
-                        return setting.enabled
-                    }
-                })
+                const addPartSetting = settings_data.find(
+                    (setting) => setting.name === "Add Part"
+                );
+                if (addPartSetting) {
+                    setAddPartEnabled(addPartSetting.enabled)
+                    return addPartSetting.enabled;
+                }
             }
         } catch (error) {
             toast.error("Could not load settings data")
@@ -36,6 +37,7 @@ const AddPartPage = () => {
     useEffect(() => {
         loadAddPartSettings();
     },[]);
+
     const handleAddPart = async () => {
         const enabled = await loadAddPartSettings();
         {
@@ -77,7 +79,7 @@ const AddPartPage = () => {
         } 
          
     }
-
+    
 
     if (!addPartEnabled){
         return (

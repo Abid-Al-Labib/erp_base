@@ -1,7 +1,9 @@
 import { Order } from "@/types";
 import { supabase_client } from "./SupabaseClient";
-import { convertBDTimeToUtc } from "./helper.ts";
+import { convertBDTimeToUtc, managePermission } from "./helper.ts";
 import toast from "react-hot-toast";
+import { count } from "console";
+import { Head } from "react-day-picker";
 
 
 export const fetchOrders = async ({
@@ -301,4 +303,43 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
     }
     console.log("Returned Current Orders of",machine_id, data)
     return data as unknown as Order[];
+}
+
+
+export const fetchMetricActiveOrders = async () => {
+    const { count, error } = await supabase_client.from('orders').
+        select('*',{ count: 'exact', head: true })
+        .neq('current_status_id', 8)
+    if (error) {
+        toast.error(error.message)
+    }
+    return count
+}
+
+export const fetchManagableOrders = async (role:string) => {
+    const { data, error } = await supabase_client.from('orders').
+    select(
+        `
+            id,
+            current_status_id,
+            statuses(*)
+        `
+    )
+    .neq('current_status_id', 8)
+    
+    if (error) {
+        toast.error(error.message)
+    }
+
+    if (!data) {
+        return 0;
+    }
+
+    // Filter through the orders and check if they are manageable
+    const manageableOrders = data.filter((order: any) => {
+        const statusName = order.statuses?.name;
+        return managePermission(statusName, role); // Check permission for the current role and status
+    });
+
+    return manageableOrders.length;
 }
