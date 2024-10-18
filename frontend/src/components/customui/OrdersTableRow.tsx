@@ -12,6 +12,8 @@ import { convertUtcToBDTime, managePermission } from '@/services/helper';
 import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
 import { profile } from 'console';
 import { useAuth } from '@/context/AuthContext';
+import { OctagonAlert } from 'lucide-react';
+
 
 
 interface OrdersTableRowProps {
@@ -33,11 +35,20 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
     }
     setIsDeleteDialogOpen(false)
   }
+  const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
   
-  return (
-    <TableRow>
+  return  (
+  <TableRow >
       <TableCell className="font-medium">
-        {order.id}
+        {(permissionToManage) ? (
+          <Badge className="bg-indigo-100 text-md" variant="secondary">
+            {order.id}
+          </Badge>
+        ) : (
+            <Badge className="bg-white-100 text-md" variant="secondary">
+            {order.id}
+          </Badge>
+        )}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {order.factory_sections?.name && order.machines?.name
@@ -95,14 +106,31 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              aria-haspopup="true"
-              size="icon"
-              variant="ghost"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
+            {permissionToManage ? (
+              <Button
+                // className="text-indigo-400" // Set static color of the button
+                className="text-yellow-900" // Set static color of the button
+
+                aria-haspopup="true"
+                size="icon"
+                variant="ghost">
+                <OctagonAlert>
+                  <span className="sr-only text-red-600 ">Toggle menu</span>
+                </OctagonAlert>
+              </Button>
+
+            ):(
+                <Button
+                  aria-haspopup="true"
+                  size="icon"
+                  variant="ghost"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              )
+            }
+            
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -111,7 +139,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
                 View
               </DropdownMenuItem>
             </Link>
-            { managePermission(order.statuses.name, profile?.permission? profile.permission : "") &&
+            {permissionToManage &&
               <Link to={`/manageorder/${order.id}`}>
               <DropdownMenuItem>
                 Manage

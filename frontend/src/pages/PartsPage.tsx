@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchParts } from '../services/PartsService';
+import { fetchPageParts } from '../services/PartsService';
 import { useNavigate } from "react-router-dom"
 import { Loader2, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ const PartsPage = () => {
     const fetchPartsForPage = async (appliedFilters = filters, page = currentPage) => {
         try {
             setLoading(true);
-            const { data: fetchedParts, count } = await fetchParts(
+            const { data: fetchedParts, count } = await fetchPageParts(
                 appliedFilters.partIdQuery || undefined,
                 appliedFilters.partNameQuery || undefined,
                 page,
@@ -164,12 +164,12 @@ const PartsPage = () => {
                                 }  
                             </Table>
                         </CardContent>
-                         <CardFooter>
+                        <CardFooter>
                             <div className="flex justify-between items-center w-full text-xs text-muted-foreground">
                                 <span>
                                     Showing <strong>{(currentPage - 1) * partsPerPage + 1}</strong> to <strong>{Math.min(currentPage * partsPerPage, totalCount)}</strong> of <strong>{totalCount}</strong> Parts
                                 </span>
-                                
+
                                 {/* Pagination */}
                                 <div className="flex gap-2">
                                     <Button
@@ -179,16 +179,49 @@ const PartsPage = () => {
                                     >
                                         Previous
                                     </Button>
-                                    {[...Array(totalPages)].map((_, i) => (
+
+                                    {/* First Page */}
+                                    <Button
+                                        size="sm"
+                                        variant={currentPage === 1 ? 'default' : 'outline'}
+                                        onClick={() => handlePageChange(1)}
+                                    >
+                                        1
+                                    </Button>
+
+                                    {/* Ellipses before the current page */}
+                                    {currentPage > 4 && <span className="mx-2">...</span>}
+
+                                    {/* Pages around the current page (2 before and 2 after) */}
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(page =>
+                                            page >= currentPage - 2 && page <= currentPage + 2 && page !== 1 && page !== totalPages
+                                        )
+                                        .map((page) => (
+                                            <Button
+                                                key={page}
+                                                size="sm"
+                                                variant={currentPage === page ? 'default' : 'outline'}
+                                                onClick={() => handlePageChange(page)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ))}
+
+                                    {/* Ellipses after the current page */}
+                                    {currentPage < totalPages - 3 && <span className="mx-2">...</span>}
+
+                                    {/* Last Page */}
+                                    {totalPages > 1 && (
                                         <Button
-                                            key={i}
                                             size="sm"
-                                            variant={currentPage === i + 1 ? 'default' : 'outline'}
-                                            onClick={() => handlePageChange(i + 1)}
+                                            variant={currentPage === totalPages ? 'default' : 'outline'}
+                                            onClick={() => handlePageChange(totalPages)}
                                         >
-                                            {i + 1}
+                                            {totalPages}
                                         </Button>
-                                    ))}
+                                    )}
+
                                     <Button
                                         size="sm"
                                         onClick={() => handlePageChange(currentPage + 1)}

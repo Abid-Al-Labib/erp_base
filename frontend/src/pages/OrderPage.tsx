@@ -19,7 +19,7 @@ const OrderPage = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [ordersPerPage] = useState(5); // Set the number of orders per page here
+    const [ordersPerPage] = useState(10); // Set the number of orders per page here
     const [count, setCount] = useState(0);
     const [filters, setFilters] = useState<any>({});
     const [filterSummary, setFilterSummary] = useState<string>(''); // New state for summary
@@ -204,16 +204,49 @@ const OrderPage = () => {
                                                 >
                                                     Previous
                                                 </Button>
-                                                {[...Array(totalPages)].map((_, i) => (
+
+                                                {/* First Page */}
+                                                <Button
+                                                    size="sm"
+                                                    variant={currentPage === 1 ? 'default' : 'outline'}
+                                                    onClick={() => setCurrentPage(1)}
+                                                >
+                                                    1
+                                                </Button>
+
+                                                {/* Ellipses if needed before the current page */}
+                                                {currentPage > 4 && <span className="mx-2">...</span>}
+
+                                                {/* Pages around the current page (2 before and 2 after) */}
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                                    .filter(page =>
+                                                        page >= currentPage - 2 && page <= currentPage + 2 && page !== 1 && page !== totalPages
+                                                    )
+                                                    .map((page) => (
+                                                        <Button
+                                                            key={page}
+                                                            size="sm"
+                                                            variant={currentPage === page ? 'default' : 'outline'}
+                                                            onClick={() => setCurrentPage(page)}
+                                                        >
+                                                            {page}
+                                                        </Button>
+                                                    ))}
+
+                                                {/* Ellipses if needed after the current page */}
+                                                {currentPage < totalPages - 3 && <span className="mx-2">...</span>}
+
+                                                {/* Last Page */}
+                                                {totalPages > 1 && (
                                                     <Button
-                                                        key={i}
                                                         size="sm"
-                                                        variant={currentPage === i + 1 ? 'default' : 'outline'}
-                                                        onClick={() => setCurrentPage(i + 1)}
+                                                        variant={currentPage === totalPages ? 'default' : 'outline'}
+                                                        onClick={() => setCurrentPage(totalPages)}
                                                     >
-                                                        {i + 1}
+                                                        {totalPages}
                                                     </Button>
-                                                ))}
+                                                )}
+
                                                 <Button
                                                     size="sm"
                                                     onClick={() => setCurrentPage(currentPage + 1)}

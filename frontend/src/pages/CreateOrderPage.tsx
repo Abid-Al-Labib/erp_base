@@ -14,12 +14,13 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
 import { fetchMachines, setMachineIsRunningById } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
-import { fetchParts } from "@/services/PartsService"
+import { fetchAllParts } from "@/services/PartsService"
 import { Part } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
+import { fetchAppSettings } from "@/services/AppSettingsService"
 
 
 
@@ -115,7 +116,7 @@ const CreateOrderPage = () => {
     const [parts, setParts] = useState<Part[]>([]);
     useEffect(() => {
         const loadParts = async () => {
-            const fetchedParts = await fetchParts();
+            const fetchedParts = await fetchAllParts();
             setParts(fetchedParts.data);
         };
     
@@ -141,7 +142,7 @@ const CreateOrderPage = () => {
     const [forceMachineRender, setForceMachineRender] = useState<number>(0);
 
 
-
+    const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false);
 
     // Array to store all parts
 
@@ -368,6 +369,25 @@ const CreateOrderPage = () => {
     }, []);
 
     useEffect(() => {
+        const loadAddPartSettings = async () => {
+            try {
+                const settings_data = await fetchAppSettings()
+                if (settings_data) {
+                    settings_data.forEach((setting) => {
+                        if (setting.name === "Add Part") {
+                            setaddPartEnabled(setting.enabled)
+                        }
+                    })
+                }
+            } catch (error) {
+                toast.error("Could not load settings data")
+                setaddPartEnabled(false)
+            }
+        }
+        loadAddPartSettings();
+    }, []);
+
+    useEffect(() => {
         if (selectedFactoryId !== null) {
             const loadFactorySections = async () => {
                 const sections = await fetchFactorySections(selectedFactoryId);
@@ -404,7 +424,7 @@ const CreateOrderPage = () => {
     useEffect(() => {
         if (isPartsSelectOpen) {
             const loadParts = async () => {
-                const fetchedParts = await fetchParts();
+                const fetchedParts = await fetchAllParts();
                 setParts(fetchedParts.data);
             };
 
@@ -638,15 +658,18 @@ const CreateOrderPage = () => {
                                                     </div>
 
                                                     {/* Create New Part button */}
-                                                    <div className="p-2">
-                                                        <Button
-                                                            size="sm"
-                                                            className="w-full bg-blue-950"
-                                                            onClick={() => window.open('/addpart', '_blank')} // Opens /addpart in a new tab
-                                                        >
-                                                            Create New Part
-                                                        </Button>
-                                                    </div>
+                                                    {addPartEnabled && (
+                                                        <div className="p-2">
+                                                            <Button
+                                                                size="sm"
+                                                                className="w-full bg-blue-950"
+                                                                onClick={() => window.open('/addpart', '_blank')} // Opens /addpart in a new tab
+                                                                
+                                                            >
+                                                                Create New Part
+                                                            </Button>
+                                                        </div>
+                                                    )}
 
                                                     {/* Filtered part options */}
                                                     {parts
