@@ -30,7 +30,7 @@ interface Machine {
 interface AllMachinesStatusProps {
     factoryId?: number;
     factorySectionId?: number;
-    handleRowSelection: (factoryId: number, factorySectionId: number, machineId: number) => void; // New prop
+    handleRowSelection: (factoryId: number, factorySectionId: number, machineId: number) => void; 
 }
 
 const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factorySectionId, handleRowSelection }) => {
@@ -38,6 +38,8 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+
 
     useEffect(() => {
         const fetchAllData = async () => {
@@ -92,6 +94,20 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
         fetchAllData();
     }, [factoryId, factorySectionId]);
 
+    const handleSortByStatus = () => {
+        setSortOrder((prevSortOrder) => (prevSortOrder === 'asc' ? 'desc' : 'asc'));
+        setMachines((prevMachines) => {
+            const sortedMachines = [...prevMachines].sort((a, b) => {
+                if (sortOrder === 'asc') {
+                    return a.is_running === b.is_running ? 0 : a.is_running ? -1 : 1;
+                } else {
+                    return a.is_running === b.is_running ? 0 : a.is_running ? 1 : -1;
+                }
+            });
+            return sortedMachines;
+        });
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center p-5">
@@ -114,7 +130,9 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
                             <TableHead>Factory</TableHead>
                             <TableHead>Factory Section</TableHead>
                             <TableHead>Machine Name</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead onClick={handleSortByStatus} className="cursor-pointer">
+                                Status {sortOrder ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

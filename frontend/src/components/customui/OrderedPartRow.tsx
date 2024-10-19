@@ -107,15 +107,15 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
         //Logic to update storage and machine part quantity
         if (order_type=="Machine"){
-          const subtractedParts = await updateMachinePartQty(
+          await updateMachinePartQty(
             machine_id,
             orderedPartInfo.part_id,
             orderedPartInfo.qty,
             'subtract'
-          ) || 0;
+          )
 
           // Call addDamagePartQuantity only if parts were subtracted
-          addDamagePartQuantity(factory_id, orderedPartInfo.part_id, subtractedParts);
+          addDamagePartQuantity(factory_id, orderedPartInfo.part_id, orderedPartInfo.qty);
           
         }
       } catch (error) {

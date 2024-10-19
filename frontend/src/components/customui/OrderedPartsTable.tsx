@@ -52,13 +52,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
    
         // If order type is "Machine" and the part is not approved, update quantities
         if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
-          const subtractedParts = await updateMachinePartQty(
+          await updateMachinePartQty(
             order.machine_id,
             ordered_part.part_id,
             ordered_part.qty,
             'subtract'
-          ) || 0;
-            promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, subtractedParts));
+          )
+          promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, ordered_part.qty));
           
         }
 
