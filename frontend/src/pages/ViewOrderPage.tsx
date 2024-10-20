@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, MemoryRouter, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatusTracker from "@/components/customui/StatusTracker";
 import OrderInfo from "@/components/customui/OrderInfo";
@@ -8,14 +8,17 @@ import { Order } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
 import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 import { supabase_client } from "@/services/SupabaseClient";
+import { useAuth } from "@/context/AuthContext";
+
+
+
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-
+  const profile = useAuth().profile;
   const loadOrders = async () => {
     if (!id || isNaN(parseInt(id))) {
       toast.error("Invalid order ID");
@@ -58,12 +61,17 @@ const ViewOrderPage = () => {
     loadOrders();
   }, [id, navigate,supabase_client]);
 
+  
+  const CreateInvoice = () => {
+    window.open(`/invoice/${id}`, '_blank');
+  };
+
   if (loading) {
     return <div>Loading...</div>; // Add a loading state if necessary
   }
-
+  
   if (!order) {
-    toast.error("No order found with this id")
+    toast.error("No order found with this id");
     return <div>No order found</div>; // Handle the case where no orders are returned
   }
 
@@ -73,26 +81,30 @@ const ViewOrderPage = () => {
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <div className="sm:flex flex-1 gap-2">
             <div className="w-full mt-4">
-            <OrderInfo
-              order={order}
-            />
+              <OrderInfo order={order} />
             </div>
             <div className="mt-4">
               <StatusTracker order_id={order.id} />
             </div>
           </div>
-            <div className="w-full mt-4 overflow-x-auto">
-              <OrderedPartsTable
-                mode="view"
-                order={order} 
-                current_status={order.statuses}         
-              />
-            </div>
+          <div className="w-full mt-4 overflow-x-auto">
+            <OrderedPartsTable mode="view" order={order} current_status={order.statuses} />
           </div>
+        </div>
       </main>
       <div className="flex justify-end">
-        <div className="my-3 mx-3">
-          <Link to={'/orders'}><Button>Back To Orders</Button></Link>
+        <div className="my-3 mx-3 flex gap-2">
+          {(profile?.permission === 'admin' || profile?.permission === 'finance') && (
+            <Button 
+              disabled={order?.current_status_id <= 3} 
+              onClick={CreateInvoice}
+            >
+              Create Invoice
+            </Button>
+          )}
+          <Link to={'/orders'}>
+            <Button>Back To Orders</Button>
+          </Link>
         </div>
       </div>
     </div>

@@ -1,11 +1,11 @@
 import { Order, OrderedPart, Status } from "@/types";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { useEffect, useState } from "react";
 import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import OrderedPartRow from "./OrderedPartRow";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { isChangeStatusAllowed } from "@/services/helper";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
@@ -19,7 +19,7 @@ import { updateMachinePartQty } from "@/services/MachinePartsService";
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
 
 interface OrderedPartsTableProp {
-  mode:  "view" | "manage"
+  mode:  "view" | "manage" | "invoice"
   order: Order
   current_status: Status
 }
@@ -36,7 +36,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false)
   const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false)
   const navigate = useNavigate()
-
+  const [totalCost, setTotalCost] = useState<string>(" - ")
+  const [costBreakdown, setCostBreakdown] = useState<string>("Total Cost Breakdown: -")
   const [runCount, setRunCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -171,6 +172,39 @@ const manageOrderStatus = async () => {
   }
 }
 
+const calculateTotalCost = () => {
+  if (orderedParts.length > 0) {
+    let totalCost = 0; 
+    let ans_string = "";
+
+    orderedParts.forEach((part, index) => {
+      if (part.qty && part.unit_cost) {
+        const cost = part.qty * part.unit_cost;
+        totalCost += cost;
+        ans_string += `(${part.qty} x ${part.unit_cost})`; // Add current part to string
+        if (index < orderedParts.length - 1) {
+          ans_string += " + ";
+        }
+      }
+    });
+
+    const finalTotalCostString = totalCost > 0
+      ? `BDT ${totalCost}`
+      : "-"; // Handle case where there are no valid parts
+
+    const finalCostBreakdownString = totalCost > 0
+    ? `Total Cost Breakdown: BDT ${ans_string}`
+    : "Total Cost Breakdown: -"; // Handle case where there are no valid parts
+
+    setTotalCost(finalTotalCostString);
+    setCostBreakdown(finalCostBreakdownString)
+  } else {
+     // Handle case where orderedParts is empty
+    setTotalCost("Total Cost: -");
+    setCostBreakdown("Total Cost Breakdown: -")
+  }
+};
+
 const handleOrderManagement = async () => {
     if (runCount > 0 && !isProcessing) {
       setIsProcessing(true)
@@ -182,6 +216,11 @@ const handleOrderManagement = async () => {
       return;
     }
 };
+
+  //use effect to calculet total cost everytime orderedParts is reloaded
+  useEffect( () => {
+    calculateTotalCost();
+  }, [orderedParts]);
 
   // useEffect to monitor and process the queue
   useEffect( () => {
@@ -222,9 +261,9 @@ const handleOrderManagement = async () => {
     return(      
       <Card x-chunk="dashboard-06-chunk-0" className="mt-1">
       <CardHeader>
-          <CardTitle>View Parts Ordered</CardTitle>
+          <CardTitle>Parts Ordered</CardTitle>
           <CardDescription>
-          This is a list of parts that were ordered.
+          <p>This is a list of parts that were ordered.</p>
           </CardDescription>
       </CardHeader>
       {(loadingTable===true)? (
@@ -267,12 +306,76 @@ const handleOrderManagement = async () => {
               machine_id={order.machine_id}
               order_type={order.order_type}/>
             ))}
+              {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
+                <TableCell className="font-bold">Total:</TableCell>
+                <TableCell className="font-bold">{totalCost}</TableCell>
+              </TableRow>
+              )}
             </TableBody>
         }  
       </Table>
       </CardContent>
     }
     </Card>
+    )
+  }
+  else if (mode==="invoice"){
+    return(      
+      <Card x-chunk="dashboard-06-chunk-0" className="mt-1">
+        <CardHeader>
+          <CardTitle>Parts Ordered</CardTitle>
+          <CardDescription>
+          <p>The list of parts that were ordered.</p>
+          </CardDescription>
+        </CardHeader>
+          {(loadingTable===true)? (
+                  <div className='animate-spin flex flex-row justify-center p-5'>
+                      <Loader2 />
+                  </div>
+          ):
+
+
+        <CardContent>
+          <Table>
+            <TableHeader>
+            <TableRow>
+              <TableHead>Part</TableHead>
+              <TableHead>Brand</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Qty</TableHead>
+              <TableHead>Cost/Unit</TableHead>
+              <TableHead>Subtotal</TableHead>
+            </TableRow>
+            </TableHeader>
+            {loadingTable? (
+              <div className='flex flex-row justify-center'>
+                  <Loader2 className='h-8 w-8 animate-spin'/>
+              </div>
+            ):
+              <TableBody>
+              {orderedParts.map(orderedPart => (                                        
+                  <OrderedPartRow key={orderedPart.id}
+                mode="invoice"
+                orderedPartInfo={orderedPart}
+                current_status={current_status}
+                factory_id={order.factory_id}
+                machine_id={order.machine_id}
+                order_type={order.order_type}/>
+              ))}
+              <TableRow>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell className="font-bold">Total:</TableCell>
+                <TableCell className="font-bold">{totalCost}</TableCell>
+              </TableRow>
+              </TableBody>
+            }  
+          </Table>
+        </CardContent>
+        }
+      </Card>
     )
   }
   else if (mode==="manage"){
@@ -338,6 +441,11 @@ const handleOrderManagement = async () => {
               machine_id={order.machine_id}
               order_type={order.order_type}/>
             ))}
+              {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
+                <TableCell className="font-bold">Total:</TableCell>
+                <TableCell className="font-bold">{totalCost}</TableCell>
+              </TableRow>
+              )}
             </TableBody>
         }  
       </Table>
