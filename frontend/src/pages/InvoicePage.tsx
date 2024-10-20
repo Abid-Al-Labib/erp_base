@@ -5,8 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { fetchOrderByID } from '@/services/OrdersService';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from "react-to-print";
 import { Separator } from '@/components/ui/separator';
@@ -45,34 +43,6 @@ const InvoicePage = () => {
           setLoading(false);
         }
     };
-
-    async function downloadInvoice(): Promise<void> {
-        const inputData = invoiceRef.current;
-        console.log(inputData)
-        try {
-          if (inputData)
-          {
-            const canvas = await html2canvas(inputData);
-            const imgData = canvas.toDataURL("image/png");
-            const pdf = new jsPDF({
-              orientation: "portrait",
-              unit: "px",
-              format: 'a4'
-            });
-    
-            const width = 600
-            const height = 800
-    
-            pdf.addImage(imgData,"PNG", 20, 0, width,height)
-            pdf.save(`invoice-orderid-${order?.id}.pdf`)
-          }
-        else{
-          console.log("no input data for invoice")
-        }
-        } catch (error) {
-          console.log(error)
-        }
-    }
 
     useEffect(() => {
         loadOrders()
