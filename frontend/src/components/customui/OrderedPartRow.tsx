@@ -26,7 +26,7 @@ import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
 
 
 interface OrderedPartRowProp{
-    mode: 'view' | 'manage',
+    mode: 'view' | 'manage' | 'invoice',
     orderedPartInfo: OrderedPart,
     current_status: Status,
     factory_id: number
@@ -503,6 +503,19 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                 </DialogContent>
             </Dialog>
         </TableCell>
+    </TableRow>
+    )
+  }
+  else if(mode==='invoice'){
+    return (
+      <TableRow>
+        <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.brand || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.vendor || '-'}</TableCell>}
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.qty}</TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.unit_cost || '-'}</TableCell>}
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{`${orderedPartInfo.unit_cost?orderedPartInfo.unit_cost*orderedPartInfo.qty: "-"}`}</TableCell>}
+
     </TableRow>
     )
   }

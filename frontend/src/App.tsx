@@ -63,6 +63,7 @@ import DamagedPartsPage from './pages/DamagedPartsPage';
 import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/customui/routing/PrivateRouting'; // Import PrivateRoute component
+import InvoicePage from './pages/InvoicePage';
 
 const App: React.FC = () => {
   return (
@@ -109,6 +110,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <ViewPartPage />
+              </PrivateRoute>
+            }
+          />
+          <Route  
+            path="/invoice/:id"
+            element={
+              <PrivateRoute>
+                <InvoicePage />
               </PrivateRoute>
             }
           />
