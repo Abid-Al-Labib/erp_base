@@ -115,7 +115,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
             // Fetch machines when a factory section is selected
             const fetchMachinesData = async () => {
                 const fetchedMachines = await fetchMachines(selectedFactorySectionId);
-                setMachines(fetchedMachines);
+                setMachines(fetchedMachines.data);
                 setSelectedMachineId(-1); // Reset machine selection
             };
 
