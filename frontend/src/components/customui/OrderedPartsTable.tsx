@@ -407,6 +407,7 @@ const handleOrderManagement = async () => {
         <Table>
         <TableHeader>
         <TableRow>
+            <TableHead className="whitespace-nowrap"></TableHead>
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
