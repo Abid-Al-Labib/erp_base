@@ -25,7 +25,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
         try {
           await updateDamagePartQuantity(damagedPart.factory_id, damagedPart.part_id, qty);
           setIsEditing(false);
-          toast.success("Quantity updated successfully.");
+          // toast.success("Quantity updated successfully.");
         } catch (error) {
           toast.error("Failed to update quantity.");
         } finally {

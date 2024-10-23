@@ -90,20 +90,18 @@ const ManageOrderPage = () => {
   return (
     <>
       <NavigationBar />
-      <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
-        <div className="mx-4">
-          <OrderInfo
-            order={order}
-          />
-          <OrderedPartsTable
-            mode="manage"
-            order={order}
-            current_status={order.statuses}
-          />
-          <div className="flex justify-end">
-            <div className="my-3 mx-3">
-              <Link to={'/orders'}><Button>Back To Orders</Button></Link>
-            </div>
+      <div className="mx-4 my-4">
+        <OrderInfo
+          order={order}
+        />
+        <OrderedPartsTable
+          mode="manage"
+          order={order}
+          current_status={order.statuses}
+        />
+        <div className="flex justify-end">
+          <div className="my-3 mx-3">
+            <Link to={'/orders'}><Button>Back To Orders</Button></Link>
           </div>
         </div>
       </div>

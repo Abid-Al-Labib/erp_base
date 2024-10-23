@@ -136,9 +136,10 @@ export const updateMachinePartQty = async (
     // Handle upsert error if it occurs
     if (upsertError) {
         toast.error(upsertError.message);
-    } else {
-        toast.success("Machine part quantity updated successfully!");
-    }
+    } 
+    // else {
+    //     toast.success("Machine part quantity updated successfully!");
+    // }
     return returnFlag;
 };
 

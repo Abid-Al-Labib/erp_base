@@ -82,7 +82,8 @@ export const addDamagePartQuantity = async (factory_id: number, part_id: number,
     // Handle update error if it occurs
     if (updateError) {
         toast.error(updateError.message);
-    } else {
-        toast.success("Damaged part quantity updated successfully!");
-    }
+    } 
+    // else {
+    //     toast.success("Damaged part quantity updated successfully!");
+    // }
 };
