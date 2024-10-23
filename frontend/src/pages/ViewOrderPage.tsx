@@ -9,9 +9,7 @@ import { fetchOrderByID } from "@/services/OrdersService";
 import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 import { supabase_client } from "@/services/SupabaseClient";
 import { useAuth } from "@/context/AuthContext";
-
-
-
+import NavigationBar from "@/components/customui/NavigationBar";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -76,38 +74,41 @@ const ViewOrderPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40 mx-2">
-      <main className="grid m-4">
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="sm:flex flex-1 gap-2">
-            <div className="w-full mt-4">
-              <OrderInfo order={order} />
+    <>
+    <NavigationBar />
+      <div className="flex min-h-screen w-full flex-col bg-muted/40 mx-2">
+        <main className="grid m-4">
+          <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
+            <div className="sm:flex flex-1 gap-2">
+              <div className="w-full mt-4">
+                <OrderInfo order={order} />
+              </div>
+              <div className="mt-4">
+                <StatusTracker order_id={order.id} />
+              </div>
             </div>
-            <div className="mt-4">
-              <StatusTracker order_id={order.id} />
+            <div className="w-full mt-4 overflow-x-auto">
+              <OrderedPartsTable mode="view" order={order} current_status={order.statuses} />
             </div>
           </div>
-          <div className="w-full mt-4 overflow-x-auto">
-            <OrderedPartsTable mode="view" order={order} current_status={order.statuses} />
+        </main>
+        <div className="flex justify-end">
+          <div className="my-3 mx-3 flex gap-2">
+            {(profile?.permission === 'admin' || profile?.permission === 'finance') && (
+              <Button 
+                disabled={order?.current_status_id <= 3} 
+                onClick={CreateInvoice}
+              >
+                Create Invoice
+              </Button>
+            )}
+            <Link to={'/orders'}>
+              <Button>Back To Orders</Button>
+            </Link>
           </div>
-        </div>
-      </main>
-      <div className="flex justify-end">
-        <div className="my-3 mx-3 flex gap-2">
-          {(profile?.permission === 'admin' || profile?.permission === 'finance') && (
-            <Button 
-              disabled={order?.current_status_id <= 3} 
-              onClick={CreateInvoice}
-            >
-              Create Invoice
-            </Button>
-          )}
-          <Link to={'/orders'}>
-            <Button>Back To Orders</Button>
-          </Link>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
