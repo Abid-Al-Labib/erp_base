@@ -1,5 +1,4 @@
-
-
+import { OrderedPart } from "@/types";
 
 export const showPendingOrderApproveButton = (status:string , isapproved:boolean): boolean =>{
     if (status === "Pending" && !isapproved) {
@@ -50,8 +49,17 @@ export const showQuotationButton = (status: string, brand: string | null, vendor
   return false;
 }
 
-export const showBudgetApproveButton = (status:string, isApproved:boolean): boolean =>{
-    if (status === "Budget Released" && !isApproved) {
+export const showAllBudgetApproveButton = (status: string, ordered_parts: OrderedPart[] ) => {
+    //here it is assumed that all 
+    if (status === "Budget Released"){
+        const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));
+        if(partsToCheck.every(part => part.vendor !== null && part.unit_cost !== null && part.brand !== null)) return true
+    }
+    return false
+}
+
+export const showBudgetApproveButton = (status:string, isApproved:boolean, qty:number|null, vendor:string|null, brand:string|null): boolean =>{
+    if (status === "Budget Released" && !isApproved && qty!==null && vendor !==null && brand!==null) {
         return true;
     }
     return false;

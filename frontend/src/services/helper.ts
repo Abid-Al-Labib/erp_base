@@ -77,6 +77,15 @@ export const convertBDTimeToUtc = (bdTimestamp: string): string => {
   return utcDate.toISOString();
 };
 
+export const isRevertStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
+  const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));
+
+  if (current_status==="Budget Released"){
+    return partsToCheck.some(part => part.vendor === null || part.unit_cost === null || part.brand === null);
+  }
+
+  return false
+}
 
 export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
   // Filter parts that have in_storage === false and approved_storage_withdrawal === false
@@ -99,7 +108,7 @@ export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_stat
         break;
       }
       case "Budget Released": {
-        if(partsToCheck.every(part => part.approved_budget === true)) return 5
+        if(partsToCheck.every(part => part.approved_budget === true && part.vendor !== null && part.unit_cost !== null && part.brand !== null)) return 5
         break;
       }
       case "Waiting For Purchase": {
@@ -162,6 +171,70 @@ export const managePermission = (status: string, role: string): boolean => {
         if (role === "admin") {
           return true;
         } else if (role === "finance") {
+          return true;
+        } 
+        break;
+  
+      case "Parts Sent To Factory":
+        if (role === "admin") {
+          return true;
+        } else if (role === "department") {
+          return true;
+        } else if (role === "directorTechnical") {
+          return true;
+        } else if (role === "finance") {
+        return true;
+        }
+        break;
+  
+      case "Parts Received":
+        return false
+        break;
+      
+
+
+      default:
+        return false;
+    }
+  
+    return false;
+  };
+
+
+  export const highlightManagebleOrder = (status: string, role: string): boolean => {
+    switch (status) {
+      case "Pending":
+         if (role === "directorTechnical") {
+          return true;
+        }
+        break;
+  
+      case "Order Sent To Head Office":
+        if (role === "admin") {
+          return true;
+        }
+        break;
+  
+      case "Waiting For Quotation":
+        if (role === "finance") {
+          return true;
+        } 
+        break;
+  
+      case "Budget Released":
+        if (role === "admin") {
+          return true;
+        } 
+        break;
+  
+      case "Waiting For Purchase":
+        if (role === "finance") {
+          return true;
+        }
+        break;
+  
+      case "Purchase Complete":
+        if (role === "finance") {
           return true;
         } 
         break;
