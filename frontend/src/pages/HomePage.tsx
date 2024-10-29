@@ -2,20 +2,26 @@ import NavigationBar from "@/components/customui/NavigationBar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from '@/context/AuthContext'; 
 import { fetchMetricNotRunningMachines, fetchMetricRunningMachines } from "@/services/MachineServices";
-import { fetchManagableOrders, fetchMetricActiveOrders } from "@/services/OrdersService";
+import { fetchMetricMostFrequentOrderedParts } from "@/services/OrderedPartsService";
+import { fetchManagableOrders, fetchMetricActiveOrders, fetchMetricsHighMaintenanceFactorySections } from "@/services/OrdersService";
+import { FactorySection, Machine, Part } from "@/types";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 const HomePage = () => {
   const profile = useAuth().profile
   const [loadingMetricRunningMachines, setLoadingMetricRunningMachines] = useState<boolean>(false)
   const [loadingMetricNotRunningMachines, setLoadingMetricNotRunningMachines] = useState<boolean>(false)
   const [loadingMetricManagableOrders, setLoadingMetricManagableOrders] = useState<boolean>(false)
   const [loadingMetricActiveOrders, setLoadingMetricActiveOrders] = useState<boolean>(false)
+  const [loadingMetricMostFrequentOrderedParts, setLoadingMetricMostFrequentOrderedParts] = useState<boolean>(false)
+  const [loadingMetricHighMaintenanceFactorySections, setLoadingMetricHighMaintenanceFactorySections] = useState<boolean>(false)
   
   const [numberOfMachinesRunning, setNumberOfMachinesRunning] = useState<number|null>(null)
   const [numberOfMachinesNotRunning, setNumberOfMachinesNotRunning] = useState<number|null>(null)
   const [numberOfManagableOrders, setNumberOfManagableOrders] = useState<number|null>(null)
   const [numberOfActiveOrders, setNumberOfActiveOrders] = useState<number|null>(null)
-
+  const [mostFrequentOrderedParts, setMostFrequentOrderedParts] = useState<Part[]|null>(null)
+  const [highMaintenanceFactorySections, setHighMaintenanceFactorySections] = useState<string[]|null>(null)
 
   const loadMetricRunningMachines = async () => {
     setLoadingMetricRunningMachines(true);
@@ -69,10 +75,36 @@ const HomePage = () => {
     }
   };
 
+  const loadMetricMostFrequentOrderedParts =  async () => {
+    setLoadingMetricMostFrequentOrderedParts(true)
+    try {
+      const parts = await fetchMetricMostFrequentOrderedParts()
+      setMostFrequentOrderedParts(parts)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoadingMetricMostFrequentOrderedParts(false)
+    }
+  }
+
+  const loadMetricHighMaintenanceMachines = async () => {
+    setLoadingMetricHighMaintenanceFactorySections(true)
+    try {
+      const factorySections = await fetchMetricsHighMaintenanceFactorySections()
+      setHighMaintenanceFactorySections(factorySections)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoadingMetricHighMaintenanceFactorySections(false)
+    }
+  }
+
   useEffect(()=>{
     loadMetricRunningMachines()
     loadMetricNotRunningMachines()
     loadMetricActiveOrders()
+    loadMetricMostFrequentOrderedParts()
+    loadMetricHighMaintenanceMachines()
   },[])
 
   useEffect(() => {
@@ -157,6 +189,57 @@ return (
                   {numberOfActiveOrders}
                   <span className="text-sm font-normal text-muted-foreground">orders</span>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Top frequently ordered parts */}
+          <Card className="max-w-xs p-2">
+            <CardHeader>
+              <CardTitle>Most frequently ordered parts</CardTitle>
+              <CardDescription>Based on the number of orders made for a part, NOT from the quantity ordered</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {loadingMetricMostFrequentOrderedParts ? (
+                <div className="text-xl">Loading...</div>
+              ) : (
+                <ol className="list-decimal list-inside text-sm">
+                  {mostFrequentOrderedParts && mostFrequentOrderedParts.length > 0 ? (
+                    mostFrequentOrderedParts.map((part, index) => (
+                      <li key={part.id} className="mt-1">
+                        <Link to={`/viewpart/${part.id}`} className="hover:text-blue-500 hover:underline">
+                          {part.name}
+                        </Link>
+                      </li>
+                    ))
+                  ) : (
+                    <div>Error while calculating</div>
+                  )}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="max-w-xs p-2">
+            <CardHeader>
+              <CardTitle>High maintenance factory sections</CardTitle>
+              <CardDescription>Calculated from which factory sections require most orders</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
+              {loadingMetricHighMaintenanceFactorySections? (
+                <div className="text-xl">Loading...</div>
+              ) : (
+                <ol className="list-decimal list-inside text-sm">
+                  {highMaintenanceFactorySections && highMaintenanceFactorySections.length > 0 ? (
+                    highMaintenanceFactorySections.map((section) => (
+                      <li className="mt-1">
+                        {section}
+                      </li>
+                    ))
+                  ) : (
+                    <div>Error while calculating</div>
+                  )}
+                </ol>
               )}
             </CardContent>
           </Card>

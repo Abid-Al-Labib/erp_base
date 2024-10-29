@@ -44,7 +44,7 @@ const DamagedPartsRow: React.FC<DamagedPartsRowProp> = ({ damagedPart }) => {
     <TableRow>
       <TableCell className="whitespace-nowrap">{damagedPart.parts.id}</TableCell>
       <TableCell className="whitespace-nowrap">
-        <a className="hover:underline" target="_blank" href={`/viewpart/${damagedPart.parts.name}`}>
+        <a className="hover:underline" target="_blank" href={`/viewpart/${damagedPart.parts.id}`}>
           {damagedPart.parts.name}
         </a>
       </TableCell>

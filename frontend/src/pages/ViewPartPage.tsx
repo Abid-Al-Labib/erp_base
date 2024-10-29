@@ -1,4 +1,5 @@
 import LinkedOrdersTable from "@/components/customui/LinkedOrdersTable";
+import NavigationBar from "@/components/customui/NavigationBar";
 import PartInfo from "@/components/customui/PartInfo";
 import { Button } from "@/components/ui/button";
 import { convertUtcToBDTime } from "@/services/helper";
@@ -72,7 +73,9 @@ const ViewPartPage = () => {
   }
 
   return (
-    <div className="flex w-full flex-col bg-muted/40 mt-2">
+    <>
+    <NavigationBar />
+    <div className="flex  min-h-screen w-full flex-col bg-muted/40 mt-2">
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
         <div>
           <PartInfo
@@ -80,9 +83,7 @@ const ViewPartPage = () => {
             created_at={convertUtcToBDTime(parts[0].created_at)}
             name={parts[0].name}
             unit={parts[0].unit}
-            lifetime={parts[0].lifetime}
-            description={parts[0].description}
-          />
+            description={parts[0].description} />
         </div>
 
         {loadingTable ? (
@@ -91,8 +92,7 @@ const ViewPartPage = () => {
           </div>
         ) : (
           <LinkedOrdersTable
-            linkedOrderedParts={linkedOrderedParts}
-          />
+            linkedOrderedParts={linkedOrderedParts} />
         )}
       </main>
       <div className="flex justify-end">
@@ -100,7 +100,7 @@ const ViewPartPage = () => {
           <Link to={'/parts'}><Button>Back To Parts</Button></Link>
         </div>
       </div>
-    </div>
+    </div></>
   );
 };
 

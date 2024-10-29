@@ -2,8 +2,7 @@ import { Order } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import { convertBDTimeToUtc, managePermission } from "./helper.ts";
 import toast from "react-hot-toast";
-import { count } from "console";
-import { Head } from "react-day-picker";
+import { fetchFactoriesByIds, fetchFactorySectionsByIds } from "./FactoriesService.ts";
 
 
 export const fetchOrders = async ({
@@ -323,3 +322,45 @@ export const fetchManagableOrders = async (role:string) => {
 
     return manageableOrders.length;
 }
+
+
+export const fetchMetricsHighMaintenanceFactorySections = async () => {
+    const { data, error } = await supabase_client
+      .from('orders')
+      .select(`factory_section_id, count: factory_section_id.count()`)
+      .order('count', { ascending: false })
+      .limit(3);
+  
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
+  
+    // Extract section IDs from `data` to maintain order
+    const sectionIds = data.map((item) => item.factory_section_id);
+  
+    // Fetch section details and create a Map by section ID
+    const sectionData = await fetchFactorySectionsByIds(sectionIds);
+    if (!sectionData) return null;
+    const sectionMap = new Map(sectionData.map((section) => [section.id, section]));
+  
+    // Extract factory IDs from the sections
+    const factoryIds = sectionData.map((section) => section.factory_id);
+    
+    // Fetch factory details and create a Map by factory ID
+    const factoryData = await fetchFactoriesByIds(factoryIds);
+    if (!factoryData) return null;
+    const factoryMap = new Map(factoryData.map((factory) => [factory.id, factory]));
+  
+    // Build the result in the order of `data`
+    const result = data.map((item) => {
+      const section = sectionMap.get(item.factory_section_id);
+      if (section) {
+        const factory = factoryMap.get(section.factory_id);
+        return factory ? `${factory.abbreviation} - ${section.name}` : `Unknown Factory - ${section.name}`;
+      }
+      return `Unknown Section`;
+    });
+  
+    return result as string[];
+  };

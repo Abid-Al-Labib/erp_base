@@ -1,6 +1,7 @@
-import { OrderedPart } from "@/types";
+import { OrderedPart, Part } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
+import { fetchPartsByIDs } from "./PartsService";
 
 export const fetchOrderedPartByPartID = async( part_id:number) => {
     const {data,error} =  await supabase_client.from('order_parts').select(
@@ -261,3 +262,32 @@ export const insertOrderedParts = async (
     return data as unknown as OrderedPart[];
 };
 
+export const fetchMetricMostFrequentOrderedParts = async () => {
+    const { data, error } = await supabase_client
+      .from('order_parts')
+      .select('part_id, count:part_id.count()')
+      .order('count', { ascending: false })
+      .limit(3);
+  
+    if (error) {
+      console.error('Error fetching top ordered parts:', error);
+      return null;
+    }
+  
+    // Extract part IDs in the correct order
+    const partIds = data.map((item) => item.part_id);
+  
+    // Fetch part details based on the extracted part IDs and create a Map for lookup
+    const partsData = await fetchPartsByIDs(partIds);
+    if (!partsData) {
+      console.error('Error fetching parts details');
+      return null;
+    }
+    
+    // Map part details by part ID
+    const partsMap = new Map(partsData.map((part) => [part.id, part]));
+  
+    // Build the result, preserving the order from `data`
+    const result = data.map((item) => partsMap.get(item.part_id)).filter(Boolean);
+    return result as Part[];
+  };

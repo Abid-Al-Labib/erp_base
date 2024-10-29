@@ -8,11 +8,10 @@ interface PartInfoProp {
     name: string,
     unit: string,
     description: string,
-    lifetime: number | null
 }
 
 
-const PartInfo:React.FC<PartInfoProp> = ({id,created_at,name,unit,description,lifetime}) => {
+const PartInfo:React.FC<PartInfoProp> = ({id,created_at,name,unit,description}) => {
     return (
         <Card
         className="sm:col-span-2" x-chunk="dashboard-05-chunk-0"
@@ -38,10 +37,6 @@ const PartInfo:React.FC<PartInfoProp> = ({id,created_at,name,unit,description,li
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Unit</span>
                 <span>{unit}</span>
-            </li>
-            <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">lifetime in days</span>
-                <span>{lifetime}</span>
             </li>
             </ul>
         <Separator className="my-2" />

@@ -89,3 +89,15 @@ export const fetchPartByID = async (part_id: number)=> {
     console.log(data)
     return data as Part[]
 }
+
+export const fetchPartsByIDs = async (part_ids: number[])=> {
+    const { data, error } = await supabase_client
+    .from('parts')
+    .select("*")
+    .in('id', part_ids)
+
+    if (error) {
+        toast.error(error.message)
+    }
+    return data as Part[]
+}
