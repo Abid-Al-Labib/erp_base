@@ -1,6 +1,6 @@
 import { Order } from "@/types";
 import { supabase_client } from "./SupabaseClient";
-import { convertBDTimeToUtc, managePermission } from "./helper.ts";
+import { convertBDTimeToUtc, isManagebleOrder, managePermission } from "./helper.ts";
 import toast from "react-hot-toast";
 import { fetchFactoriesByIds, fetchFactorySectionsByIds } from "./FactoriesService.ts";
 
@@ -317,7 +317,7 @@ export const fetchManagableOrders = async (role:string) => {
     // Filter through the orders and check if they are manageable
     const manageableOrders = data.filter((order: any) => {
         const statusName = order.statuses?.name;
-        return managePermission(statusName, role); // Check permission for the current role and status
+        return isManagebleOrder(statusName, role); // Check permission for the current role and status
     });
 
     return manageableOrders.length;
@@ -329,15 +329,18 @@ export const fetchMetricsHighMaintenanceFactorySections = async () => {
       .from('orders')
       .select(`factory_section_id, count: factory_section_id.count()`)
       .order('count', { ascending: false })
-      .limit(3);
+      .limit(10);
   
     if (error) {
       toast.error(error.message);
       return null;
     }
   
-    // Extract section IDs from `data` to maintain order
-    const sectionIds = data.map((item) => item.factory_section_id);
+    // Filter out rows where factory_section_id is null
+    const filteredData = data.filter((item) => item.factory_section_id !== null);
+  
+    // Extract section IDs from `filteredData` to maintain order
+    const sectionIds = filteredData.map((item) => item.factory_section_id);
   
     // Fetch section details and create a Map by section ID
     const sectionData = await fetchFactorySectionsByIds(sectionIds);
@@ -346,14 +349,65 @@ export const fetchMetricsHighMaintenanceFactorySections = async () => {
   
     // Extract factory IDs from the sections
     const factoryIds = sectionData.map((section) => section.factory_id);
-    
+  
     // Fetch factory details and create a Map by factory ID
     const factoryData = await fetchFactoriesByIds(factoryIds);
     if (!factoryData) return null;
     const factoryMap = new Map(factoryData.map((factory) => [factory.id, factory]));
   
-    // Build the result in the order of `data`
-    const result = data.map((item) => {
+    // Build the result in the order of `filteredData`
+    const result = filteredData.map((item) => {
+      const section = sectionMap.get(item.factory_section_id);
+      if (section) {
+        const factory = factoryMap.get(section.factory_id);
+        return factory ? `${factory.abbreviation} - ${section.name} - (${item.count})` : `Unknown Factory - ${section.name}`;
+      }
+      return `Unknown Section`;
+    });
+  
+    return result as string[];
+  };
+
+
+  export const fetchMetricsHighMaintenanceFactorySectionsCurrentMonth = async () => {
+    // Get the start and end dates for the current month
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    const startOfNextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString();
+  
+    const { data, error } = await supabase_client
+      .from('orders')
+      .select(`factory_section_id, count: factory_section_id.count()`)
+      .gte('created_at', startOfMonth)
+      .lt('created_at', startOfNextMonth)
+      .order('count', { ascending: false })
+      .limit(10);
+  
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
+  
+    // Filter out rows where factory_section_id is null
+    const filteredData = data.filter((item) => item.factory_section_id !== null);
+  
+    // Extract section IDs from `filteredData` to maintain order
+    const sectionIds = filteredData.map((item) => item.factory_section_id);
+  
+    // Fetch section details and create a Map by section ID
+    const sectionData = await fetchFactorySectionsByIds(sectionIds);
+    if (!sectionData) return null;
+    const sectionMap = new Map(sectionData.map((section) => [section.id, section]));
+  
+    // Extract factory IDs from the sections
+    const factoryIds = sectionData.map((section) => section.factory_id);
+  
+    // Fetch factory details and create a Map by factory ID
+    const factoryData = await fetchFactoriesByIds(factoryIds);
+    if (!factoryData) return null;
+    const factoryMap = new Map(factoryData.map((factory) => [factory.id, factory]));
+  
+    // Build the result in the order of `filteredData`
+    const result = filteredData.map((item) => {
       const section = sectionMap.get(item.factory_section_id);
       if (section) {
         const factory = factoryMap.get(section.factory_id);
@@ -364,3 +418,4 @@ export const fetchMetricsHighMaintenanceFactorySections = async () => {
   
     return result as string[];
   };
+  

@@ -8,7 +8,7 @@ import { Badge } from '../ui/badge';
 import { deleteOrderByID, fetchRunningOrdersByMachineId } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
-import { convertUtcToBDTime, highlightManagebleOrder, managePermission } from '@/services/helper';
+import { convertUtcToBDTime, isManagebleOrder, managePermission } from '@/services/helper';
 import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '@/context/AuthContext';
 import { OctagonAlert } from 'lucide-react';
@@ -42,7 +42,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
     setIsDeleteDialogOpen(false)
   }
   const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
-  const isHighlightedOrder = highlightManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")
+  const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")
   return  (
   <TableRow className={isHighlightedOrder? "bg-red-50": ""}>
       <TableCell className="font-medium">

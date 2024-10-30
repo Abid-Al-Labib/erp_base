@@ -201,7 +201,7 @@ export const managePermission = (status: string, role: string): boolean => {
   };
 
 
-  export const highlightManagebleOrder = (status: string, role: string): boolean => {
+  export const isManagebleOrder = (status: string, role: string): boolean => {
     switch (status) {
       case "Pending":
          if (role === "directorTechnical") {

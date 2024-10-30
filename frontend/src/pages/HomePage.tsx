@@ -2,9 +2,9 @@ import NavigationBar from "@/components/customui/NavigationBar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from '@/context/AuthContext'; 
 import { fetchMetricNotRunningMachines, fetchMetricRunningMachines } from "@/services/MachineServices";
-import { fetchMetricMostFrequentOrderedParts } from "@/services/OrderedPartsService";
-import { fetchManagableOrders, fetchMetricActiveOrders, fetchMetricsHighMaintenanceFactorySections } from "@/services/OrdersService";
-import { FactorySection, Machine, Part } from "@/types";
+import { fetchMetricMostFrequentOrderedParts, fetchMetricMostFrequentOrderedPartsCurrentMonth } from "@/services/OrderedPartsService";
+import { fetchManagableOrders, fetchMetricActiveOrders, fetchMetricsHighMaintenanceFactorySections, fetchMetricsHighMaintenanceFactorySectionsCurrentMonth } from "@/services/OrdersService";
+import { Part } from "@/types";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 const HomePage = () => {
@@ -14,14 +14,18 @@ const HomePage = () => {
   const [loadingMetricManagableOrders, setLoadingMetricManagableOrders] = useState<boolean>(false)
   const [loadingMetricActiveOrders, setLoadingMetricActiveOrders] = useState<boolean>(false)
   const [loadingMetricMostFrequentOrderedParts, setLoadingMetricMostFrequentOrderedParts] = useState<boolean>(false)
+  const [loadingMetricMostFrequentOrderedPartsCurrentMonth, setLoadingMetricMostFrequentOrderedPartsCurrentMonth] = useState<boolean>(false)
   const [loadingMetricHighMaintenanceFactorySections, setLoadingMetricHighMaintenanceFactorySections] = useState<boolean>(false)
+  const [loadingMetricHighMaintenanceFactorySectionsCurrentMonth, setLoadingMetricHighMaintenanceFactorySectionsCurrentMonth] = useState<boolean>(false)
   
   const [numberOfMachinesRunning, setNumberOfMachinesRunning] = useState<number|null>(null)
   const [numberOfMachinesNotRunning, setNumberOfMachinesNotRunning] = useState<number|null>(null)
   const [numberOfManagableOrders, setNumberOfManagableOrders] = useState<number|null>(null)
   const [numberOfActiveOrders, setNumberOfActiveOrders] = useState<number|null>(null)
   const [mostFrequentOrderedParts, setMostFrequentOrderedParts] = useState<Part[]|null>(null)
+  const [mostFrequentOrderedPartsCurrentMonth, setMostFrequentOrderedPartsCurrentMonth] = useState<Part[]|null>(null)
   const [highMaintenanceFactorySections, setHighMaintenanceFactorySections] = useState<string[]|null>(null)
+  const [highMaintenanceFactorySectionsCurrentMonth, setHighMaintenanceFactorySectionsCurrentMonth] = useState<string[]|null>(null)
 
   const loadMetricRunningMachines = async () => {
     setLoadingMetricRunningMachines(true);
@@ -87,6 +91,18 @@ const HomePage = () => {
     }
   }
 
+  const loadMetricMostFrequentOrderedPartsCurrentMonth =  async () => {
+    setLoadingMetricMostFrequentOrderedPartsCurrentMonth(true)
+    try {
+      const parts = await fetchMetricMostFrequentOrderedPartsCurrentMonth()
+      setMostFrequentOrderedPartsCurrentMonth(parts)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoadingMetricMostFrequentOrderedPartsCurrentMonth(false)
+    }
+  }
+
   const loadMetricHighMaintenanceMachines = async () => {
     setLoadingMetricHighMaintenanceFactorySections(true)
     try {
@@ -99,12 +115,26 @@ const HomePage = () => {
     }
   }
 
+  const loadMetricHighMaintenanceMachinesCurrentMonth = async () => {
+    setLoadingMetricHighMaintenanceFactorySectionsCurrentMonth(true)
+    try {
+      const factorySections = await fetchMetricsHighMaintenanceFactorySectionsCurrentMonth()
+      setHighMaintenanceFactorySectionsCurrentMonth(factorySections)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoadingMetricHighMaintenanceFactorySectionsCurrentMonth(false)
+    }
+  }
+
   useEffect(()=>{
     loadMetricRunningMachines()
     loadMetricNotRunningMachines()
     loadMetricActiveOrders()
     loadMetricMostFrequentOrderedParts()
+    loadMetricMostFrequentOrderedPartsCurrentMonth()
     loadMetricHighMaintenanceMachines()
+    loadMetricHighMaintenanceMachinesCurrentMonth()
   },[])
 
   useEffect(() => {
@@ -116,9 +146,113 @@ const HomePage = () => {
 return (
     <>
       <NavigationBar />
-      <div className="flex h-screen flex-col justify-center items-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-          
+      <div className="flex h-screen flex-col justify-center items-center sm:mt-4 mt-60">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-5"> 
+          {/* Top frequently ordered parts */}
+          <Card className="max-w-xs p-2">
+            <CardHeader>
+              <CardTitle>Most frequently ordered parts</CardTitle>
+              <CardDescription>Based on the number of orders made for a part, NOT from the quantity ordered</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {loadingMetricMostFrequentOrderedParts ? (
+                <div className="text-xl">Loading...</div>
+              ) : (
+                <ol className="list-decimal list-inside text-sm">
+                  {mostFrequentOrderedParts && mostFrequentOrderedParts.length > 0 ? (
+                    mostFrequentOrderedParts.map((part) => (
+                      <li key={part.id} className="mt-1">
+                        <Link to={`/viewpart/${part.id}`} className="hover:text-blue-500 hover:underline">
+                          {part.name}
+                        </Link>
+                      </li>
+                    ))
+                  ) : (
+                    <div>No Data Available</div>
+                  )}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top frequently ordered parts Monthly*/}
+          <Card className="max-w-xs p-2">
+            <CardHeader>
+              <CardTitle>Most frequently ordered parts (monthly)</CardTitle>
+              <CardDescription>Based on the number of orders made for a part, NOT from the quantity ordered</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {loadingMetricMostFrequentOrderedPartsCurrentMonth ? (
+                <div className="text-xl">Loading...</div>
+              ) : (
+                <ol className="list-decimal list-inside text-sm">
+                  {mostFrequentOrderedPartsCurrentMonth && mostFrequentOrderedPartsCurrentMonth.length > 0 ? (
+                    mostFrequentOrderedPartsCurrentMonth.map((part) => (
+                      <li key={part.id} className="mt-1">
+                        <Link to={`/viewpart/${part.id}`} className="hover:text-blue-500 hover:underline">
+                          {part.name}
+                        </Link>
+                      </li>
+                    ))
+                  ) : (
+                    <div>No Data Available</div>
+                  )}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* High Maintenance ordered parts*/}
+          <Card className="max-w-xs p-2">
+            <CardHeader>
+              <CardTitle>High maintenance factory sections</CardTitle>
+              <CardDescription>Calculated from which factory sections require most orders</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
+              {loadingMetricHighMaintenanceFactorySections? (
+                <div className="text-xl">Loading...</div>
+              ) : (
+                <ol className="list-decimal list-inside text-sm">
+                  {highMaintenanceFactorySections && highMaintenanceFactorySections.length > 0 ? (
+                    highMaintenanceFactorySections.map((section) => (
+                      <li className="mt-1">
+                        {section}
+                      </li>
+                    ))
+                  ) : (
+                    <div>No Data Available</div>
+                  )}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+          {/* High Maintenance ordered parts monthly*/}
+          <Card className="max-w-xs p-2">
+            <CardHeader>
+              <CardTitle>High maintenance factory sections (monthly)</CardTitle>
+              <CardDescription>Calculated from which factory sections require most orders</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
+              {loadingMetricHighMaintenanceFactorySectionsCurrentMonth? (
+                <div className="text-xl">Loading...</div>
+              ) : (
+                <ol className="list-decimal list-inside text-sm">
+                  {highMaintenanceFactorySectionsCurrentMonth && highMaintenanceFactorySectionsCurrentMonth.length > 0 ? (
+                    highMaintenanceFactorySectionsCurrentMonth.map((section) => (
+                      <li className="mt-1">
+                        {section}
+                      </li>
+                    ))
+                  ) : (
+                    <div>No Data Available</div>
+                  )}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
           {/* Machines Running */}
           <Card className="max-w-xs p-2">
             <CardHeader>
@@ -193,57 +327,6 @@ return (
             </CardContent>
           </Card>
           
-          {/* Top frequently ordered parts */}
-          <Card className="max-w-xs p-2">
-            <CardHeader>
-              <CardTitle>Most frequently ordered parts</CardTitle>
-              <CardDescription>Based on the number of orders made for a part, NOT from the quantity ordered</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              {loadingMetricMostFrequentOrderedParts ? (
-                <div className="text-xl">Loading...</div>
-              ) : (
-                <ol className="list-decimal list-inside text-sm">
-                  {mostFrequentOrderedParts && mostFrequentOrderedParts.length > 0 ? (
-                    mostFrequentOrderedParts.map((part, index) => (
-                      <li key={part.id} className="mt-1">
-                        <Link to={`/viewpart/${part.id}`} className="hover:text-blue-500 hover:underline">
-                          {part.name}
-                        </Link>
-                      </li>
-                    ))
-                  ) : (
-                    <div>Error while calculating</div>
-                  )}
-                </ol>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="max-w-xs p-2">
-            <CardHeader>
-              <CardTitle>High maintenance factory sections</CardTitle>
-              <CardDescription>Calculated from which factory sections require most orders</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-row items-baseline gap-4 p-4 pt-0">
-              {loadingMetricHighMaintenanceFactorySections? (
-                <div className="text-xl">Loading...</div>
-              ) : (
-                <ol className="list-decimal list-inside text-sm">
-                  {highMaintenanceFactorySections && highMaintenanceFactorySections.length > 0 ? (
-                    highMaintenanceFactorySections.map((section) => (
-                      <li className="mt-1">
-                        {section}
-                      </li>
-                    ))
-                  ) : (
-                    <div>Error while calculating</div>
-                  )}
-                </ol>
-              )}
-            </CardContent>
-          </Card>
-
         </div>
       </div>
     </>

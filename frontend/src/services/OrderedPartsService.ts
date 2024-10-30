@@ -267,7 +267,7 @@ export const fetchMetricMostFrequentOrderedParts = async () => {
       .from('order_parts')
       .select('part_id, count:part_id.count()')
       .order('count', { ascending: false })
-      .limit(3);
+      .limit(10);
   
     if (error) {
       console.error('Error fetching top ordered parts:', error);
@@ -291,3 +291,63 @@ export const fetchMetricMostFrequentOrderedParts = async () => {
     const result = data.map((item) => partsMap.get(item.part_id)).filter(Boolean);
     return result as Part[];
   };
+
+export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
+    // Define the current month start and end dates
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    const startOfNextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString();
+  
+    // Step 1: Fetch orders from the current month
+    const { data: ordersData, error: ordersError } = await supabase_client
+      .from('orders')
+      .select('id')
+      .filter('created_at', 'gte', startOfMonth)
+      .filter('created_at', 'lt', startOfNextMonth);
+  
+    if (ordersError) {
+      console.error("Couldn't find orders for this month:", ordersError);
+      return null;
+    }
+  
+    // Extract order IDs
+    const orderIdsForThisMonth = ordersData?.map((order) => order.id);
+    if (!orderIdsForThisMonth || orderIdsForThisMonth.length === 0) {
+      console.log("No orders found for this month.");
+      return [];
+    }
+  
+    // Step 2: Fetch most frequent ordered parts in the current month
+    const { data: partsData, error: partsError } = await supabase_client
+      .from('order_parts')
+      .select('part_id, count:part_id.count()')
+      .in('order_id', orderIdsForThisMonth)
+      .order('count', { ascending: false })
+      .limit(10);
+    
+    if (partsError) {
+      console.error('Error fetching top ordered parts for current month:', partsError);
+      return null;
+    }
+  
+    // Extract part IDs from parts data
+    const partIds = partsData.map((item) => item.part_id);
+  
+    // Step 3: Fetch part details based on part IDs
+    const partsDetails = await fetchPartsByIDs(partIds);
+    if (!partsDetails) {
+      console.error('Error fetching part details.');
+      return null;
+    }
+  
+    // Map part details by part ID
+    const partsMap = new Map(partsDetails.map((part) => [part.id, part]));
+  
+    // Build the result array with parts in the correct order
+    const result = partsData.map((item) => partsMap.get(item.part_id)).filter(Boolean);
+  
+    return result as Part[];
+  };
+  
+  
+
+  
