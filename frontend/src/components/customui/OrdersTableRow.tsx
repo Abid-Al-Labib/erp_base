@@ -8,9 +8,8 @@ import { Badge } from '../ui/badge';
 import { deleteOrderByID, fetchRunningOrdersByMachineId } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
-import { convertUtcToBDTime, managePermission } from '@/services/helper';
+import { convertUtcToBDTime, highlightManagebleOrder, managePermission } from '@/services/helper';
 import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
-import { profile } from 'console';
 import { useAuth } from '@/context/AuthContext';
 import { OctagonAlert } from 'lucide-react';
 import { setMachineIsRunningById } from '@/services/MachineServices';
@@ -43,19 +42,11 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
     setIsDeleteDialogOpen(false)
   }
   const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
-  
+  const isHighlightedOrder = highlightManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")
   return  (
-  <TableRow >
+  <TableRow className={isHighlightedOrder? "bg-red-50": ""}>
       <TableCell className="font-medium">
-        {(permissionToManage) ? (
-          <Badge className="bg-indigo-100 text-md" variant="secondary">
             {order.id}
-          </Badge>
-        ) : (
-            <Badge className="bg-white-100 text-md" variant="secondary">
-            {order.id}
-          </Badge>
-        )}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {order.factory_sections?.name && order.machines?.name
@@ -104,7 +95,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       </TableCell>
       <TableCell>
       <Badge
-        className={order.statuses.name === "Parts Received" ? "bg-green-100": order.statuses.name === "Pending" ? "bg-red-100": "bg-orange-100"}
+        className={order.statuses.name === "Parts Received" ? "bg-green-100": order.statuses.name === "Pending" ? "bg-red-300": "bg-orange-100"}
         variant="secondary"
       >
         {order.statuses.name}
@@ -113,7 +104,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {permissionToManage ? (
+            {isHighlightedOrder ? (
               <Button
                 // className="text-indigo-400" // Set static color of the button
                 className="text-yellow-900" // Set static color of the button
@@ -164,7 +155,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       </TableCell>
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-                <DialogTitle className="text-red-600">Delete Part</DialogTitle>
+                <DialogTitle className="text-red-600">Delete Part -  <span> ID: {order.id}</span></DialogTitle>
                 <div>
                   You are about to permanently delete this order.
                   <br />

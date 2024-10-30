@@ -20,6 +20,10 @@ const OrderedPartInfo: React.FC<OrderedPartInfoProp> = ({ orderedPart }) => {
             <span><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPart.part_id}`}>{orderedPart.parts.name}</a></span>
           </li>
           <li className="flex items-center justify-between">
+            <span className="font-semibold text-muted-foreground">Unit</span>
+            <span>{orderedPart.parts.unit || '-'}</span>
+          </li>
+          <li className="flex items-center justify-between">
             <span className="font-semibold text-muted-foreground">Quantity</span>
             <span>{orderedPart.qty || '-'}</span>
           </li>

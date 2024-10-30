@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { managePermission } from "@/services/helper";
 import { supabase_client } from "@/services/SupabaseClient";
+import { DialogContent, Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+
 import NavigationBar from "../components/customui/NavigationBar"
 
 const ManageOrderPage = () => {
@@ -17,6 +19,11 @@ const ManageOrderPage = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const profile = useAuth().profile
+  const [isManageOrderAuthorizedDialogOpen, setIsManageOrderAuthorizedDialogOpen] = useState<boolean>(false)
+  const [isOrderCompleteDialogOpen, setIsOrderCompleteDialogOpen] = useState<boolean>(false)
+  const handleNavigationToOrderPage = () => {
+    navigate("/orders");
+  }
 
   const loadOrder = async () => {
     if (!id || isNaN(parseInt(id))) {
@@ -29,7 +36,17 @@ const ManageOrderPage = () => {
       const data = await fetchOrderByID(order_id);
       console.log(data)
       if (data) {
-        setOrder(data);
+        const order = data
+        setOrder(order);
+        if (order.statuses.name === "Parts Received"){
+          setIsOrderCompleteDialogOpen(true)
+        }
+        else if (profile && profile.permission)
+        {
+          if(!managePermission(order.statuses.name,profile.permission)){
+            setIsManageOrderAuthorizedDialogOpen(true)
+          }
+        }
       } else {
         toast.error("Order not found");
         navigate("/orders");
@@ -70,22 +87,12 @@ const ManageOrderPage = () => {
   }
 
 
-  if (order){
-    if (order.statuses.name === "Parts Received"){
-      navigate("/orders");
-    }
-    else if (profile && profile.permission)
-      {
-        if(!managePermission(order.statuses.name,profile.permission)){
-          return <div>You are not authorized to access at this stage</div>;
-        }
-      }
-  }
-  else{
+
+  if(!order)
+  {  
     toast.error("No order found with this id")
     return <div>No order found</div>; // Handle the case where no orders are returned
   }
-
 
   return (
     <>
@@ -99,13 +106,41 @@ const ManageOrderPage = () => {
           order={order}
           current_status={order.statuses}
         />
-        <div className="flex justify-end">
-          <div className="my-3 mx-3">
-            <Link to={'/orders'}><Button>Back To Orders</Button></Link>
-          </div>
+      <div className="flex justify-end">
+        <div className="my-3 mx-3">
+          <Link to={'/orders'}><Button>Back To Orders</Button></Link>
         </div>
       </div>
+    </div>
+      <Dialog open={isOrderCompleteDialogOpen} onOpenChange={handleNavigationToOrderPage}>
+        <DialogContent>
+          <DialogTitle>
+           Parts Received!
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              This order is completed as parts has been received. You will be redirected to orders page.
+            </p>
+          </DialogDescription>
+          <Button onClick={handleNavigationToOrderPage}>Okay</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isManageOrderAuthorizedDialogOpen} onOpenChange={handleNavigationToOrderPage}>
+        <DialogContent>
+          <DialogTitle>
+           Unauthorized to manage order
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              This order is in a status that cannot be managed by you. You will be redirected to orders page. 
+            </p>
+          </DialogDescription>
+          <Button onClick={handleNavigationToOrderPage}>Okay</Button>
+        </DialogContent>
+      </Dialog>
     </>
+    
   )
 }
 
