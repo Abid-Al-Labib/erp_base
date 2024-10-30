@@ -429,6 +429,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
           </Badge>
         </TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
+        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
@@ -615,6 +618,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
@@ -706,6 +710,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             <Dialog open={isReceivedDialogOpen} onOpenChange={setIsReceivedDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogTitle>Date when part was received at Factory</DialogTitle>
+                <DialogDescription><span className="text-sm">{orderedPartInfo.parts.name}</span></DialogDescription>
                 <Calendar
                   mode="single"
                   selected={dateReceived}
@@ -720,6 +725,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   <DialogTitle>
                     Date when part was sent to factory
                   </DialogTitle>
+                  <DialogDescription><span className="text-sm">{orderedPartInfo.parts.name}</span></DialogDescription>
                   <Calendar
                     mode="single"
                     selected={dateSent}
@@ -734,6 +740,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                       <DialogTitle>
                         Date when part was purchased
                       </DialogTitle>
+                      <DialogDescription><span className="text-sm">{orderedPartInfo.parts.name}</span></DialogDescription>
                       <Calendar
                         mode="single"
                         selected={datePurchased}
@@ -746,7 +753,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isCostingDialogOpen} onOpenChange={setIsCostingDialogOpen} >
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogTitle>
-                      Update Costing
+                      Quotation -  <span className="text-sm">{orderedPartInfo.parts.name}</span>
                     </DialogTitle>
                     <fieldset className="grid gap-6 rounded-lg border p-4">
                       <div className="grid gap-3">
@@ -789,7 +796,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isOfficeNoteDialogOpen} onOpenChange={setIsOfficeNoteDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogTitle>
-                    Office Note
+                    Office Note - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <div className="grid w-full gap-2">
                     <Label htmlFor="officeNote">Add you note here</Label>
@@ -809,7 +816,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
               <Dialog open={isDenyDialogOpen} onOpenChange={setIsDenyDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
-                        <DialogTitle className="text-red-600">Deny Part</DialogTitle>
+                        <DialogTitle className="text-red-600">Deny Part - <span className="text-sm">{orderedPartInfo.parts.name}</span></DialogTitle>
                         <div>
                           Are you sure you want to deny this part?
                           <br />
@@ -821,7 +828,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
               <Dialog open={isReviseBudgetDialogOpen} onOpenChange={setIsReviseBudgetDialogOpen}>
                     <DialogContent className="sm:max-w-[425px]">
-                        <DialogTitle className="text-red-600">Revise Budget</DialogTitle>
+                        <DialogTitle className="text-red-600">Revise Budget - <span className="text-sm">{orderedPartInfo.parts.name}</span></DialogTitle>
                         <p className="text-sm text-muted-foreground">
                           Checking a box will deny that category
                         </p>
@@ -868,7 +875,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isApproveBudgetDialogOpen} onOpenChange={setIsApproveBudgetDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Budget Approval
+                    Budget Approval - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
@@ -887,7 +894,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isTakeFromStorageDialogOpen} onOpenChange={setIsTakeFromStorageDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Take from storage Approval
+                    Take from storage Approval - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
@@ -904,7 +911,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isApproveFromFactoryDialogOpen} onOpenChange={setIsApproveFromFactoryDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Approval From Factory
+                    Approval From Factory - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
@@ -918,7 +925,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isApproveFromOfficeDialogOpen} onOpenChange={setIsApproveFromOfficeDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Approval from Office
+                    Approval from Office - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">

@@ -148,7 +148,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       </TableCell>
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-                <DialogTitle className="text-red-600">Delete Part</DialogTitle>
+                <DialogTitle className="text-red-600">Delete Part -  <span> ID: {order.id}</span></DialogTitle>
                 <div>
                   You are about to permanently delete this order.
                   <br />
