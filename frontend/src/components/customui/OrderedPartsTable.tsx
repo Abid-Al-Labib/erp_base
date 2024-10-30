@@ -3,16 +3,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { useEffect, useState } from "react";
 import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import toast from "react-hot-toast";
-import { Loader2 } from "lucide-react";
+import { Flag, FlagOff, Loader2 } from "lucide-react";
 import OrderedPartRow from "./OrderedPartRow";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { isChangeStatusAllowed } from "@/services/helper";
+import { isChangeStatusAllowed, isRevertStatusAllowed } from "@/services/helper";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { deleteOrderByID, fetchRunningOrdersByMachineId, UpdateStatusByID } from "@/services/OrdersService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
-import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
+import { showAllBudgetApproveButton, showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
 import { updateMachinePartQty } from "@/services/MachinePartsService";
@@ -32,7 +32,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [loadingTable, setLoadingTable] = useState(true);
   const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
   const [showEmptyOrderPopup, setShowEmptyOrderPopup] = useState(false);
-  const [loadingApproval, setLoadingApproval] =useState(false)
+  const [loadingTableButtons, setLoadingTableButtons] =useState(false)
   const [isApproveAllFactoryDialogOpen, setisApproveAllFactoryDialogOpen] = useState(false)
   const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false)
   const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false)
@@ -41,9 +41,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [costBreakdown, setCostBreakdown] = useState<string>("Total Cost Breakdown: -")
   const [runCount, setRunCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showAdvanceButton, setShowAdvanceButton] = useState<boolean>(false)
+  const [showRevertButton, setShowRevertButton] = useState<boolean>(false)
+  const [isAdvanceDialogOpen,setIsAdvanceDialogOpen] = useState<boolean>(false)
+  const [isRevertDialogOpen, setIsRevertDialogOpen] = useState<boolean>(false)
 
   const handleApproveAllPendingOrder = async () => {
-    setLoadingApproval(true)
+    setLoadingTableButtons(true)
     try {
       const updatePromises = orderedParts.map(async (ordered_part) => {
         const promises = []
@@ -71,13 +75,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
-      setLoadingApproval(false)
+      setLoadingTableButtons(false)
     }
     setisApproveAllFactoryDialogOpen(false)
   }
   
   const handleApproveAllOfficeOrder = async () => {
-    setLoadingApproval(true)
+    setLoadingTableButtons(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
         if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
@@ -89,13 +93,13 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
-      setLoadingApproval(false)
+      setLoadingTableButtons(false)
     }
     setisApproveAllOfficeDialogOpen(false)
   }
   
   const handleApproveAllBudgets = async () => {
-    setLoadingApproval(true)
+    setLoadingTableButtons(true)
     try {
       const updatePromises = orderedParts.map((ordered_part) => {
         if (!(ordered_part.in_storage && ordered_part.approved_storage_withdrawal)){
@@ -107,12 +111,12 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
     } catch (error) {
       toast.error("Failed to bulk approve")
     } finally {
-      setLoadingApproval(false)
+      setLoadingTableButtons(false)
     }
     setApproveAllBudgetDialogOpen(false)
   }
   
- const deleteEmptyOrder = async () => {
+  const deleteEmptyOrder = async () => {
     if(mode==="manage")
       {
           setShowEmptyOrderPopup(true);
@@ -147,34 +151,71 @@ const loadOrderedParts = async () => {
     }
   }
 
+const handleAdvanceOrderStatus = async () => {
+  setLoadingTableButtons(true)
+  try {
+    if(!profile){
+      toast.error("Profile not found")
+      return
+    }
+    const next_status_id = isChangeStatusAllowed(orderedParts,current_status.name)
+    if (next_status_id && next_status_id!==-1 && current_status.id !== next_status_id){
+      await UpdateStatusByID(order.id,next_status_id)
+      await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
+      if(next_status_id == 8){
+        if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
+          setMachineIsRunningById(order.machine_id,true)
+          toast.success("Machine is now running")
+        }
+      }
+    }
+    else{
+      toast.error("Could not figure out next status")
+    }
+  } catch (error) {
+    toast.error("Error when trying to advance order")
+  } finally {
+    setLoadingTableButtons(false)
+    setShowAdvanceButton(false)
+    setIsAdvanceDialogOpen(false)
+    handleNavigation()
+  }
+}  
+
+
+const handleRevertOrderStatus = async() => {
+  setLoadingTableButtons(true)
+  if (!profile) {
+    toast.error("Profile not found")
+    return
+  }
+  try {
+    const prevStatus = (current_status.id-1)
+    await UpdateStatusByID(order.id, prevStatus)
+    await InsertStatusTracker((new Date()), order.id, profile.id, prevStatus)
+    toast.success("Successfully reverted status")
+  } catch (error) {
+    toast.error("Error occured while reverting status")
+  } finally {
+    setLoadingTableButtons(false)
+    setIsRevertDialogOpen(false)
+    handleNavigation()
+  }
+};
+
+
 const manageOrderStatus = async () => {
   const updatedOrderedParts = await loadOrderedParts()
   if (mode === "manage" && updatedOrderedParts)
   {
     console.log("managing:",updatedOrderedParts)
     const next_status_id = isChangeStatusAllowed(updatedOrderedParts,current_status.name)
-    console.log("current status id: ", current_status.id)
-    console.log("next status id: ",next_status_id)
+    setShowRevertButton(isRevertStatusAllowed(updatedOrderedParts,current_status.name))
+    
     if (next_status_id && next_status_id!==-1 && current_status.id !== next_status_id){
-      console.log("changing status")
-      if(!profile){
-        toast.error("Profile not found")
-        return
-      }
-      try { 
-        console.log("updating status and inserting to status tracker")
-        await UpdateStatusByID(order.id,next_status_id)
-        await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
-        if(next_status_id == 8){
-          if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
-            setMachineIsRunningById(order.machine_id,true)
-            toast.success("Machine is now running")
-          }
-        }
-      } catch (error) {
-        toast.error("Error updating status")
-      }
-      setShowActionsCompletedPopup(true);
+      setShowAdvanceButton(true);
+    }else{
+      setShowAdvanceButton(false);
     }
   }
 }
@@ -242,6 +283,7 @@ const handleOrderManagement = async () => {
   };
   
 
+
   useEffect(()=>{
     const channel = supabase_client
     .channel('order_parts-changes')
@@ -259,6 +301,10 @@ const handleOrderManagement = async () => {
   useEffect(()=>{
     loadOrderedParts()
   },[])
+
+  useEffect(()=>{
+    manageOrderStatus()
+  },[order])
   
   const handleNavigation = () => {
     navigate('/orders'); 
@@ -285,6 +331,9 @@ const handleOrderManagement = async () => {
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
+            <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
@@ -402,14 +451,22 @@ const handleOrderManagement = async () => {
         <CardContent>
         <div className="flex justify-end gap-2 mb-2">
           {showPendingOrderApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={()=>setisApproveAllFactoryDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all pending parts"}</Button>
+            <Button disabled={loadingTableButtons} onClick={()=>setisApproveAllFactoryDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all pending parts"}</Button>
           )}
           {showOfficeOrderApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={()=>setisApproveAllOfficeDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all parts"}</Button>
+            <Button disabled={loadingTableButtons} onClick={()=>setisApproveAllOfficeDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all parts"}</Button>
           )}
-          {showBudgetApproveButton(current_status.name,false) && (
-            <Button disabled={loadingApproval} onClick={()=>setApproveAllBudgetDialogOpen(true)}>{loadingApproval? "Approving...": "Approve all budgets"}</Button>
+          {showAllBudgetApproveButton(current_status.name, orderedParts) && (
+            <Button disabled={loadingTableButtons} onClick={()=>setApproveAllBudgetDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all budgets"}</Button>
           )}
+          {
+            showAdvanceButton && 
+            <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
+          }
+          {
+            showRevertButton && 
+            <Button disabled={loadingTableButtons} className="bg-orange-600" onClick={()=>setIsRevertDialogOpen(true)}><FlagOff/>Revert</Button>
+          }
         </div>
         <Table>
         <TableHeader>
@@ -421,6 +478,7 @@ const handleOrderManagement = async () => {
             <TableHead className="whitespace-nowrap">Current Storage Qty</TableHead>
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
+            <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
@@ -539,7 +597,39 @@ const handleOrderManagement = async () => {
           <Button onClick={handleApproveAllBudgets}>Approve</Button>
         </DialogContent>
       </Dialog>
+      
+      
+      <Dialog open={isAdvanceDialogOpen} onOpenChange={setIsAdvanceDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Advancing Order Status
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You can now advance this order to next status. Please confirm if you would like to advance.
+            </p>
+          </DialogDescription>
+          <Button onClick={handleAdvanceOrderStatus}>Confirm</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRevertDialogOpen} onOpenChange={setIsRevertDialogOpen}>
+        <DialogContent>
+          <DialogTitle>
+           Reverting Order Status 
+          </DialogTitle>
+          <DialogDescription>
+            <p className="text-sm text-muted-foreground">
+              You can now revert this order to previous status. Please confirm if you would like to revert.
+            </p>
+          </DialogDescription>
+          <Button onClick={handleRevertOrderStatus}>Confirm</Button>
+        </DialogContent>
+      </Dialog>
+
       </Card>
+
+      
       
     )
   }

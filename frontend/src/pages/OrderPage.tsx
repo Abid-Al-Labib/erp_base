@@ -88,24 +88,6 @@ const OrderPage = () => {
         
     }, [currentPage]);
 
-    // useEffect(() => {
-    //     const channel = supabase_client
-    //     .channel('order-changes')
-    //     .on(
-    //         'postgres_changes',
-    //         {
-    //         event: '*',
-    //         schema: 'public',
-    //         table: 'orders'
-    //         },
-    //         () => {
-    //             fetchOrdersforPage(filters, currentPage);
-    //         }
-    //     )
-    //     .subscribe()
-    // }, [supabase_client])
-
-    
     return (
         <>
             <NavigationBar />
@@ -138,7 +120,7 @@ const OrderPage = () => {
                                 </div>
 
                                 {/* Create Order Button - Positioned on the right */}
-                                { (profile?.permission==='department' || profile?.permission==="admin") &&
+                                { (profile?.permission==='department' || profile?.permission==="admin" || profile?.permission==='finance') &&
                                     <Link to="/createorder">
                                         <Button size="sm" className="h-8 gap-1 bg-blue-950">
                                             <PlusCircle className="h-3.5 w-3.5" />

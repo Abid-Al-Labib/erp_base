@@ -3,7 +3,7 @@ import { TableCell, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import { ExternalLink, MoreHorizontal, Notebook, NotebookPen,  } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Calendar } from "../ui/calendar"
 import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
@@ -13,10 +13,8 @@ import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudg
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
-import { UpdateStatusByID } from "@/services/OrdersService"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
-import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
@@ -251,27 +249,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
   const handleReviseBudget = () => {
     console.log("Denying budget");
-    const revertingStatus = async() => {
-      if (!profile) {
-        toast.error("Profile not found")
-        return
-      }
-      try {
-        const prevStatus = (current_status.id-1)
-        await UpdateStatusByID(orderedPartInfo.order_id, prevStatus)
-        await InsertStatusTracker((new Date()), orderedPartInfo.order_id, profile.id, prevStatus)
-        toast.success("Successfully reverted status")
-      } catch (error) {
-        toast.error("Error occured while reverting status")
-      }
-    };
-   
-
     const updateCosting = async(brand: string | null, cost:number | null, vendor: string | null) => {
       try {
         setCostLoading(true);
         await updateCostingByID(orderedPartInfo.id, brand, cost, vendor )
-        toast.success("Budget has been submitted for revision")
+        toast.success("Quotation updated")
       } catch (error) {
         toast.error("Error occured could not complete action");
       }
@@ -287,7 +269,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       const newVendor = denyVendor? null : vendor;
       
       updateCosting(newBrand,newCost,newVendor)
-      revertingStatus();
       setIsReviseBudgetDialogOpen(false)
       setShowDenyBudgetPopup(true)
     }
@@ -451,6 +432,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
           </Badge>
         </TableCell>
+        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
+        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
@@ -470,7 +454,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             ) : '-'
           }
         </TableCell>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="hidden md:table-cell">
+        {(profile?.permission === 'admin' || profile?.permission === 'finance') && <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.office_note?
             ( <Dialog>
@@ -566,7 +550,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   </DropdownMenuItem>
                 )}
               {
-                showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget) && (
+                showBudgetApproveButton(current_status.name, orderedPartInfo.approved_budget, orderedPartInfo.qty, orderedPartInfo.vendor, orderedPartInfo.brand) && (
                   <DropdownMenuItem onClick={() => setIsApproveBudgetDialogOpen(true)}>
                     <span className="hover:text-green-600">Approve Budget</span>
                   </DropdownMenuItem>
@@ -637,6 +621,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
@@ -728,6 +713,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             <Dialog open={isReceivedDialogOpen} onOpenChange={setIsReceivedDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogTitle>Date when part was received at Factory</DialogTitle>
+                <DialogDescription><span className="text-sm">{orderedPartInfo.parts.name}</span></DialogDescription>
                 <Calendar
                   mode="single"
                   selected={dateReceived}
@@ -742,6 +728,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   <DialogTitle>
                     Date when part was sent to factory
                   </DialogTitle>
+                  <DialogDescription><span className="text-sm">{orderedPartInfo.parts.name}</span></DialogDescription>
                   <Calendar
                     mode="single"
                     selected={dateSent}
@@ -756,6 +743,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                       <DialogTitle>
                         Date when part was purchased
                       </DialogTitle>
+                      <DialogDescription><span className="text-sm">{orderedPartInfo.parts.name}</span></DialogDescription>
                       <Calendar
                         mode="single"
                         selected={datePurchased}
@@ -768,7 +756,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isCostingDialogOpen} onOpenChange={setIsCostingDialogOpen} >
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogTitle>
-                      Update Costing
+                      Quotation -  <span className="text-sm">{orderedPartInfo.parts.name}</span>
                     </DialogTitle>
                     <fieldset className="grid gap-6 rounded-lg border p-4">
                       <div className="grid gap-3">
@@ -811,7 +799,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isOfficeNoteDialogOpen} onOpenChange={setIsOfficeNoteDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogTitle>
-                    Office Note
+                    Office Note - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <div className="grid w-full gap-2">
                     <Label htmlFor="officeNote">Add you note here</Label>
@@ -831,7 +819,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
               <Dialog open={isDenyDialogOpen} onOpenChange={setIsDenyDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
-                        <DialogTitle className="text-red-600">Deny Part</DialogTitle>
+                        <DialogTitle className="text-red-600">Deny Part - <span className="text-sm">{orderedPartInfo.parts.name}</span></DialogTitle>
                         <div>
                           Are you sure you want to deny this part?
                           <br />
@@ -843,7 +831,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
 
               <Dialog open={isReviseBudgetDialogOpen} onOpenChange={setIsReviseBudgetDialogOpen}>
                     <DialogContent className="sm:max-w-[425px]">
-                        <DialogTitle className="text-red-600">Revise Budget</DialogTitle>
+                        <DialogTitle className="text-red-600">Revise Budget - <span className="text-sm">{orderedPartInfo.parts.name}</span></DialogTitle>
                         <p className="text-sm text-muted-foreground">
                           Checking a box will deny that category
                         </p>
@@ -890,7 +878,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isApproveBudgetDialogOpen} onOpenChange={setIsApproveBudgetDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Budget Approval
+                    Budget Approval - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
@@ -909,7 +897,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isTakeFromStorageDialogOpen} onOpenChange={setIsTakeFromStorageDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Take from storage Approval
+                    Take from storage Approval - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
@@ -926,7 +914,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isApproveFromFactoryDialogOpen} onOpenChange={setIsApproveFromFactoryDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Approval From Factory
+                    Approval From Factory - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
@@ -940,7 +928,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               <Dialog open={isApproveFromOfficeDialogOpen} onOpenChange={setIsApproveFromOfficeDialogOpen}>
                 <DialogContent>
                   <DialogTitle>
-                    Approval from Office
+                    Approval from Office - <span className="text-sm">{orderedPartInfo.parts.name}</span>
                   </DialogTitle>
                   <DialogDescription>
                     <p className="text-sm text-muted-foreground">
