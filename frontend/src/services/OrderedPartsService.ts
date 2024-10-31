@@ -78,6 +78,7 @@ export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: 
       unit_cost, 
       part_purchased_date,
       part_id,
+      vendor,
       orders(machine_id)
     `)
     .eq('orders.machine_id', machine_id)
@@ -85,17 +86,16 @@ export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: 
     .not('part_purchased_date', 'is', null)
     .order('part_purchased_date', {ascending:false})
     .limit(1)
-
     if (error) {
         toast.error(error.message);
         return null; 
     }
     if (data && data.length > 0) {
-        const mostRecent = data[0];
-        console.log(data);
+        const mostRecent = data[0]
         return {
             unit_cost: mostRecent.unit_cost,
-            part_purchase_date: mostRecent.part_purchased_date
+            part_purchase_date: mostRecent.part_purchased_date,
+            vendor: mostRecent.vendor
         };
     } else {
         console.log(data)

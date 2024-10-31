@@ -56,6 +56,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [costLoading, setCostLoading] = useState(false);
   const [lastUnitCost, setLastUnitCost] = useState<number | null>(null);
   const [lastPurchaseDate, setLastPurchaseDate] = useState<string | null>(null); // assuming date is string
+  const [lastVendor, setLastVendor] = useState<String|null>(null);
   const [denyCost, setDenyCost] = useState(false);
   const [denyBrand, setDenyBrand] = useState(false);
   const [denyVendor, setDenyVendor] = useState(false);
@@ -82,14 +83,14 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               }
               else {
                 console.log(`no storage data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)
-                return null
               }
-              const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
-              if (result) {
-                setLastUnitCost(result.unit_cost);
-                setLastPurchaseDate(result.part_purchase_date);
             }
-            }
+          }
+          const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
+          if (result) {
+            setLastUnitCost(result.unit_cost);
+            setLastPurchaseDate(result.part_purchase_date);
+            setLastVendor(result.vendor)
           }
       };
 
@@ -433,9 +434,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
           </Badge>
         </TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
-        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
+        <TableCell className="whitespace-nowrap">{lastVendor? lastVendor: '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
@@ -497,13 +499,22 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     return (
       <TableRow>
         <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
+        <TableCell>
+          <div className="flex-col">
+            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <div className="text-xs">Cost: {lastUnitCost?`BDT ${lastUnitCost}` : '-'}</div>}
+            <div className="text-xs">Vendor: {lastVendor? lastVendor: '-'}</div>
+            <div className="text-xs">Date: {lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</div>
+          </div>
+        </TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.vendor || '-'}</TableCell>}
         <TableCell className="whitespace-nowrap">{orderedPartInfo.qty}</TableCell>
+        <TableCell className="whitespace-nowrap md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.unit_cost || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{`${orderedPartInfo.unit_cost?orderedPartInfo.unit_cost*orderedPartInfo.qty: "-"}`}</TableCell>}
 
-    </TableRow>
+      </TableRow>
+
     )
   }
   else if(mode==="manage"){
@@ -620,9 +631,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         </TableCell>        
         <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
-        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate): '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
+        <TableCell className="whitespace-nowrap">{lastVendor? lastVendor: '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
+        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
