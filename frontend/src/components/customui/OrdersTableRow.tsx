@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -7,12 +7,14 @@ import { Link } from 'react-router-dom';
 import { Badge } from '../ui/badge';
 import { deleteOrderByID, fetchRunningOrdersByMachineId } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
-import { Order } from '@/types';
+import { Order, OrderedPart } from '@/types';
 import { convertUtcToBDTime, isManagebleOrder, managePermission } from '@/services/helper';
 import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '@/context/AuthContext';
 import { OctagonAlert } from 'lucide-react';
 import { setMachineIsRunningById } from '@/services/MachineServices';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
+import { fetchOrderedPartsByOrderID } from '@/services/OrderedPartsService';
 
 
 
@@ -22,8 +24,10 @@ interface OrdersTableRowProps {
 }
 
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh }) => {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false) 
-  const profile = useAuth().profile
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const profile = useAuth().profile;
+  const [orderedParts,setOrderedParts] = useState<OrderedPart[]|null>(null);
+  
   const handleDeleteOrder = async () => {
     try {
         if(order.current_status_id === 1) {
@@ -41,12 +45,51 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
     }
     setIsDeleteDialogOpen(false)
   }
+
+  const loadOrderedParts = async () => {
+
+    const order_id = order.id
+    try {
+      const ordered_parts = await fetchOrderedPartsByOrderID(order_id);
+      if (ordered_parts) {
+        setOrderedParts(ordered_parts);
+      } else {
+        console.log("Could not fetch ordered parts for this order id")
+        setOrderedParts(null)
+      }
+      
+    } catch (error) {
+      console.log(`ERROR - ${error}`)
+    }
+  };
+  
+  useEffect(() => {
+    loadOrderedParts();
+  },[]);
+
   const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
   const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")
   return  (
   <TableRow className={isHighlightedOrder? "bg-red-50": ""}>
       <TableCell className="font-medium">
-            {order.id}
+          <HoverCard>
+            <HoverCardTrigger >
+              <Button variant="link">{order.id}</Button>
+            </HoverCardTrigger>
+            <HoverCardContent>
+            <div className="flex justify-between space-x-4">
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold">Ordered parts</h4>
+                <div className="flex flex-col pt-2">
+                  {orderedParts? orderedParts.map((part) => (
+                    <div className="text-xs whitespace-nowrap">{part.parts.name} - [{part.qty} {part.parts.unit}]</div>
+                  )):(<div>no data..</div>)}
+                </div>
+              </div>
+            </div>
+            </HoverCardContent>
+          </HoverCard>            
+
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {order.factory_sections?.name && order.machines?.name
@@ -155,7 +198,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
       </TableCell>
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-                <DialogTitle className="text-red-600">Delete Part -  <span> ID: {order.id}</span></DialogTitle>
+                <DialogTitle className="text-red-600">Delete Order -  <span> ID: {order.id}</span></DialogTitle>
                 <div>
                   You are about to permanently delete this order.
                   <br />
