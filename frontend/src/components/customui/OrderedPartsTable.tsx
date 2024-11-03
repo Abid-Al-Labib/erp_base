@@ -162,10 +162,12 @@ const handleAdvanceOrderStatus = async () => {
     if (next_status_id && next_status_id!==-1 && current_status.id !== next_status_id){
       await UpdateStatusByID(order.id,next_status_id)
       await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
-      if(next_status_id == 8){
-        if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
-          setMachineIsRunningById(order.machine_id,true)
-          toast.success("Machine is now running")
+      if(order.order_type == "Machine"){
+        if(next_status_id == 8){
+          if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
+            setMachineIsRunningById(order.machine_id,true)
+            toast.success("Machine is now running")
+          }
         }
       }
     }

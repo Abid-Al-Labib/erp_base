@@ -40,13 +40,13 @@ interface Status {
 }
 
 interface FilterConfig {
-    type: 'factory' | 'factorySection' | 'machine' | 'department' | 'status' | 'id' | 'date' | 'storageId' | 'partName' | 'partId' | 'orderType';
+    type: 'factory' | 'factorySection' | 'machine' | 'department' | 'status' | 'id' | 'reqNum' | 'date' | 'storageId' | 'partName' | 'partId' | 'orderType';
     label: string;
 }
 
 interface SearchAndFilterProps {
     filterConfig: FilterConfig[];
-    onApplyFilters: (filters: any, summary: string) => void; // Updated to handle two arguments
+    onApplyFilters: (filters: any, summary: string) => void;
     onResetFilters: () => void;
     hideDefaultIdDateSearch?: boolean;
 }
@@ -62,6 +62,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     const [machines, setMachines] = useState<Machine[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [statuses, setStatuses] = useState<Status[]>([]);
+    
 
     const [selectedFactoryId, setSelectedFactoryId] = useState<number>(-1);
     const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number>(-1);
@@ -76,6 +77,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     const [storageIdQuery, setStorageIdQuery] = useState('');
     const [partNameQuery, setPartNameQuery] = useState('');
     const [partIdQuery, setPartIdQuery] = useState('');
+    const [reqNumQuery, setReqNumQuery] = useState('');
 
     const [selectedOrderType, setSelectedOrderType] = useState<'all' | 'Machine' | 'Storage'>('all');
     const [dateFilterType, setDateFilterType] = useState<'on' | 'before' | 'after'>('on');
@@ -139,6 +141,10 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
         if (searchQuery) {
             summary.push(`ID: ${searchQuery}`);
         }
+
+        if (reqNumQuery) {
+            summary.push(`Req Num: ${reqNumQuery}`);
+        }
         
         // Add a note for Factory
         if (selectedFactoryId !== -1) {
@@ -186,6 +192,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
         const filters = {
             searchType,
             searchQuery,
+            reqNumQuery,
             selectedDate: tempDate,
             dateFilterType, 
             selectedFactoryId: selectedFactoryId === -1 ? undefined : selectedFactoryId,
@@ -214,6 +221,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
         setPartNameQuery('');
         setPartIdQuery('');
         setSelectedOrderType('all');
+        setReqNumQuery('');
         onResetFilters();
     };
 
@@ -264,7 +272,18 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                                     />
                                 </div>
                             )}
-
+                            {searchType === 'id' && (
+                                <div>
+                                    <Label className="mb-2 mt-4">Enter Requisition Number</Label>
+                                    <Input
+                                        type="search"
+                                        placeholder="Search by Requisition Number..."
+                                        value={reqNumQuery}
+                                        onChange={(e) => setReqNumQuery(e.target.value)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            )}
                             {searchType === 'date' && isCalendarOpen && (
                                 <div className="flex flex-col">
                                     <Label className="mb-2">Select Date</Label>

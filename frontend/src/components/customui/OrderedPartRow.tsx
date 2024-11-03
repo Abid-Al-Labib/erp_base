@@ -86,11 +86,18 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               }
             }
           }
-          const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
-          if (result) {
-            setLastUnitCost(result.unit_cost);
-            setLastPurchaseDate(result.part_purchase_date);
-            setLastVendor(result.vendor)
+          if(order_type == "Machine"){
+            const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
+              if (result) {
+              setLastUnitCost(result.unit_cost);
+              setLastPurchaseDate(result.part_purchase_date);
+              setLastVendor(result.vendor)
+            }
+          }
+          else{
+            setLastUnitCost(null);
+            setLastPurchaseDate(null);
+            setLastVendor(null);
           }
       };
 

@@ -24,6 +24,10 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order}) => {
                 <span>{order.id}</span>
             </li>
             <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Requisition Number</span>
+                <span>{order.req_num??'-'}</span>
+            </li>
+            <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Created at</span>
                 <span>{convertUtcToBDTime(order.created_at)}</span>
             </li>

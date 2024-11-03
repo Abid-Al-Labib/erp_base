@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck} from "lucide-react"
 import { useEffect, useState, useRef} from "react"
-import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
+import { fetchOrderByReqNum, insertOrder, insertOrderStorage } from "@/services/OrdersService";
 
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
@@ -48,12 +48,14 @@ interface Machine {
 }
 
 interface InputOrder {
+    req_num : string,
     order_note: string,
     created_by_user_id: number,
     department_id: number,
     factory_id: number,
     factory_section_id: number,
     machine_id: number,
+    machine_name: string,
     current_status_id: number,
     order_type: string,
 }
@@ -88,8 +90,7 @@ const CreateOrderPage = () => {
     
     const [machines, setMachines] = useState<Machine[]>([]);
     const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
-    const selectedMachineName = machines.find(machine => machine.id === selectedMachineId)?.name || "Select Machine"; // updated variable
-
+    const selectedMachineName = machines.find(machine => machine.id === selectedMachineId)?.name || '';
     const [departments, setDepartments] = useState<Department[]>([]);
     const [departmentId, setDepartmentId] = useState<number>(-1);
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
@@ -102,10 +103,12 @@ const CreateOrderPage = () => {
     const [isPartsSelectOpen, setIsPartsSelectOpen] = useState(false); 
     const [isSearchMode, setIsSearchMode] = useState(false);
 
+    const [reqNum, setReqNum] = useState('')
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
     const isOrderFormComplete =
+        reqNum.trim() &&
         selectedFactoryId !== -1 &&
         departmentId !== -1 &&
         description.trim() &&
@@ -127,7 +130,8 @@ const CreateOrderPage = () => {
 
     const partsSectionRef = useRef<HTMLDivElement | null>(null);
 
-    
+    const navigate = useNavigate()
+
 
 
 
@@ -167,6 +171,9 @@ const CreateOrderPage = () => {
     
 
     const handleCreateOrder = async () => {
+
+        console.log("Machine in first create order ", selectedMachineId);
+        
         setIsSubmitting(true);
         try {
             if (!isOrderFormComplete) {
@@ -179,15 +186,25 @@ const CreateOrderPage = () => {
                 return
             }
 
+            const fetchedReqNum = (await fetchOrderByReqNum(reqNum)) ?? [];
+            if (fetchedReqNum.length > 0) {
+                toast.error("This Requisition Number has already been used in another order");
+                setReqNum('');
+                return;
+            }
+            
+
             const createdById=profile.id;
             const statusId = 1;
             const orderData: InputOrder = {
+                req_num: reqNum,
                 order_note: description,
                 created_by_user_id: createdById,
                 department_id: departmentId,
                 factory_id: selectedFactoryId,
                 factory_section_id: selectedFactorySectionId,
                 machine_id: selectedMachineId,
+                machine_name: selectedMachineName,
                 current_status_id: statusId,
                 order_type: orderType,
             };
@@ -206,6 +223,10 @@ const CreateOrderPage = () => {
 
 
     const handleAddOrderParts = async () => {
+
+        console.log("Factory Section in second create order ", selectedFactorySectionId);
+
+        console.log("Machine in second create order ", selectedMachineId);
 
         const isPartAlreadyAdded = orderedParts.some(part => part.part_id === partId);
 
@@ -260,6 +281,11 @@ const CreateOrderPage = () => {
     };
 
     const handleFinalCreateOrder = async () => {
+
+        console.log("Factory Section in final create order ", selectedFactorySectionId);
+
+        console.log("Machine in final create order ", selectedMachineId);
+
         setIsSubmitting(true);
         try {
             // Check if the temporary order details are set
@@ -273,8 +299,10 @@ const CreateOrderPage = () => {
             }
             let orderResponse;
 
+            
             if (orderType == "Machine"){
                 orderResponse = await insertOrder(
+                    tempOrderDetails.req_num,
                     tempOrderDetails.order_note, 
                     tempOrderDetails.created_by_user_id, 
                     tempOrderDetails.department_id, 
@@ -287,6 +315,7 @@ const CreateOrderPage = () => {
             }
             else{
                 orderResponse = await insertOrderStorage(
+                    tempOrderDetails.req_num,
                     tempOrderDetails.order_note,
                     tempOrderDetails.created_by_user_id,
                     tempOrderDetails.department_id,
@@ -295,8 +324,8 @@ const CreateOrderPage = () => {
                     tempOrderDetails.order_type,
                 );
             }
-            if (orderResponse && orderResponse.length > 0) {
-                const orderId = orderResponse[0].id; 
+            if (orderResponse.data && orderResponse.data.length > 0) {
+                const orderId = orderResponse.data[0].id; 
                 // toast.success(`Order created with ID: ${orderId}, now adding parts...`);
 
                 const partPromises = orderedParts.map(part =>
@@ -321,15 +350,15 @@ const CreateOrderPage = () => {
                 if (orderType == "Machine") {
                     setMachineIsRunningById(selectedMachineId,false);
                 }
-
-
             } else {
                 toast.error("Failed to create order.");
+                return;
             }
         } catch (error) {
             toast.error(`An error occurred: ${error}`);
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
+            navigate('/orders');
         }
 };
     const handleCancelOrder = () => {
@@ -485,6 +514,18 @@ const CreateOrderPage = () => {
     
                     <CardContent>
                         <div className="grid gap-6">
+
+                            {/*Req Num*/}
+                            <div className="grid gap-3">
+                                <Label htmlFor="req_num">Requisition Number</Label>
+                                <Input
+                                    id="req_num"
+                                    defaultValue=""
+                                    className="w-[220px]"
+                                    onChange={e => setReqNum(e.target.value)}
+                                    disabled={isOrderStarted}
+                                />
+                            </div>
                             {/* Factory */}
                             <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                 <Label htmlFor="factoryName">Factory Name</Label>
@@ -559,8 +600,9 @@ const CreateOrderPage = () => {
 
                                             <SelectValue>
                                                 {selectedMachineId !== -1
-                                                    ? machines.find(m => m.id === selectedMachineId)?.name
-                                                    : "Select Machine"}
+                                                    ? machines.find(m => m.id === selectedMachineId)?.name // Show the selected machine name if available
+                                                    : tempOrderDetails?.machine_name || "Select Machine" // Fall back to tempOrderDetails.machine_name or "Select Machine"
+                                                }
                                             </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
@@ -775,8 +817,9 @@ const CreateOrderPage = () => {
                                                     {orderType === "Machine" ? (
                                                         <div className="flex justify-between">
                                                             <p><strong>Factory Section:</strong> {part.factory_section_name || "Unknown"}</p>
-                                                            <p><strong>Machine:</strong> {part.machine_name || "Unknown"}</p>
+                                                            <p><strong>Machine:</strong> {tempOrderDetails?.machine_name || "Unknown"}</p>
                                                         </div>
+                                                        
                                                     ) : (
                                                         <div className="">
                                                             <p><strong>Order for Storage</strong></p>
@@ -789,17 +832,14 @@ const CreateOrderPage = () => {
                                 </div>
                                 {/* Buttons for adding parts and finalizing the order */}
                                 <div className="flex justify-end mt-4">
-
-                                    <Link to="/orders">
-                                        <Button
-                                            size="sm"
-                                            onClick={handleFinalCreateOrder}
-                                            disabled={orderedParts.length === 0}
-                                        >
-                                            <CircleCheck className="h-4 w-4" />
-                                            Finalize Order
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleFinalCreateOrder}
+                                        disabled={orderedParts.length === 0}
+                                    >
+                                        <CircleCheck className="h-4 w-4" />
+                                        Finalize Order
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

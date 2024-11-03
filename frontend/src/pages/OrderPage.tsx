@@ -41,6 +41,7 @@ const OrderPage = () => {
                 page,
                 limit: ordersPerPage,
                 query: appliedFilters.searchType === 'id' ? appliedFilters.searchQuery : '',
+                reqNum: appliedFilters.reqNumQuery,
                 searchDate: appliedFilters.selectedDate,
                 dateFilterType: appliedFilters.dateFilterType,
                 statusId: appliedFilters.selectedStatusId !== -1 ? appliedFilters.selectedStatusId : undefined,
@@ -49,8 +50,9 @@ const OrderPage = () => {
                 factorySectionId: appliedFilters.selectedFactorySectionId !== -1 ? appliedFilters.selectedFactorySectionId : undefined,
                 machineId: appliedFilters.selectedMachineId !== -1 ? appliedFilters.selectedMachineId : undefined,
                 orderType: appliedFilters.selectedOrderType,
+            
             });
-
+            
             setOrders(data);
             setCount(count ?? 0);
             setTotalPages(Math.ceil((count ?? 0) / ordersPerPage));
@@ -144,6 +146,7 @@ const OrderPage = () => {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ID</TableHead>
+                                                    <TableHead>Req Num</TableHead>
                                                     <TableHead className="hidden md:table-cell">Order for Machine/Storage</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created at</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created by</TableHead>

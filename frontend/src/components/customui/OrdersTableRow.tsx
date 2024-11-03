@@ -26,10 +26,12 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
   const profile = useAuth().profile
   const handleDeleteOrder = async () => {
     try {
-        if(order.current_status_id === 1) {
-          if ((await (fetchRunningOrdersByMachineId(order.machine_id))).length == 1) {
-            setMachineIsRunningById(order.machine_id, true)
-            toast.success("Machine is now running")
+      if (order.order_type == "Machine") {
+          if(order.current_status_id === 1) {
+            if ((await (fetchRunningOrdersByMachineId(order.machine_id))).length == 1) {
+              setMachineIsRunningById(order.machine_id, true)
+              toast.success("Machine is now running")
+            }
           }
         }
         await deleteOrderByID(order.id)
@@ -47,6 +49,9 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
   <TableRow className={isHighlightedOrder? "bg-red-50": ""}>
       <TableCell className="font-medium">
             {order.id}
+      </TableCell>
+      <TableCell className="font-medium">
+        {order.req_num}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {order.factory_sections?.name && order.machines?.name

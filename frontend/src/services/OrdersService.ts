@@ -9,6 +9,7 @@ export const fetchOrders = async ({
     page = 1,
     limit = 10,
     query = '',
+    reqNum = '',
     searchDate,
     dateFilterType, // This is passed along with searchDate
     statusId,
@@ -21,6 +22,7 @@ export const fetchOrders = async ({
     page: number;
     limit: number;
     query?: string;
+    reqNum?: string;
     searchDate?: Date;
     dateFilterType?: 'on' | 'before' | 'after'; // Define filterType for date filtering
     statusId?: number;
@@ -35,6 +37,7 @@ export const fetchOrders = async ({
         Page: ${page}, 
         Limit: ${limit}, 
         Query: ${query}, 
+        Req Num: ${reqNum},
         Search Date: ${searchDate}, 
         Status ID: ${statusId}, 
         Department ID: ${departmentId}, 
@@ -52,6 +55,7 @@ export const fetchOrders = async ({
         .select(
             `
             id,
+            req_num,
             created_at,
             order_note,
             created_by_user_id,
@@ -75,6 +79,10 @@ export const fetchOrders = async ({
 
     if (query) {
         queryBuilder = queryBuilder.eq('id', query);
+    }
+
+    if (reqNum) {
+        queryBuilder = queryBuilder.eq('req_num', reqNum);
     }
 
     if (searchDate && dateFilterType) {
@@ -143,6 +151,7 @@ export const fetchOrderByID = async (order_id:number) => {
     select(
         `
             id,
+            req_num,
             created_at,
             order_note,
             created_by_user_id,
@@ -165,6 +174,37 @@ export const fetchOrderByID = async (order_id:number) => {
     }
     console.log(data)
     return data as unknown as Order;
+};
+
+export const fetchOrderByReqNum = async (reqNum: string) => {
+    
+    const { data, error } = await supabase_client.from('orders').
+        select(
+            `
+            id,
+            req_num,
+            created_at,
+            order_note,
+            created_by_user_id,
+            department_id,
+            current_status_id,
+            factory_id,
+            machine_id,
+            factory_section_id,
+            order_type,
+            departments(*),
+            profiles(*),
+            statuses(*),
+            factory_sections(*),
+            factories(*),
+            machines(*)
+        `
+    ).eq('req_num', reqNum)
+    if (error) {
+        return null
+    }
+    // console.log(data)
+    return data ?? [];
 };
 
 export const UpdateStatusByID = async (orderid: number, status_id:number) => {
@@ -192,6 +232,7 @@ export const deleteOrderByID = async (orderid:number) => {
 
 
 export const insertOrder = async (
+    req_num: string,
     order_note: string,
     created_by_user_id: number,
     department_id: number,
@@ -199,10 +240,11 @@ export const insertOrder = async (
     factory_section_id: number,
     machine_id: number,
     current_status_id: number,
-    order_type: string) => {
+    order_type: string, ) => {
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
+            "req_num": req_num,
             "order_note": order_note,
             "created_by_user_id": created_by_user_id,
             "department_id": department_id,
@@ -211,29 +253,29 @@ export const insertOrder = async (
             "machine_id": machine_id,
             "current_status_id": current_status_id,
             "order_type": order_type,
+            
         },
         ])
         .select()
 
     if (error) {
         toast.error("Failed to create order: " + error.message);
-        return null; 
     }
-
-    toast.success("Order successfully created");
-    return data as unknown as Order[];
+    return { data: data as Order[], error };
 };
 
 export const insertOrderStorage = async (
+    req_num: string,
     order_note: string,
     created_by_user_id: number,
     department_id: number,
     factory_id: number,
     current_status_id: number,
-    order_type: string) => {
+    order_type: string, ) => {
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
+            "req_num": req_num,
             "order_note": order_note,
             "created_by_user_id": created_by_user_id,
             "department_id": department_id,
@@ -246,11 +288,8 @@ export const insertOrderStorage = async (
 
     if (error) {
         toast.error("Failed to create order: " + error.message);
-        return null;
     }
-
-    toast.success("Order successfully created");
-    return data as unknown as Order[];
+    return { data: data as Order[], error };
 };
 
 export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
@@ -258,6 +297,7 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
         select(
             `
             id,
+            req_num,
             created_at,
             order_note,
             created_by_user_id,

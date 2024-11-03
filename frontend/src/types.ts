@@ -60,6 +60,7 @@ export type OrderedPart = {
 
 export type Order = {
     id: number,
+    req_num: string,
     created_at: string,
     order_note: string,
     created_by_user_id: number,
