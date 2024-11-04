@@ -28,7 +28,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
             try {
                 // Fetch machine details to get the running status
                 const machine = await fetchMachineById(machineId);
-                console.log("Fetched Machine:", machine); // Log the fetched machine details
+                // console.log("Fetched Machine:", machine); // Log the fetched machine details
                 if (machine) {
                     setIsRunning(machine.is_running);
                 } else {
@@ -37,17 +37,17 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
 
                 // Fetch machine parts to check part sufficiency
                 const fetchedParts = await fetchMachineParts(machineId);
-                console.log("Fetched Parts:", fetchedParts); // Log the fetched parts details
+                // console.log("Fetched Parts:", fetchedParts); // Log the fetched parts details
 
                 setSufficientParts(true);
 
                 let allPartsSufficient = true; // Assume all parts are sufficient
 
                 for (const part of fetchedParts) {
-                    console.log("Checking part:", part); 
-                    console.log(part.qty, " ", part.req_qty);
+                    // console.log("Checking part:", part); 
+                    // console.log(part.qty, " ", part.req_qty);
                     if (part.req_qty > part.qty) {
-                        console.log("Insufficient part:",  "Qty:", part.qty, "Req Qty:", part.req_qty);
+                        // console.log("Insufficient part:",  "Qty:", part.qty, "Req Qty:", part.req_qty);
                         allPartsSufficient = false; 
                         break; 
                     }

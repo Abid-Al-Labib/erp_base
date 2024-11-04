@@ -19,7 +19,7 @@ const OrderPage = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [ordersPerPage] = useState(10); // Set the number of orders per page here
+    const [ordersPerPage] = useState(20); // Set the number of orders per page here
     const [count, setCount] = useState(0);
     const [filters, setFilters] = useState<any>({});
     const [filterSummary, setFilterSummary] = useState<string>(''); // New state for summary

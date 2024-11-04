@@ -11,7 +11,7 @@ export const fetchMachines = async (
 ) => {
     let queryBuilder = supabase_client
         .from('machines')
-        .select('id, type, name, is_running, factory_section_id', { count: 'exact' }); // Request total count
+        .select('id, name, is_running, factory_section_id', { count: 'exact' }); // Request total count
 
     // Apply filter if factorySectionId is provided
     if (factorySectionId !== undefined && factorySectionId !== -1) {
@@ -45,7 +45,7 @@ export const fetchEnrichedMachines = async (
     // Fetch base machine data
     let queryBuilder = supabase_client
         .from('machines')
-        .select('id, type, name, is_running, factory_section_id', { count: 'exact' });
+        .select('id, name, is_running, factory_section_id', { count: 'exact' });
 
     // Apply filter if factorySectionId is provided
     if (factorySectionId !== undefined && factorySectionId !== -1) {
@@ -98,7 +98,7 @@ export const fetchAllMachines = async (
 ) => {
     let queryBuilder = supabase_client
         .from('machines')
-        .select('id, type, name, is_running, factory_section_id');
+        .select('id, name, is_running, factory_section_id');
 
     // Apply filter if factorySectionId is provided
     if (factorySectionId !== undefined && factorySectionId !== -1) {
@@ -121,7 +121,7 @@ export const fetchAllMachines = async (
 export const fetchMachineById = async (machineId: number) => {
     const { data, error } = await supabase_client
         .from('machines')
-        .select('id, type, name, is_running, factory_section_id')
+        .select('id, name, is_running, factory_section_id')
         .eq('id', machineId)
         .maybeSingle(); // .single() ensures that it only returns one record
 
@@ -138,7 +138,7 @@ export const setMachineIsRunningById = async (machineId: number, isRunning: bool
         .from('machines')
         .update({ is_running: isRunning })
         .eq('id', machineId)
-        .select('id, type, name, is_running, factory_section_id')
+        .select('id, name, is_running, factory_section_id')
         .maybeSingle(); // .maybeSingle() is used to ensure only one record is returned.
 
     if (error) {

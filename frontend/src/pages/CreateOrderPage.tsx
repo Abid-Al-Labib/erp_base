@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck} from "lucide-react"
 import { useEffect, useState, useRef} from "react"
-import { fetchOrderByReqNum, insertOrder, insertOrderStorage } from "@/services/OrdersService";
+import { fetchOrderByReqNum, fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage } from "@/services/OrdersService";
 
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
@@ -43,7 +43,6 @@ interface FactorySection{
 interface Machine {
     id: number;
     name: string;
-    type: string;
     factory_section_id?: number;
 }
 
@@ -171,9 +170,8 @@ const CreateOrderPage = () => {
     
 
     const handleCreateOrder = async () => {
-
-        console.log("Machine in first create order ", selectedMachineId);
         
+
         setIsSubmitting(true);
         try {
             if (!isOrderFormComplete) {
@@ -186,14 +184,14 @@ const CreateOrderPage = () => {
                 return
             }
 
-            const fetchedReqNum = (await fetchOrderByReqNum(reqNum)) ?? [];
+            const fetchedReqNum = (await fetchOrderByReqNumandFactory(reqNum,selectedFactoryId)) ?? [];
             if (fetchedReqNum.length > 0) {
-                toast.error("This Requisition Number has already been used in another order");
+                toast.error("This Requisition Number has already been used in another order for this factory");
                 setReqNum('');
                 return;
             }
             
-
+            setReqNum(reqNum.trim())
             const createdById=profile.id;
             const statusId = 1;
             const orderData: InputOrder = {
@@ -212,6 +210,8 @@ const CreateOrderPage = () => {
             setShowPartForm(true); // This triggers the scroll due to useEffect
             setIsOrderStarted(true);
             toast.success("Order details are set. Please add parts.");
+
+
 
 
         } catch (error) {
@@ -520,9 +520,10 @@ const CreateOrderPage = () => {
                                 <Label htmlFor="req_num">Requisition Number</Label>
                                 <Input
                                     id="req_num"
-                                    defaultValue=""
+                                    value={reqNum} // Bind the input value to reqNum state
                                     className="w-[220px]"
-                                    onChange={e => setReqNum(e.target.value)}
+                                    onChange={e => setReqNum(e.target.value)} // Update state on every keystroke
+                                    onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))} // Remove all spaces on blur
                                     disabled={isOrderStarted}
                                 />
                             </div>

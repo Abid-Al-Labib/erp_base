@@ -26,7 +26,8 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         approved_office_order,
         approved_budget,
         orders(*),
-        parts(*)
+        parts(*),
+        qty_taken_from_storage
         `
     ).eq('part_id',part_id).order('id', { ascending: true });
 
@@ -61,7 +62,8 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         approved_office_order,
         approved_budget,
         orders(*),
-        parts(*)
+        parts(*),
+        qty_taken_from_storage
         `
     ).eq('order_id',order_id).order('id', { ascending: true });
     console.log(data)
@@ -350,4 +352,13 @@ export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
   
   
 
-  
+export const updateQtyTakenFromStorage = async (orderedpart_id: number, quantity: number) => {
+    const { error } = await supabase_client.from('order_parts').update(
+        { qty_taken_from_storage: quantity }
+    ).eq('id', orderedpart_id)
+
+    if (error) {
+        toast.error(error.message)
+    }
+}
+

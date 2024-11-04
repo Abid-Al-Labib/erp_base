@@ -119,6 +119,7 @@ export const updateMachinePartQty = async (
     } else { 
         //This is for adding new parts
         updatedQuantity = new_quantity + currentQty;
+        // console.log("new_quantity",new_quantity, " current_quantity", currentQty, " updated quantity", updatedQuantity)
     }
 
     // Upsert the new quantity value into the database

@@ -9,7 +9,7 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateQtyTakenFromStorage, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime } from "@/services/helper"
@@ -65,12 +65,14 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const navigate = useNavigate()
   const [disableTakeStorageRow, setDisableTakeStorageRow] = useState(false);
   const [currentStorageQty,setCurrentStorageQty] = useState<number|null>(null)
+  const [qtyTakenFromStorage, setQtyTakenFromStorage] = useState<number | null>(null)
   const handleNavigation = () => {
     navigate('/orders'); 
   };
   // useEffect to fetch most recent cost and purchase date
   useEffect(() => {
       const fetchData = async () => {
+        console.log(orderedPartInfo)
           if (mode=="manage")
           {
             const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && orderedPartInfo.qty===0
@@ -134,7 +136,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   }
 
   const handleApproveTakingFromStorage = () => {
-    // console.log(`Headoffice approves taking ${orderedPartInfo.qty} from storage`)
+    console.log(`Headoffice approves taking ${orderedPartInfo.qty} from storage`)
     const takeFromStorage = async() => {
       try {
         if (currentStorageQty)
@@ -153,6 +155,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               console.log("updated sent date")
               await updateReceivedByFactoryDateByID(orderedPartInfo.id,new Date())
               console.log("updated received date")
+              
+              console.log("updated qty_taken_from_storage")
               setDisableTakeStorageRow(true)
             }
             else{
@@ -166,6 +170,15 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
               await updateMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty,'add')
               console.log("updated machine part qty")
             }
+            let takingFromStorageQty
+            if(currentStorageQty <= orderedPartInfo.qty){
+              takingFromStorageQty = currentStorageQty
+            }
+            else{
+              takingFromStorageQty = orderedPartInfo.qty
+            }
+            await updateQtyTakenFromStorage(orderedPartInfo.id, takingFromStorageQty)
+            setQtyTakenFromStorage(takingFromStorageQty)
             await updateApprovedStorageWithdrawalByID(orderedPartInfo.id, true)
             console.log("approved taking from storage")
           }
@@ -437,7 +450,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             className={orderedPartInfo.approved_storage_withdrawal ? "bg-green-100" : "bg-red-100"}
             variant="secondary"
           >
-            {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
+            {orderedPartInfo.approved_storage_withdrawal ? `${orderedPartInfo.qty_taken_from_storage}` : "No"}
           </Badge>
         </TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
@@ -633,7 +646,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             className={orderedPartInfo.approved_storage_withdrawal ? "bg-green-100" : "bg-red-100"}
             variant="secondary"
           >
-            {orderedPartInfo.approved_storage_withdrawal ? "Yes" : "No"}
+            {orderedPartInfo.approved_storage_withdrawal ? `${orderedPartInfo.qty_taken_from_storage}` : "No"}
           </Badge>
         </TableCell>        
         <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>

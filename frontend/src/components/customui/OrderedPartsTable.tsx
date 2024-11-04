@@ -355,6 +355,7 @@ const handleOrderManagement = async () => {
                 <Loader2 className='h-8 w-8 animate-spin'/>
             </div>
         ):
+        
             <TableBody>
             {orderedParts.map(orderedPart => (                                        
                 <OrderedPartRow key={orderedPart.id}
