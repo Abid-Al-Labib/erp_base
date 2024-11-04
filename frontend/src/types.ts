@@ -21,7 +21,6 @@ export type DamagedPart = {
 export type Machine = {
     id: number,
     name: string,
-    type: string,
     is_running: boolean,
     factory_section_id: number,
     factory_sections: FactorySection
@@ -51,6 +50,7 @@ export type OrderedPart = {
     approved_storage_withdrawal: boolean,
     order_id: number,
     part_id: number,
+    mrr_number: string,
     approved_pending_order: boolean
     approved_office_order: boolean
     approved_budget: boolean

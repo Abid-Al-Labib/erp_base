@@ -9,10 +9,10 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
-import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton } from "@/services/ButtonVisibilityHelper"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateMrrNumberByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton, showMrrButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
-import { convertUtcToBDTime } from "@/services/helper"
+import { convertUtcToBDTime, managePermission } from "@/services/helper"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { Textarea } from "../ui/textarea"
@@ -49,7 +49,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const [isReviseBudgetDialogOpen, setIsReviseBudgetDialogOpen] = useState(false);
   const [isOfficeNoteDialogOpen, setIsOfficeNoteDialogOpen] = useState(false);
   const [isTakeFromStorageDialogOpen, setIsTakeFromStorageDialogOpen] = useState(false);
+  const [isMrrDialogOpen, setIsMrrDialogOpen] = useState(false)
   const [isDenyDialogOpen, setIsDenyDialogOpen] = useState(false);
+  const [mrrLoading, setMrrLoading] = useState(false)
+  const [mrrNumber, setMrrNumber] = useState(orderedPartInfo.mrr_number || '')
   const [vendor, setVendor] = useState(orderedPartInfo.vendor || '');
   const [brand, setBrand] = useState(orderedPartInfo.brand || '')
   const [unitCost, setUnitCost] = useState(orderedPartInfo.unit_cost || '');
@@ -65,6 +68,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   const navigate = useNavigate()
   const [disableTakeStorageRow, setDisableTakeStorageRow] = useState(false);
   const [currentStorageQty,setCurrentStorageQty] = useState<number|null>(null)
+  
+  const StatusChangeRefresh = () => {
+   
+  }
+  
   const handleNavigation = () => {
     navigate('/orders'); 
   };
@@ -278,6 +286,29 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     }
   }
 
+  const handleMRRinput = () => {
+    const updateMrrNumber = async(mrr_number:string) => {
+      try {
+        setMrrLoading(true);
+        await updateMrrNumberByID(orderedPartInfo.id, mrr_number.trim())
+        toast.success("MRR Number has been set")
+      } catch(error){
+        toast.error("Error occured while setting MRR number")
+      } finally {
+        setMrrLoading(false);
+      }
+    } 
+
+    if (!(mrrNumber.trim().length>0)) {
+      toast.error('Please fill in all information');
+      return;
+    }
+
+    updateMrrNumber(mrrNumber)
+    setMrrNumber('')
+
+  }
+
   const handleUpdateCosting = () => {
     const updateCosting = async(brand:string, cost:number, vendor: string) => {
       try {
@@ -478,6 +509,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? (convertUtcToBDTime(orderedPartInfo.part_purchased_date)).split(',')[0] : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date ? (convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date)).split(',')[0] : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date ? (convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date)).split(',')[0] : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.mrr_number? orderedPartInfo.mrr_number: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{`${orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'} / ${orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}`}</TableCell>
 
         <TableCell className="md:hidden">
@@ -603,6 +635,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                   </DropdownMenuItem>
                 )}
               {
+                showMrrButton(current_status.name, orderedPartInfo.mrr_number) && (
+                  <DropdownMenuItem onClick={() => setIsMrrDialogOpen(true)}>
+                    <span>Add MRR number</span>
+                  </DropdownMenuItem>
+                )}
+              {
                 showSampleReceivedButton(orderedPartInfo.is_sample_sent_to_office, orderedPartInfo.is_sample_received_by_office) && (
                   <DropdownMenuItem onClick={() => setIsSampleReceivedDialogOpen(true)}>
                     <span>Receive Sample</span>
@@ -677,6 +715,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date ? (convertUtcToBDTime(orderedPartInfo.part_purchased_date)).split(',')[0] : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date ? (convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date)).split(',')[0] : '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date ? (convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date)).split(',')[0] : '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{orderedPartInfo.mrr_number? orderedPartInfo.mrr_number: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{`${orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'} / ${orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}`}</TableCell>
         <TableCell className="md:hidden">
             <Dialog>
@@ -722,6 +761,33 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                 <Button onClick={handleSampleReceived}>Confirm</Button>
               </DialogContent>
             </Dialog>
+
+            <Dialog open={isMrrDialogOpen} onOpenChange={setIsMrrDialogOpen}>
+                <DialogContent>
+                  <DialogTitle>
+                    Mrr Number - <span className="text-sm">{orderedPartInfo.parts.name}</span>
+                  </DialogTitle>
+                  <DialogDescription>
+                    <p className="text-sm text-muted-foreground">
+                      Please enter the MRR number for this ordered part
+                    </p>
+                    <div className="grid gap-3 mt-2">
+                        <Label htmlFor="mrr">MRR Number:</Label>
+                        <Input 
+                          id="mrr" 
+                          type="text" 
+                          value={mrrNumber}
+                          placeholder="Enter MRR number"
+                          onChange={(e) => setMrrNumber(e.target.value)}
+                        />
+                      </div>
+                  </DialogDescription>
+                  <Button onClick={handleMRRinput} disabled={mrrLoading}>
+                      {mrrLoading ? "Updating..." : "Confirm"}
+                    </Button>
+                </DialogContent>
+              </Dialog>
+
             <Dialog open={isReceivedDialogOpen} onOpenChange={setIsReceivedDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogTitle>Date when part was received at Factory</DialogTitle>
@@ -735,6 +801,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
                 <Button onClick={handleUpdateReceivedDate}>Confirm</Button>
               </DialogContent>
             </Dialog>
+
             <Dialog open={isSentDialogOpen} onOpenChange={setIsSentDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                   <DialogTitle>

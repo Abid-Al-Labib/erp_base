@@ -25,6 +25,10 @@ const ManageOrderPage = () => {
     navigate("/orders");
   }
 
+  const handleNavigationToViewOrderPage = () => {
+    navigate(`/vieworder/${id}`)
+  }
+
   const loadOrder = async () => {
     if (!id || isNaN(parseInt(id))) {
       toast.error("Invalid order ID");
@@ -133,10 +137,10 @@ const ManageOrderPage = () => {
           </DialogTitle>
           <DialogDescription>
             <p className="text-sm text-muted-foreground">
-              This order is in a status that cannot be managed by you. You will be redirected to orders page. 
+              This order is in a status that cannot be managed by you. You will be redirected to view order page. 
             </p>
           </DialogDescription>
-          <Button onClick={handleNavigationToOrderPage}>Okay</Button>
+          <Button onClick={handleNavigationToViewOrderPage}>Okay</Button>
         </DialogContent>
       </Dialog>
     </>

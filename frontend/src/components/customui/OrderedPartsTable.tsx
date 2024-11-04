@@ -178,7 +178,6 @@ const handleAdvanceOrderStatus = async () => {
     setLoadingTableButtons(false)
     setShowAdvanceButton(false)
     setIsAdvanceDialogOpen(false)
-    handleNavigation()
   }
 }  
 
@@ -199,7 +198,6 @@ const handleRevertOrderStatus = async() => {
   } finally {
     setLoadingTableButtons(false)
     setIsRevertDialogOpen(false)
-    handleNavigation()
   }
 };
 
@@ -276,7 +274,7 @@ const handleOrderManagement = async () => {
 }, [runCount, isProcessing]);
 
   const handleChanges = async (payload: any) => {
-    console.log(isProcessing)
+    console.log("handling changes:",isProcessing)
     if (!isProcessing) {
     setRunCount(prevCount => prevCount + 1);
   }
@@ -344,6 +342,7 @@ const handleOrderManagement = async () => {
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap">MRR number</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
             <TableHead className="md:hidden">Info</TableHead>
         </TableRow>
@@ -494,6 +493,7 @@ const handleOrderManagement = async () => {
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
+            <TableHead className="whitespace-nowrap">MRR number</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
             <TableHead className="md:hidden">Info</TableHead>
         </TableRow>

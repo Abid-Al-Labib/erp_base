@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       app_settings: {
@@ -52,6 +77,13 @@ export type Database = {
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damaged_parts_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
             referencedColumns: ["id"]
           },
           {
@@ -120,6 +152,13 @@ export type Database = {
             referencedRelation: "factories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "factory_sections_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
         ]
       }
       machine_parts: {
@@ -149,6 +188,13 @@ export type Database = {
             foreignKeyName: "machine_parts_machine_id_fkey"
             columns: ["machine_id"]
             isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["machineid"]
+          },
+          {
+            foreignKeyName: "machine_parts_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
             referencedRelation: "machines"
             referencedColumns: ["id"]
           },
@@ -167,21 +213,18 @@ export type Database = {
           id: number
           is_running: boolean
           name: string
-          type: string
         }
         Insert: {
           factory_section_id: number
           id?: number
           is_running: boolean
           name: string
-          type: string
         }
         Update: {
           factory_section_id?: number
           id?: number
           is_running?: boolean
           name?: string
-          type?: string
         }
         Relationships: [
           {
@@ -190,6 +233,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "factory_sections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "machines_factory_section_id_fkey"
+            columns: ["factory_section_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["factorysectionid"]
           },
         ]
       }
@@ -204,6 +254,7 @@ export type Database = {
           in_storage: boolean
           is_sample_received_by_office: boolean
           is_sample_sent_to_office: boolean
+          mrr_number: string | null
           note: string | null
           office_note: string | null
           order_id: number
@@ -212,6 +263,7 @@ export type Database = {
           part_received_by_factory_date: string | null
           part_sent_by_office_date: string | null
           qty: number
+          qty_taken_from_storage: number
           unit_cost: number | null
           vendor: string | null
         }
@@ -225,6 +277,7 @@ export type Database = {
           in_storage?: boolean
           is_sample_received_by_office?: boolean
           is_sample_sent_to_office?: boolean
+          mrr_number?: string | null
           note?: string | null
           office_note?: string | null
           order_id: number
@@ -233,6 +286,7 @@ export type Database = {
           part_received_by_factory_date?: string | null
           part_sent_by_office_date?: string | null
           qty: number
+          qty_taken_from_storage?: number
           unit_cost?: number | null
           vendor?: string | null
         }
@@ -246,6 +300,7 @@ export type Database = {
           in_storage?: boolean
           is_sample_received_by_office?: boolean
           is_sample_sent_to_office?: boolean
+          mrr_number?: string | null
           note?: string | null
           office_note?: string | null
           order_id?: number
@@ -254,6 +309,7 @@ export type Database = {
           part_received_by_factory_date?: string | null
           part_sent_by_office_date?: string | null
           qty?: number
+          qty_taken_from_storage?: number
           unit_cost?: number | null
           vendor?: string | null
         }
@@ -286,6 +342,7 @@ export type Database = {
           machine_id: number | null
           order_note: string | null
           order_type: string | null
+          req_num: string | null
         }
         Insert: {
           created_at?: string
@@ -298,6 +355,7 @@ export type Database = {
           machine_id?: number | null
           order_note?: string | null
           order_type?: string | null
+          req_num?: string | null
         }
         Update: {
           created_at?: string
@@ -310,6 +368,7 @@ export type Database = {
           machine_id?: number | null
           order_note?: string | null
           order_type?: string | null
+          req_num?: string | null
         }
         Relationships: [
           {
@@ -341,11 +400,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_factory_section_id_fkey"
             columns: ["factory_section_id"]
             isOneToOne: false
             referencedRelation: "factory_sections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_factory_section_id_fkey"
+            columns: ["factory_section_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["factorysectionid"]
+          },
+          {
+            foreignKeyName: "orders_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["machineid"]
           },
           {
             foreignKeyName: "orders_machine_id_fkey"
@@ -361,7 +441,6 @@ export type Database = {
           created_at: string
           description: string
           id: number
-          lifetime: number | null
           name: string
           unit: string
         }
@@ -369,7 +448,6 @@ export type Database = {
           created_at?: string
           description: string
           id?: number
-          lifetime?: number | null
           name: string
           unit: string
         }
@@ -377,7 +455,6 @@ export type Database = {
           created_at?: string
           description?: string
           id?: number
-          lifetime?: number | null
           name?: string
           unit?: string
         }
@@ -411,15 +488,7 @@ export type Database = {
           position?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       status_tracker: {
         Row: {
@@ -513,6 +582,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "storage_parts_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "storage_parts_part_id_fkey"
             columns: ["part_id"]
             isOneToOne: false
@@ -523,7 +599,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      fullname_machines: {
+        Row: {
+          abrev: string | null
+          factorysectionid: number | null
+          fullnamemachine: string | null
+          id: number | null
+          isrunning: boolean | null
+          machineid: number | null
+          name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -617,4 +704,19 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
