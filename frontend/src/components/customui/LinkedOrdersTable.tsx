@@ -25,7 +25,7 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
 
     const handleApplyFilters = (newFilters: typeof filters) => {
         setFilters(newFilters);
-        console.log('Applied Filters:', newFilters); // Debug log for applied filters
+        // console.log('Applied Filters:', newFilters); // Debug log for applied filters
     };
 
     const handleResetFilters = () => {
@@ -39,7 +39,6 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
             selectedStatusId: -1,
         };
         setFilters(resetFilters);
-        console.log('Reset Filters:', resetFilters); // Debug log for reset filters
     };
 
     const filteredParts = linkedOrderedParts.filter((part) => {
@@ -51,7 +50,7 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
             ? new Date(part.orders.created_at).toDateString() === filters.selectedDate.toDateString()
             : true;
 
-        console.log("TESTING MATCHES FACTORY", filters.selectedFactoryId);
+        // console.log("TESTING MATCHES FACTORY", filters.selectedFactoryId);
 
         const matchesFactory = (filters.selectedFactoryId !== -1 && filters.selectedFactoryId !== undefined)
             ? part.orders.factory_id === filters.selectedFactoryId
@@ -65,7 +64,7 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
             ? part.orders.machine_id === filters.selectedMachineId
             : true;
 
-        console.log("matchesFactory:", matchesFactory); // Log to see the state of matchesFactory
+        // console.log("matchesFactory:", matchesFactory); // Log to see the state of matchesFactory
 
         return (
             matchesQuery &&
@@ -76,7 +75,7 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
         );
     });
 
-    console.log('Filtered Parts:', filteredParts); // Debug log for filtered parts
+    // console.log('Filtered Parts:', filteredParts); // Debug log for filtered parts
 
         return (
         <div>

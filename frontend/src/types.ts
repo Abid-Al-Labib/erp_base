@@ -56,6 +56,7 @@ export type OrderedPart = {
     approved_budget: boolean
     orders : Order,
     parts: Part,
+    qty_taken_from_storage: number
 }
 
 export type Order = {
