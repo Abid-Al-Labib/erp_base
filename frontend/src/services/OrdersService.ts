@@ -207,6 +207,38 @@ export const fetchOrderByReqNum = async (reqNum: string) => {
     return data ?? [];
 };
 
+export const fetchOrderByReqNumandFactory = async (reqNum: string, factoryId: number) => {
+
+    const { data, error } = await supabase_client.from('orders').
+        select(
+            `
+            id,
+            req_num,
+            created_at,
+            order_note,
+            created_by_user_id,
+            department_id,
+            current_status_id,
+            factory_id,
+            machine_id,
+            factory_section_id,
+            order_type,
+            departments(*),
+            profiles(*),
+            statuses(*),
+            factory_sections(*),
+            factories(*),
+            machines(*)
+        `
+        ).ilike('req_num', reqNum).eq('factory_id',factoryId)
+    if (error) {
+        return null
+    }
+    // console.log(data)
+    return data ?? [];
+    
+};
+
 export const UpdateStatusByID = async (orderid: number, status_id:number) => {
     
     const { error } = await supabase_client.from('orders')
