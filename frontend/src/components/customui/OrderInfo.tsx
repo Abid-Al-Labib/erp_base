@@ -5,16 +5,18 @@ import { convertUtcToBDTime } from "@/services/helper"
 
 interface OrderInfoProp {
     order: Order
+    mode: 'view' | 'manage' | 'default'
+    
 }
 
 
-const OrderInfo: React.FC<OrderInfoProp> = ({order}) => {
+const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
   return (
         <Card
         className="sm:col-span-2" x-chunk="dashboard-05-chunk-0"
     >
         <CardHeader className="pb-3">
-        <CardTitle>Order Detail</CardTitle>
+        <CardTitle>{mode==="view"? "View ": mode==="manage"? "Manage ": ""}Order </CardTitle>
         </CardHeader>
         <Separator className="my-4" />
         <CardContent>
