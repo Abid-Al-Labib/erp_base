@@ -104,6 +104,7 @@ const ManageOrderPage = () => {
       <div className="mx-4 my-4">
         <OrderInfo
           order={order}
+          mode="manage"
         />
         <OrderedPartsTable
           mode="manage"

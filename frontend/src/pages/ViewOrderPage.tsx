@@ -81,7 +81,7 @@ const ViewOrderPage = () => {
           <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
             <div className="sm:flex flex-1 gap-2">
               <div className="w-full mt-4">
-                <OrderInfo order={order} />
+                <OrderInfo order={order} mode="view"/>
               </div>
               <div className="mt-4">
                 <StatusTracker order_id={order.id} />
