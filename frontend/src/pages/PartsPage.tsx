@@ -23,7 +23,7 @@ const PartsPage = () => {
     const [filters, setFilters] = useState<any>({});
     const [currentPage, setCurrentPage] = useState(1);   // Track current page
     const [totalPages, setTotalPages] = useState(1);     // Track total pages
-    const [partsPerPage] = useState(10);                 // Set number of parts per page
+    const [partsPerPage] = useState(20);                 // Set number of parts per page
     const [totalCount, setTotalCount] = useState(0);     // Track total number of parts
     const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false)
     const navigate = useNavigate()

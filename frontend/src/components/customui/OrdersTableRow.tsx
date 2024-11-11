@@ -312,24 +312,9 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
     <>
   <TableRow onClick={handleRowClick} className={isHighlightedOrder? "bg-red-50": ""}>
       <TableCell className="font-medium">
-          <HoverCard>
-            <HoverCardTrigger >
-              <Button variant="link">{order.id}</Button>
-            </HoverCardTrigger>
-            <HoverCardContent>
-            <div className="flex justify-between space-x-4">
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold">Ordered parts</h4>
-                <div className="flex flex-col pt-2">
-                  {orderedParts? orderedParts.map((part) => (
-                    <div className="text-xs whitespace-nowrap">{part.parts.name} - [{part.qty} {part.parts.unit}]</div>
-                  )):(<div>no data..</div>)}
-                </div>
-              </div>
-            </div>
-            </HoverCardContent>
-          </HoverCard>            
 
+        {order.id}
+           
       </TableCell>
       <TableCell className="font-medium">
         {order.req_num}

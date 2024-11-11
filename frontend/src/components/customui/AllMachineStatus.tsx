@@ -73,7 +73,7 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
             setLoading(true);
 
             const { data: enrichedMachines, count } = await fetchEnrichedMachines(factoryId ?? -1, factorySectionId ?? -1, page, machinesPerPage, sortOrder);
-
+            
             // Set the state with the enriched machine data
             setMachines(enrichedMachines);
             setTotalCount(count ?? 0);

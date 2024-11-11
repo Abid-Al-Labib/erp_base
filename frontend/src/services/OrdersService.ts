@@ -8,6 +8,7 @@ import { fetchFactoriesByIds, fetchFactorySectionsByIds } from "./FactoriesServi
 export const fetchOrders = async ({
     page = 1,
     limit = 10,
+    showCompleted,
     query = '',
     reqNum = '',
     searchDate,
@@ -21,6 +22,7 @@ export const fetchOrders = async ({
 }: {
     page: number;
     limit: number;
+    showCompleted: boolean;
     query?: string;
     reqNum?: string;
     searchDate?: Date;
@@ -83,6 +85,13 @@ export const fetchOrders = async ({
 
     if (reqNum) {
         queryBuilder = queryBuilder.eq('req_num', reqNum);
+    }
+
+    if (!showCompleted){
+        queryBuilder = queryBuilder.neq('current_status_id', 8)
+    }
+    if (showCompleted){
+        queryBuilder = queryBuilder.eq('current_status_id', 8)
     }
 
     if (searchDate && dateFilterType) {

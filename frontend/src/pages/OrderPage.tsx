@@ -13,6 +13,9 @@ import { fetchOrders } from '@/services/OrdersService';
 import SearchAndFilter from '@/components/customui/SearchAndFilter'; // Import the new component
 import { useAuth } from '@/context/AuthContext';
 import { supabase_client } from '@/services/SupabaseClient';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@radix-ui/react-dropdown-menu';
+
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -23,6 +26,7 @@ const OrderPage = () => {
     const [count, setCount] = useState(0);
     const [filters, setFilters] = useState<any>({});
     const [filterSummary, setFilterSummary] = useState<string>(''); // New state for summary
+    const [showCompleted, setShowCompleted] = useState<boolean>(false)
     const profile = useAuth().profile
 
     const handleApplyFilters = (newFilters: any, summary: string) => { // Receive the summary
@@ -40,6 +44,7 @@ const OrderPage = () => {
             const { data, count } = await fetchOrders({
                 page,
                 limit: ordersPerPage,
+                showCompleted: showCompleted,
                 query: appliedFilters.searchType === 'id' ? appliedFilters.searchQuery : '',
                 reqNum: appliedFilters.reqNumQuery,
                 searchDate: appliedFilters.selectedDate,
@@ -70,6 +75,8 @@ const OrderPage = () => {
         fetchOrdersforPage({}); 
     };
 
+
+
     useEffect(() => {
         const channel = supabase_client
         .channel('order-changes')
@@ -88,7 +95,7 @@ const OrderPage = () => {
         .subscribe()
         fetchOrdersforPage(filters, currentPage);
         
-    }, [currentPage]);
+    }, [currentPage,showCompleted]);
 
     return (
         <>
@@ -115,10 +122,20 @@ const OrderPage = () => {
                                         onResetFilters={handleResetFilters}
                                     />
 
+                                    
+
                                     {/* Filter Summary */}
                                     <span className="text-gray-500 text-ss max-w-[150px] md:max-w-[300px] lg:max-w-[400px] truncate overflow-hidden ml-4">
                                         {filterSummary}
                                     </span>
+
+                                    <div className="items-top flex space-x-2">
+                                        <Switch
+                                            checked={showCompleted}
+                                            onCheckedChange={() => { setShowCompleted(!showCompleted), setCurrentPage(1) }}
+                                        />
+                                        <Label>Show Completed Orders</Label>
+                                    </div>
                                 </div>
 
                                 {/* Create Order Button - Positioned on the right */}

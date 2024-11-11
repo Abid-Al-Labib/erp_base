@@ -90,6 +90,7 @@ export const fetchEnrichedMachines = async (
         };
     });
 
+    console.log(enrichedMachines)
     return { data: enrichedMachines, count };
 };
 
