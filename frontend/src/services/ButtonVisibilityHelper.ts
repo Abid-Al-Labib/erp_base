@@ -93,6 +93,14 @@ export const showReceivedButton = (status:string, receivedDate: string | null): 
     return false;
 }
 
+export const showMrrButton = (status:string, mrr_number:string|null): boolean => {
+    if (status === "Parts Sent To Factory" && mrr_number===null)
+    {
+        return true
+    }
+    return false
+}
+
 export const showSampleReceivedButton = (is_sample_sent_to_office: boolean, is_sample_received_by_office: boolean): boolean => {
     if (is_sample_sent_to_office && !is_sample_received_by_office){
         return true;

@@ -7,7 +7,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
-import { fetchAllMachines, fetchMachines } from '@/services/MachineServices';
+import { fetchAllMachines } from '@/services/MachineServices';
 import { fetchStatuses } from '@/services/StatusesService';
 
 interface Department {

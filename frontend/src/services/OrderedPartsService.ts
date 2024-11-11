@@ -22,6 +22,7 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         approved_storage_withdrawal,
         order_id,
         part_id,
+        mrr_number,
         approved_pending_order,
         approved_office_order,
         approved_budget,
@@ -58,6 +59,7 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         approved_storage_withdrawal,
         order_id,
         part_id,
+        mrr_number,
         approved_pending_order,
         approved_office_order,
         approved_budget,
@@ -166,6 +168,20 @@ export const deleteOrderedPartByID = async (orderedpart_id: number) => {
         toast.error(error.message)
     }
         
+}
+
+export const updateMrrNumberByID = async (orderedpart_id:number, mrr_number:string) => {
+    const { error } = await supabase_client.from('order_parts').update(
+        { 
+            mrr_number: mrr_number,
+        }
+    ).eq('id', orderedpart_id)
+
+    if (error) {
+        console.log("error for unique:",error.code)
+        toast.error(error.message)
+    }
+    
 }
 
 export const updateCostingByID = async (orderedpart_id: number, brand:string | null, unit_cost: number | null, vendor: string | null) => {

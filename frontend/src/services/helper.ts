@@ -120,7 +120,7 @@ export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_stat
         break;
       }
       case "Parts Sent To Factory": {
-        if(ordered_parts.every(part => part.part_received_by_factory_date !== null)) return 8
+        if(ordered_parts.every(part => part.part_received_by_factory_date !== null && part.mrr_number !== null)) return 8
         break;
       }
 
