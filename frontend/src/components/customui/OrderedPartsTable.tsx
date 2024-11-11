@@ -127,6 +127,8 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
           }
 
       }
+    toast.success("Empty order was removed")
+    handleNavigation()
   }
 
 const loadOrderedParts = async () => {
@@ -328,6 +330,7 @@ const handleOrderManagement = async () => {
         <Table>
         <TableHeader>
         <TableRow>
+            <TableHead></TableHead>
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
@@ -356,8 +359,9 @@ const handleOrderManagement = async () => {
         ):
         
             <TableBody>
-            {orderedParts.map(orderedPart => (                                        
+            {orderedParts.map((orderedPart,index) => (                                        
                 <OrderedPartRow key={orderedPart.id}
+              index={index + 1}
               mode="view"
               orderedPartInfo={orderedPart}
               current_status={current_status}
@@ -398,6 +402,7 @@ const handleOrderManagement = async () => {
           <Table>
             <TableHeader>
             <TableRow>
+              <TableHead></TableHead>
               <TableHead>Part</TableHead>
               <TableHead>Last Purchase</TableHead>
               <TableHead>Brand</TableHead>
@@ -414,8 +419,9 @@ const handleOrderManagement = async () => {
               </div>
             ):
               <TableBody>
-              {orderedParts.map(orderedPart => (                                        
+              {orderedParts.map((orderedPart,index) => (                                        
                   <OrderedPartRow key={orderedPart.id}
+                index={index+1}
                 mode="invoice"
                 orderedPartInfo={orderedPart}
                 current_status={current_status}
@@ -478,7 +484,8 @@ const handleOrderManagement = async () => {
         <Table>
         <TableHeader>
         <TableRow>
-            <TableHead className="whitespace-nowrap"></TableHead>
+            <TableHead></TableHead>
+            <TableHead className="whitespace-nowrap">Actions</TableHead>
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
@@ -507,8 +514,9 @@ const handleOrderManagement = async () => {
             </div>
         ):
             <TableBody>
-            {orderedParts.map(orderedPart => (                                        
+            {orderedParts.map((orderedPart,index) => (                                        
                 <OrderedPartRow key={orderedPart.id}
+              index={index+1}
               mode="manage"
               orderedPartInfo={orderedPart}
               current_status={current_status}

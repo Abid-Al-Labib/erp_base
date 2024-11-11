@@ -24,6 +24,7 @@ import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
 
 
 interface OrderedPartRowProp{
+    index: number
     mode: 'view' | 'manage' | 'invoice',
     orderedPartInfo: OrderedPart,
     current_status: Status,
@@ -32,7 +33,7 @@ interface OrderedPartRowProp{
     order_type: string,
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartInfo, current_status, factory_id, machine_id, order_type}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, orderedPartInfo, current_status, factory_id, machine_id, order_type}) => {
   const profile = useAuth().profile
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
@@ -462,6 +463,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   if(mode==='view'){
     return (
       <TableRow>
+        <TableCell>{index}.</TableCell>
         <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell className="whitespace-nowrap">
           <Badge
@@ -545,6 +547,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
   else if(mode==='invoice'){
     return (
       <TableRow>
+        <TableCell>{index}.</TableCell>
         <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
         <TableCell>
           <div className="flex-col">
@@ -569,6 +572,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
         <TableRow className={`${
           disableTakeStorageRow ? 'bg-gray-300 pointer-events-none' : ''
         } transition duration-200 ease-in-out`}>
+        <TableCell>{index}.</TableCell>
         <TableCell>
           <DropdownMenu open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
             <DropdownMenuTrigger asChild>
