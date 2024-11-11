@@ -66,9 +66,9 @@ const LinkedOrdersRow:React.FC<LinkedOrdersRowProps> = ({linkedOrderPart}) => {
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="hidden md:table-cell">{linkedOrderPart.brand? (linkedOrderPart.brand): '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="hidden md:table-cell">{linkedOrderPart.unit_cost? `BDT ${(linkedOrderPart.unit_cost)}`: '-'}</TableCell>}
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="hidden md:table-cell">{linkedOrderPart.vendor? (linkedOrderPart.vendor): '-'}</TableCell>}
-        <TableCell className="hidden md:table-cell">{linkedOrderPart.part_purchased_date? convertUtcToBDTime(linkedOrderPart.part_purchased_date) : '-'}</TableCell>
-        <TableCell className="hidden md:table-cell">{linkedOrderPart.part_sent_by_office_date? convertUtcToBDTime(linkedOrderPart.part_sent_by_office_date) : '-'}</TableCell>
-        <TableCell className="hidden md:table-cell">{linkedOrderPart.part_received_by_factory_date? convertUtcToBDTime(linkedOrderPart.part_received_by_factory_date) : '-'}</TableCell>
+        <TableCell className="hidden md:table-cell">{linkedOrderPart.part_purchased_date? convertUtcToBDTime(linkedOrderPart.part_purchased_date).split(',')[0] : '-'}</TableCell>
+        <TableCell className="hidden md:table-cell">{linkedOrderPart.part_sent_by_office_date? convertUtcToBDTime(linkedOrderPart.part_sent_by_office_date).split(',')[0] : '-'}</TableCell>
+        <TableCell className="hidden md:table-cell">{linkedOrderPart.part_received_by_factory_date? convertUtcToBDTime(linkedOrderPart.part_received_by_factory_date).split(',')[0] : '-'}</TableCell>
         <TableCell className="md:hidden">
           <Dialog>
           <DialogTrigger asChild>

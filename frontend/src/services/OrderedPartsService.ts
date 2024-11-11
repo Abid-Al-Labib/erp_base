@@ -83,7 +83,7 @@ export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: 
       part_purchased_date,
       part_id,
       vendor,
-      orders(machine_id)
+      orders!inner(machine_id)
     `)
     .eq('orders.machine_id', machine_id)
     .eq('part_id', part_id)
