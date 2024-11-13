@@ -36,9 +36,18 @@ const EditPartPage = () => {
                 const unitInput = document.getElementById("unit") as HTMLInputElement;
                 const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
 
-                if (nameInput) nameInput.value = currPart.name;
-                if (unitInput) unitInput.value = currPart.unit;
-                if (descriptionInput) descriptionInput.value = currPart.description;
+                if (nameInput) 
+                {
+                    nameInput.value = currPart.name;
+                }
+                if (unitInput) 
+                {
+                    unitInput.value = currPart.unit;
+                }
+                if (descriptionInput) 
+                {
+                    descriptionInput.value = currPart.description;
+                }
 
             } catch (error) {
                 console.log(error)
@@ -60,11 +69,6 @@ const EditPartPage = () => {
             const name = nameInput.value;
             const unit = unitInput.value;
             const description = descriptionInput.value;
-
-            if (!name || !unit || !description) {
-                toast.error("Please fill out all the fields");
-                return;
-            }
             
             if (!id || isNaN(parseInt(id))) {
                 toast.error("Invalid part ID");
