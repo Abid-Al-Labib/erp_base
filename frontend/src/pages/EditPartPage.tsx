@@ -9,6 +9,7 @@ import { CirclePlus, CircleX, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { editPart, fetchPartByID } from "@/services/PartsService"
 import toast from 'react-hot-toast'
+import { Part } from "@/types"
 
 const EditPartPage = () => {
 
@@ -16,7 +17,7 @@ const EditPartPage = () => {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setisSubmitting] = useState(false);
     const navigate = useNavigate();
-
+    const [currentPart, setCurrentPart] =  useState<Part|null>(null)
     useEffect(()=>{
         const loadPart = async () => {
 
@@ -31,11 +32,11 @@ const EditPartPage = () => {
             try {
                 const data = await fetchPartByID(part_id);
                 const currPart = data[0]
-                
+                setCurrentPart(currPart)
                 const nameInput = document.getElementById("name") as HTMLInputElement;
                 const unitInput = document.getElementById("unit") as HTMLInputElement;
                 const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
-
+                
                 if (nameInput) 
                 {
                     nameInput.value = currPart.name;
@@ -66,9 +67,13 @@ const EditPartPage = () => {
             const unitInput = document.getElementById("unit") as HTMLInputElement;
             const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
 
-            const name = nameInput.value;
-            const unit = unitInput.value;
-            const description = descriptionInput.value;
+            let name = currentPart?.name;
+            let unit = currentPart?.unit;
+            let description = currentPart?.description;
+
+            name = nameInput.value;
+            unit = unitInput.value;
+            description = descriptionInput.value;
             
             if (!id || isNaN(parseInt(id))) {
                 toast.error("Invalid part ID");
