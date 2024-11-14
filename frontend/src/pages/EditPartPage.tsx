@@ -33,25 +33,6 @@ const EditPartPage = () => {
                 const data = await fetchPartByID(part_id);
                 const currPart = data[0]
                 setCurrentPart(currPart)
-                const nameInput = document.getElementById("name") as HTMLInputElement;
-                const unitInput = document.getElementById("unit") as HTMLInputElement;
-                const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
-                
-                if (nameInput) 
-                {
-                    nameInput.value = currPart.name;
-                    nameInput.placeholder = currPart.name
-                }
-                if (unitInput) 
-                {
-                    unitInput.value = currPart.unit;
-                    unitInput.placeholder = currPart.unit;
-                }
-                if (descriptionInput) 
-                {
-                    descriptionInput.value = currPart.description;
-                    descriptionInput.placeholder = currPart.description;
-                }
 
             } catch (error) {
                 console.log(error)
@@ -70,13 +51,9 @@ const EditPartPage = () => {
             const unitInput = document.getElementById("unit") as HTMLInputElement;
             const descriptionInput = document.getElementById("description") as HTMLTextAreaElement;
 
-            let name = currentPart?.name;
-            let unit = currentPart?.unit;
-            let description = currentPart?.description;
-
-            name = nameInput.value;
-            unit = unitInput.value;
-            description = descriptionInput.value;
+            const name = nameInput.value
+            const unit = unitInput.value;
+            const description = descriptionInput.value;
             
             if (!id || isNaN(parseInt(id))) {
                 toast.error("Invalid part ID");
@@ -91,8 +68,8 @@ const EditPartPage = () => {
                 toast.success("Part Updated")
 
                 nameInput.value = "";
-                unitInput.value = "";
-                descriptionInput.value = "";
+                unitInput.value ="";
+                descriptionInput.value = currentPart?.description || "";
             }
         }catch(error) {
             toast.error('' + error)
@@ -128,7 +105,7 @@ const EditPartPage = () => {
                                         id="name"
                                         type="text"
                                         className="w-full"
-                                        defaultValue=""
+                                        defaultValue={currentPart?.name || ""}
                                         />
                                     </div>
                                     <div className="grid gap-3">
@@ -137,14 +114,14 @@ const EditPartPage = () => {
                                         id="unit"
                                         type="text"
                                         className="w-full"
-                                        defaultValue=""
+                                        defaultValue={currentPart?.unit || ""}
                                         />
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="description">Description</Label>
                                         <Textarea
                                         id="description"
-                                        defaultValue=""
+                                        defaultValue={currentPart?.description || ""}
                                         className="min-h-32"
                                         />
                                     </div>
