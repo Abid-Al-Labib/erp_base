@@ -193,10 +193,10 @@ const handleRevertOrderStatus = async() => {
     return
   }
   try {
-    const prevStatus = (current_status.id-1)
+    const prevStatus = 3 //always goes back to waiting for quotation status
     await UpdateStatusByID(order.id, prevStatus)
     await InsertStatusTracker((new Date()), order.id, profile.id, prevStatus)
-    toast.success("Successfully reverted status")
+    toast.success("Successfully reverted status to Waiting For Quotation")
   } catch (error) {
     toast.error("Error occured while reverting status")
   } finally {

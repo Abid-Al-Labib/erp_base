@@ -9,14 +9,14 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateMrrNumberByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateQtyTakenFromStorage, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
-import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton, showMrrButton } from "@/services/ButtonVisibilityHelper"
+import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, returnOrderedPartByID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateMrrNumberByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateQtyTakenFromStorage, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton, showMrrButton, showReturnButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
-import { convertUtcToBDTime, managePermission } from "@/services/helper"
+import { convertUtcToBDTime} from "@/services/helper"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { Textarea } from "../ui/textarea"
-import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
+import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, updateStoragePartQty } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { updateMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
@@ -64,9 +64,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
   const [denyCost, setDenyCost] = useState(false);
   const [denyBrand, setDenyBrand] = useState(false);
   const [denyVendor, setDenyVendor] = useState(false);
-  const [showDenyBudgetPopup, setShowDenyBudgetPopup] = useState(false);
   const [noteValue, setNoteValue] = useState<string>('');
   const navigate = useNavigate()
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [disableTakeStorageRow, setDisableTakeStorageRow] = useState(false);
   const [currentStorageQty,setCurrentStorageQty] = useState<number|null>(null)
   const [qtyTakenFromStorage, setQtyTakenFromStorage] = useState<number | null>(null)
@@ -295,7 +295,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
       
       updateCosting(newBrand,newCost,newVendor)
       setIsReviseBudgetDialogOpen(false)
-      setShowDenyBudgetPopup(true)
     }
     else{
       toast.error("You have not selected any category to deny.")
@@ -418,10 +417,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             //if order type storage
             toast.success("Part received by factory date set!")
             if (order_type=="Storage"){
-              addStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+              await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty,'add');
             }
             if (order_type == "Machine") {
-              updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'add');
+              await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'add');
             }
 
             
@@ -458,6 +457,28 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
     updateSampleReceived();
     setIsSampleReceivedDialogOpen(false);
     setIsActionMenuOpen(false);
+  }
+
+  const handleReturnPart = () => {
+    console.log("Returning Part")
+    
+    const returnOrderedPart = async () => {
+      try {
+        await returnOrderedPartByID(orderedPartInfo.id)
+        if (order_type=="Storage"){
+          await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty,'subtract');
+        }
+        if (order_type == "Machine") {
+          await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'subtract');
+        }
+      } catch (error) {
+        toast.error("Error returning Part")
+      }
+    }
+
+    returnOrderedPart()
+    setIsReturnDialogOpen(false)
+    
   }
 
   if(mode==='view'){
@@ -665,6 +686,12 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
                     <span>Receive Sample</span>
                   </DropdownMenuItem>
                 )}
+              {
+                showReturnButton(current_status.name, orderedPartInfo) && (
+                  <DropdownMenuItem onClick={() => setIsReturnDialogOpen(true)}>
+                    <span className="hover:text-red-600">Return Part</span>
+                  </DropdownMenuItem>
+                )}
 
             </DropdownMenuContent>
           </DropdownMenu>
@@ -749,20 +776,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             </Dialog>
         </TableCell>
           
-            <Dialog open={showDenyBudgetPopup} onOpenChange={handleNavigation}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="text-red-600">Budget has been sent back for revision</DialogTitle>
-                  <DialogDescription>
-                    <p>Order status is reverted.</p>
-                    <p>You will be moved back to orders page.</p>
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button onClick={handleNavigation}>OK</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
             <Dialog open={isSampleReceivedDialogOpen} onOpenChange={setIsSampleReceivedDialogOpen}>
               <DialogContent>
                 <DialogTitle>
@@ -1035,6 +1048,21 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
                   </DialogDescription>
           
                   <Button onClick={handleApproveOffice}>Approve</Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+                <DialogContent>
+                  <DialogTitle>
+                    Returning Part - <span className="text-sm">{orderedPartInfo.parts.name}</span>
+                  </DialogTitle>
+                  <DialogDescription>
+                    <p className="text-sm text-muted-foreground">
+                      Are you sure you want to return this part?
+                    </p>
+                  </DialogDescription>
+          
+                  <Button onClick={handleReturnPart}>Approve</Button>
                 </DialogContent>
               </Dialog>
         </TableRow>

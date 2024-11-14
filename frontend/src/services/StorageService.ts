@@ -80,21 +80,20 @@ export const upsertStoragePart = async (part_id: number, factory_id: number, qua
 
 }
 
-export const updateStoragePartQty = async (part_id: number, factory_id: number, new_quantity: number) => {
+// export const updateStoragePartQty = async (part_id: number, factory_id: number, new_quantity: number) => {
     
-    const { error } = await supabase_client
-    .from('storage_parts')
-    .update({ qty: new_quantity })
-    .eq('part_id', part_id).eq('factory_id', factory_id)
+//     const { error } = await supabase_client
+//     .from('storage_parts')
+//     .update({ qty: new_quantity })
+//     .eq('part_id', part_id).eq('factory_id', factory_id)
 
-    if (error){
-        toast.error(error.message)
-    }
+//     if (error){
+//         toast.error(error.message)
+//     }
         
-}
+// }
 
-export const addStoragePartQty = async (part_id: number, factory_id: number, new_quantity: number) => {
-
+export const updateStoragePartQty = async (part_id: number, factory_id: number, quantity: number, type: 'add'|'subtract') => {
 
     const { data: currentData, error } = await supabase_client
         .from('storage_parts')
@@ -102,23 +101,34 @@ export const addStoragePartQty = async (part_id: number, factory_id: number, new
         .eq('part_id', part_id).eq('factory_id', factory_id)
         .single()
 
+    let updatedQuantity = 0
+    if (currentData){
+        if (type === 'add') {
+            updatedQuantity = currentData.qty+quantity;
+        }
+        else 
+        {
+            if (currentData.qty>=quantity){
+                updatedQuantity = currentData.qty - quantity;
+            }
+        }
     
-    const updatedQuantity =(currentData?.qty||0)+new_quantity;
-
-    
-
-    const {  } = await supabase_client
-        .from('storage_parts')
-        .upsert({
-            part_id: part_id,
-            factory_id: factory_id,
-            qty: updatedQuantity
-        }, { onConflict: 'part_id, factory_id' }
-        )
+        const {  } = await supabase_client
+            .from('storage_parts')
+            .upsert({
+                part_id: part_id,
+                factory_id: factory_id,
+                qty: updatedQuantity
+            }, { onConflict: 'part_id, factory_id' }
+            )
+ 
+    }
 
     if (error) {
         toast.error(error.message)
-    }
+    }   
+
+
 
 
 }

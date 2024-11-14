@@ -94,7 +94,7 @@ export const showReceivedButton = (status:string, receivedDate: string | null): 
 }
 
 export const showMrrButton = (status:string, mrr_number:string|null): boolean => {
-    if (status === "Parts Sent To Factory" && mrr_number===null)
+    if ((status === "Parts Sent To Factory" || status === "Parts Received") && mrr_number===null)
     {
         return true
     }
@@ -106,4 +106,20 @@ export const showSampleReceivedButton = (is_sample_sent_to_office: boolean, is_s
         return true;
     }
     return false;
+}
+
+export const showReturnButton = (status: string, ordered_part: OrderedPart): boolean => {
+    console.log("return order part:",ordered_part)
+    if (status === "Parts Received" && 
+        ordered_part.brand!==null &&
+        ordered_part.vendor!==null &&
+        ordered_part.unit_cost!==null &&
+        ordered_part.approved_budget===true &&
+        ordered_part.part_purchased_date!==null && 
+        ordered_part.part_received_by_factory_date!==null && 
+        ordered_part.part_sent_by_office_date!==null)
+        {
+            return true
+        }
+        return false
 }

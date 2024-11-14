@@ -83,6 +83,10 @@ export const isRevertStatusAllowed = (ordered_parts: OrderedPart[], current_stat
   if (current_status==="Budget Released"){
     return partsToCheck.some(part => part.vendor === null || part.unit_cost === null || part.brand === null);
   }
+  else if (current_status==="Parts Received"){
+    return partsToCheck.some(part => (part.vendor === null || part.unit_cost === null || part.brand === null || part.approved_budget=== false || part.part_purchased_date===null || part.part_received_by_factory_date===null|| part.part_sent_by_office_date===null
+    ));
+  }
 
   return false
 }
@@ -188,11 +192,17 @@ export const managePermission = (status: string, role: string): boolean => {
         break;
   
       case "Parts Received":
-        return false
+        if (role === "admin") {
+          return true;
+        } else if (role === "department") {
+          return true;
+        } else if (role === "directorTechnical") {
+          return true;
+        } else if (role === "finance") {
+        return true;
+        }
         break;
       
-
-
       default:
         return false;
     }

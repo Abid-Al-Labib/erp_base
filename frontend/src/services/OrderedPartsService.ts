@@ -128,6 +128,26 @@ export const updateApprovedOfficeOrderByID = async (orderedpart_id: number, appr
     }
 }
 
+export const returnOrderedPartByID = async (orderedpart_id:number) => {
+    const { error } = await supabase_client.from('order_parts')
+    .update(
+    { 
+        brand: null,
+        vendor: null,
+        unit_cost: null,
+        approved_budget: false,
+        part_purchased_date: null,
+        part_sent_by_office_date:null,
+        part_received_by_factory_date: null,
+        mrr_number: null
+    }
+    ).eq('id', orderedpart_id)
+    
+    if (error){
+        toast.error(error.message)
+    }
+}
+
 export const updateApprovedStorageWithdrawalByID = async (orderedpart_id: number, approved: boolean) => {
         
     const { error } = await supabase_client.from('order_parts').update(

@@ -42,14 +42,9 @@ const ManageOrderPage = () => {
       if (data) {
         const order = data
         setOrder(order);
-        if (order.statuses.name === "Parts Received"){
-          setIsOrderCompleteDialogOpen(true)
-        }
-        else if (profile && profile.permission)
+        if (profile && profile.permission && !managePermission(order.statuses.name,profile.permission))
         {
-          if(!managePermission(order.statuses.name,profile.permission)){
-            setIsManageOrderAuthorizedDialogOpen(true)
-          }
+          setIsManageOrderAuthorizedDialogOpen(true)
         }
       } else {
         toast.error("Order not found");
@@ -117,19 +112,6 @@ const ManageOrderPage = () => {
         </div>
       </div>
     </div>
-      <Dialog open={isOrderCompleteDialogOpen} onOpenChange={handleNavigationToOrderPage}>
-        <DialogContent>
-          <DialogTitle>
-           Parts Received!
-          </DialogTitle>
-          <DialogDescription>
-            <p className="text-sm text-muted-foreground">
-              This order is completed as parts has been received. You will be redirected to orders page.
-            </p>
-          </DialogDescription>
-          <Button onClick={handleNavigationToOrderPage}>Okay</Button>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isManageOrderAuthorizedDialogOpen} onOpenChange={handleNavigationToOrderPage}>
         <DialogContent>
