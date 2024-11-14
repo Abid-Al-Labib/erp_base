@@ -146,7 +146,7 @@ const HomePage = () => {
 return (
     <>
       <NavigationBar />
-      <div className="flex h-screen flex-col justify-center items-center sm:mt-4 mt-60">
+      <div className="flex flex-col justify-center items-center mt-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-5"> 
           {/* Top frequently ordered parts */}
           <Card className="max-w-xs p-2">

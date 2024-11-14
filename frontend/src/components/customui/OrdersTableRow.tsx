@@ -316,7 +316,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
         {order.id}
            
       </TableCell>
-      <TableCell className="font-medium">
+      <TableCell className="font-medium hidden md:table-cell">
         {order.req_num}
       </TableCell>
       <TableCell className="hidden md:table-cell">
@@ -340,6 +340,10 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
             <DialogHeader>
               <DialogTitle>Order information</DialogTitle>
               <DialogDescription>
+              <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Req Number</span>
+                <span> {order.req_num} </span>
+              </li>    
               <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Order for Machine/Storage</span>
                 <span> {order.factory_sections?.name && order.machines?.name

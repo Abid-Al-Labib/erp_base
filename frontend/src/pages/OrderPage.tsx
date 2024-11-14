@@ -163,7 +163,7 @@ const OrderPage = () => {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ID</TableHead>
-                                                    <TableHead>Req Num</TableHead>
+                                                    <TableHead className='hidden md:table-cell'>Req Num</TableHead>
                                                     <TableHead className="hidden md:table-cell">Order for Machine/Storage</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created at</TableHead>
                                                     <TableHead className="hidden md:table-cell">Created by</TableHead>
