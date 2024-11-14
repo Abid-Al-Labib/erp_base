@@ -128,7 +128,17 @@ export const updateStoragePartQty = async (part_id: number, factory_id: number, 
         toast.error(error.message)
     }   
 
+}
 
+export const editStoragePartQty = async (part_id: number, factory_id: number, new_quantity: number) => {
+    
+    const { error } = await supabase_client
+    .from('storage_parts')
+    .update({ qty: new_quantity })
+    .eq('part_id', part_id).eq('factory_id', factory_id)
 
-
+    if (error){
+        toast.error(error.message)
+    }
+        
 }

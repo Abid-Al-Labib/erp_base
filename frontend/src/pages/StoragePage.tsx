@@ -16,11 +16,12 @@ type StoragePart = {
   description: string;
   qty: number;
   factory_name: string;
+  factory_id: number;
 };
 
 const StoragePage = () => {
   const [parts, setParts] = useState<StoragePart[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<any>({});
   const [factories, setFactories] = useState<{ id: number; name: string }[]>([]);
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
@@ -65,6 +66,7 @@ const StoragePage = () => {
           description: record.parts.description,
           qty: record.qty,
           factory_name: factoryMap[record.factory_id],
+          factory_id: record.factory_id,
         }));
 
         if (processedParts.length > 0) {
