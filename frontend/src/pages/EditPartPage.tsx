@@ -40,14 +40,17 @@ const EditPartPage = () => {
                 if (nameInput) 
                 {
                     nameInput.value = currPart.name;
+                    nameInput.placeholder = currPart.name
                 }
                 if (unitInput) 
                 {
                     unitInput.value = currPart.unit;
+                    unitInput.placeholder = currPart.unit;
                 }
                 if (descriptionInput) 
                 {
                     descriptionInput.value = currPart.description;
+                    descriptionInput.placeholder = currPart.description;
                 }
 
             } catch (error) {
