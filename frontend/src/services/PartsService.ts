@@ -22,7 +22,7 @@ export const fetchPageParts = async (partId?: string, partName?: string, page = 
         queryBuilder = queryBuilder.ilike('name', `%${partName}%`);
     }
 
-    const { data, count, error } = await queryBuilder.order('id');
+    const { data, count, error } = await queryBuilder.order('name');
 
     if (error) {
         throw new Error(error.message);
