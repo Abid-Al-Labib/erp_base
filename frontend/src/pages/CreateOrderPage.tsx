@@ -61,6 +61,7 @@ interface InputOrder {
 
 interface InputOrderedPart {
     qty: number;
+    unit: string | null;
     order_id: number;
     part_id: number;
     factory_id: number;
@@ -243,6 +244,7 @@ const CreateOrderPage = () => {
 
                 const newOrderedPart: InputOrderedPart = {
                     qty: qty,
+                    unit: "",
                     order_id: 0, // Will be set when the order is created
                     part_id: partId,
                     factory_id: selectedFactoryId,
@@ -261,6 +263,7 @@ const CreateOrderPage = () => {
         else{
             const newOrderedPart = {
                 qty: qty,
+                unit: "",
                 order_id: 0, // Will be set when the order is created
                 part_id: partId,
                 factory_id: selectedFactoryId,
@@ -722,6 +725,7 @@ const CreateOrderPage = () => {
                                                         .filter((part) =>
                                                             part.name.toLowerCase().includes(searchQueryParts.toLowerCase())
                                                         )
+                                                        .sort((a, b) => a.name.localeCompare(b.name)) // Sort parts alphabetically
                                                         .map((part) => (
                                                             <SelectItem 
                                                                 key={part.id} 
@@ -739,13 +743,17 @@ const CreateOrderPage = () => {
         
                                         {/* Setting QTY */}
                                         <div className="flex flex-col space-y-2">
-                                            <Label htmlFor="quantity" className="font-medium">Quantity</Label>
+                                            <Label htmlFor="quantity" className="font-medium"> {`Quantity${partId !== -1 ? ` in ${parts.find((p) => p.id === partId)?.unit || ''}` : ''}`}</Label>
                                             <input
                                                 id="quantity"
                                                 type="number"
                                                 value={qty >= 0 ? qty : ''}
                                                 onChange={e => setQty(Number(e.target.value))}
-                                                placeholder="Enter Quantity"
+                                                placeholder={
+                                                    partId !== -1
+                                                        ? `Enter quantity in ${parts.find((p) => p.id === partId)?.unit || 'units'}`
+                                                        : 'Enter quantity'
+                                                }
                                                 className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
