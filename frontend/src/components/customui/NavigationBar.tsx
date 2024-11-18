@@ -213,6 +213,14 @@ const NavigationBar = () => {
         >
           Damaged-Parts
         </Link>
+        <Link
+          to="/management"
+          className={`transition-colors whitespace-nowrap hover:text-foreground ${
+            isActive("/management") ? "font-bold" : "text-foreground"
+          }`}
+        >
+          Management
+        </Link>
       </nav>
 
       <Sheet>
@@ -271,6 +279,14 @@ const NavigationBar = () => {
               }`}
             >
               Damaged-Parts
+            </Link>
+            <Link
+              to="/management"
+              className={`transition-colors whitespace-nowrap hover:text-foreground ${
+                isActive("/management") ? "font-bold" : "text-foreground"
+              }`}
+            >
+              Management
             </Link>
           </nav>
         </SheetContent>

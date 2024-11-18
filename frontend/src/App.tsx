@@ -64,6 +64,7 @@ import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/customui/routing/PrivateRouting'; // Import PrivateRoute component
 import InvoicePage from './pages/InvoicePage';
+import ManagementPage from './pages/ManagementPage';
 
 const App: React.FC = () => {
   return (
@@ -126,6 +127,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <OrderPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/management"
+            element={
+              <PrivateRoute>
+                <ManagementPage/>
               </PrivateRoute>
             }
           />
