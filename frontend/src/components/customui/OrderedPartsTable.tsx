@@ -478,7 +478,7 @@ const handleOrderManagement = async () => {
           }
           {
             showRevertButton && 
-            <Button disabled={loadingTableButtons} className="bg-orange-600" onClick={()=>setIsRevertDialogOpen(true)}><FlagOff/>Revert</Button>
+            <Button disabled={loadingTableButtons} className="bg-orange-600" onClick={()=>setIsRevertDialogOpen(true)}><FlagOff/>Revert to Quotation</Button>
           }
         </div>
         <Table>
