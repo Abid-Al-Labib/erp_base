@@ -75,17 +75,43 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
     return data as unknown as OrderedPart[]
 }
 
-export const fetchLastCostAndPurchaseDate = async (machine_id: number, part_id: number) => {
+export const fetchLastChangeDate = async (machine_id:number, part_id:number) => {
+    const { data, error } = await supabase_client
+    .from('order_parts')
+    .select(`
+      part_received_by_factory_date,
+      part_id,
+      orders!inner(machine_id)
+    `)
+    .eq('orders.machine_id', machine_id)
+    .eq('part_id', part_id)
+    .not('part_received_by_factory_date', 'is', null)
+    .order('part_received_by_factory_date', {ascending:false})
+    .limit(1)
+    if (error) {
+        toast.error(error.message);
+        return null; 
+    }
+
+    if (data && data.length > 0) {
+        const mostRecentChange = data[0]
+        return mostRecentChange.part_received_by_factory_date
+
+    } else {
+        console.log(data)
+        return null;
+    }
+}
+
+export const fetchLastCostAndPurchaseDate = async (part_id: number) => {
     const { data, error } = await supabase_client
     .from('order_parts')
     .select(`
       unit_cost, 
       part_purchased_date,
       part_id,
-      vendor,
-      orders!inner(machine_id)
+      vendor
     `)
-    .eq('orders.machine_id', machine_id)
     .eq('part_id', part_id)
     .not('part_purchased_date', 'is', null)
     .order('part_purchased_date', {ascending:false})

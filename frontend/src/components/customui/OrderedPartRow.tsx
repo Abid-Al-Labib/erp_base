@@ -9,7 +9,7 @@ import { OrderedPart, Status } from "@/types"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import toast from "react-hot-toast"
-import { deleteOrderedPartByID, fetchLastCostAndPurchaseDate, returnOrderedPartByID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateMrrNumberByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateQtyTakenFromStorage, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
+import { deleteOrderedPartByID, fetchLastChangeDate, fetchLastCostAndPurchaseDate, returnOrderedPartByID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID, updateApprovedStorageWithdrawalByID, updateCostingByID, updateMrrNumberByID, updateOfficeNoteByID, updateOrderedPartQtyByID, updatePurchasedDateByID, updateQtyTakenFromStorage, updateReceivedByFactoryDateByID, updateSampleReceivedByID, updateSentDateByID } from "@/services/OrderedPartsService"
 import { showBudgetApproveButton, showPendingOrderApproveButton, showOfficeOrderApproveButton, showOfficeOrderDenyButton, showPurchaseButton, showQuotationButton, showReceivedButton, showSampleReceivedButton, showSentButton, showReviseBudgetButton, showOfficeNoteButton, showApproveTakingFromStorageButton, showMrrButton, showReturnButton } from "@/services/ButtonVisibilityHelper"
 import OrderedPartInfo from "./OrderedPartInfo"
 import { convertUtcToBDTime} from "@/services/helper"
@@ -60,7 +60,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
   const [costLoading, setCostLoading] = useState(false);
   const [lastUnitCost, setLastUnitCost] = useState<number | null>(null);
   const [lastPurchaseDate, setLastPurchaseDate] = useState<string | null>(null); // assuming date is string
-  const [lastVendor, setLastVendor] = useState<String|null>(null);
+  const [lastVendor, setLastVendor] = useState<string|null>(null);
+  const [lastChangeDate, setLastChangeDate] = useState<string|null>(null)
   const [denyCost, setDenyCost] = useState(false);
   const [denyBrand, setDenyBrand] = useState(false);
   const [denyVendor, setDenyVendor] = useState(false);
@@ -93,11 +94,16 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             }
           }
           if(order_type == "Machine"){
-            const result = await fetchLastCostAndPurchaseDate(machine_id, orderedPartInfo.part_id);
-              if (result) {
-              setLastUnitCost(result.unit_cost);
-              setLastPurchaseDate(result.part_purchase_date);
-              setLastVendor(result.vendor)
+            const past_purchase_result = await fetchLastCostAndPurchaseDate(orderedPartInfo.part_id);
+            const last_change_result = await fetchLastChangeDate(machine_id,orderedPartInfo.part_id);
+              if (past_purchase_result) {
+              setLastUnitCost(past_purchase_result.unit_cost);
+              setLastPurchaseDate(past_purchase_result.part_purchase_date);
+              setLastVendor(past_purchase_result.vendor)
+            }
+
+            if (last_change_result) {
+              setLastChangeDate(last_change_result)
             }
           }
           else{
@@ -505,6 +511,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap">{lastVendor? lastVendor: '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{lastChangeDate? convertUtcToBDTime(lastChangeDate).split(',')[0]: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
@@ -575,6 +582,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <div className="text-xs">Cost: {lastUnitCost?`BDT ${lastUnitCost}` : '-'}</div>}
             <div className="text-xs">Vendor: {lastVendor? lastVendor: '-'}</div>
             <div className="text-xs">Date: {lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</div>
+            <div className="text-xs">Change Date: {lastChangeDate? convertUtcToBDTime(lastChangeDate).split(',')[0]: '-'}</div>
           </div>
         </TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.brand || '-'}</TableCell>}
@@ -717,6 +725,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap">{lastVendor? lastVendor: '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{lastChangeDate? convertUtcToBDTime(lastChangeDate).split(',')[0]: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
         {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}

@@ -337,6 +337,7 @@ const handleOrderManagement = async () => {
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
+            <TableHead className="whitespace-nowrap">Last Change Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
@@ -404,7 +405,7 @@ const handleOrderManagement = async () => {
             <TableRow>
               <TableHead></TableHead>
               <TableHead>Part</TableHead>
-              <TableHead>Last Purchase</TableHead>
+              <TableHead>History</TableHead>
               <TableHead>Brand</TableHead>
               <TableHead>Vendor</TableHead>
               <TableHead>Qty</TableHead>
@@ -493,6 +494,7 @@ const handleOrderManagement = async () => {
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
+            <TableHead className="whitespace-nowrap">Last Change Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
             {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
