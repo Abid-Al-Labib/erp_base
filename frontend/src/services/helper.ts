@@ -80,7 +80,7 @@ export const convertBDTimeToUtc = (bdTimestamp: string): string => {
 export const isRevertStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
   const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));
 
-  if (current_status==="Budget Released"){
+  if (current_status==="Budget Released" || current_status==="Waiting For Purchase"){
     return partsToCheck.some(part => part.vendor === null || part.unit_cost === null || part.brand === null);
   }
   else if (current_status==="Parts Received"){
