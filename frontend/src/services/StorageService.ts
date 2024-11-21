@@ -99,30 +99,34 @@ export const updateStoragePartQty = async (part_id: number, factory_id: number, 
         .from('storage_parts')
         .select('qty')
         .eq('part_id', part_id).eq('factory_id', factory_id)
-        .single()
 
     let updatedQuantity = 0
-    if (currentData){
-        if (type === 'add') {
-            updatedQuantity = currentData.qty+quantity;
-        }
-        else 
-        {
-            if (currentData.qty>=quantity){
-                updatedQuantity = currentData.qty - quantity;
-            }
-        }
     
-        const {  } = await supabase_client
-            .from('storage_parts')
-            .upsert({
-                part_id: part_id,
-                factory_id: factory_id,
-                qty: updatedQuantity
-            }, { onConflict: 'part_id, factory_id' }
-            )
- 
+    if (type === 'add') {
+        if (currentData){
+            updatedQuantity = currentData[0].qty+quantity;
+        }
+        else updatedQuantity = updatedQuantity + quantity
     }
+    else 
+    {
+        if(currentData){
+            if (currentData[0].qty>=quantity){
+                updatedQuantity = currentData[0].qty - quantity;
+            }
+        } 
+    }
+    
+
+    
+    const {  } = await supabase_client
+    .from('storage_parts')
+    .upsert({
+        part_id: part_id,
+        factory_id: factory_id,
+        qty: updatedQuantity
+    }, { onConflict: 'part_id, factory_id' }
+    )
 
     if (error) {
         toast.error(error.message)

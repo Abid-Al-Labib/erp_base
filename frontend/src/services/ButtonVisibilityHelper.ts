@@ -69,6 +69,9 @@ export const showReviseBudgetButton = (status:string, isApproved:boolean): boole
     if (status === "Budget Released" && !isApproved) {
         return true;
     }
+    else if (status === "Waiting For Purchase") {
+        return true;
+    }
     return false;
 }
 
