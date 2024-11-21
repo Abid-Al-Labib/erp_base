@@ -2,6 +2,7 @@ import { Machine } from "@/types";
 import { fetchFactories, fetchAllFactorySections } from '@/services/FactoriesService';
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
+import { fetchRunningOrdersByMachineId } from "./OrdersService";
 
 export const fetchMachines = async (
     factorySectionId: number | undefined,
@@ -176,4 +177,43 @@ export const fetchMetricNotRunningMachines = async () => {
     }
     
     return count;
+};
+
+
+export const addMachine = async (name: string, factorySectionId: number) => {
+    const { data, error } = await supabase_client
+        .from("machines")
+        .insert([{ name, factory_section_id: factorySectionId, is_running:true }]);
+
+    if (error) {
+        toast.error("Error adding machine: " + error.message);
+        return null;
+    }
+
+    toast.success("Machine added successfully!");
+    return data;
+};
+
+export const deleteMachine = async (machineId: number) => {
+    // Check if the machine has running orders
+    const runningOrders = await fetchRunningOrdersByMachineId(machineId);
+
+    if (runningOrders && runningOrders.length > 0) {
+        toast.error("Machine has running orders and cannot be deleted.");
+        return false;
+    }
+
+    // Proceed to delete the machine
+    const { data, error } = await supabase_client
+        .from("machines")
+        .delete()
+        .eq("id", machineId);
+
+    if (error) {
+        toast.error("Error deleting machine: " + error.message);
+        return false;
+    }
+
+    toast.success("Machine deleted successfully!");
+    return true;
 };

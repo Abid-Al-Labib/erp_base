@@ -76,9 +76,6 @@ const MachinePartsPage = () => {
 
         setMachineParts(processedParts);
 
-        const runningOrdersData = await fetchRunningOrdersByMachineId(selectedMachineId);
-        setRunningOrders(runningOrdersData);
-
       }
 
     } catch (error) {
