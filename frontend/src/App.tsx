@@ -65,6 +65,7 @@ import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/customui/routing/PrivateRouting'; // Import PrivateRoute component
 import InvoicePage from './pages/InvoicePage';
 import ManagementPage from './pages/ManagementPage';
+import ExpenseLensPage from './pages/ExpenseLensPart';
 
 const App: React.FC = () => {
   return (
@@ -103,6 +104,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <EditPartPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/expenselens/:id"
+            element={
+              <PrivateRoute>
+                <ExpenseLensPage />
               </PrivateRoute>
             }
           />

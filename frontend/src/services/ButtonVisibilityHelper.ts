@@ -1,5 +1,14 @@
 import { OrderedPart } from "@/types";
 
+
+export const showExpenseLensPart = (permission: string): boolean =>{
+    if (permission === "admin" || permission === "finance") {
+        return true;
+    }
+    return false;
+}
+
+
 export const showPendingOrderApproveButton = (status:string , isapproved:boolean): boolean =>{
     if (status === "Pending" && !isapproved) {
         return true;

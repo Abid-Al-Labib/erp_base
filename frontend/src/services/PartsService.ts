@@ -93,13 +93,13 @@ export const editPart =  async(part_id:number,name:string,unit:string,descriptio
 export const fetchPartByID = async (part_id: number)=> {
     const { data, error } = await supabase_client.from('parts').select("*").eq(
         'id', part_id
-    )
+    ).single()
 
     if (error){
         toast.error(error.message)
     }
     console.log(data)
-    return data as Part[]
+    return data as Part
 }
 
 export const fetchPartsByIDs = async (part_ids: number[])=> {

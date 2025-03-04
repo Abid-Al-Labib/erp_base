@@ -13,12 +13,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const ViewPartPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [parts, setParts] = useState<Part[]>([]);
+  const [part, setPart] = useState<Part | null>(null);
   const [linkedOrderedParts, setLinkedOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingPartInfo, setLoadingPartInfo] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
 
   const navigate = useNavigate();
+  
 
   useEffect(() => {
     const loadParts = async () => {
@@ -30,8 +31,8 @@ const ViewPartPage = () => {
       const part_id = parseInt(id);
       try {
         const part_data = await fetchPartByID(part_id);
-        if (part_data && part_data.length > 0) {
-          setParts(part_data);
+        if (part_data) {
+          setPart(part_data);
         } else {
           toast.error("Part not found");
           navigate("/parts");
@@ -67,7 +68,7 @@ const ViewPartPage = () => {
     );
   }
 
-  if (parts.length === 0) {
+  if (!part) {
     toast.error("No order found with this id");
     return <div>No order found</div>; // Handle the case where no orders are returned
   }
@@ -79,11 +80,11 @@ const ViewPartPage = () => {
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
         <div>
           <PartInfo
-            id={parts[0].id}
-            created_at={convertUtcToBDTime(parts[0].created_at)}
-            name={parts[0].name}
-            unit={parts[0].unit}
-            description={parts[0].description} />
+            id={part.id}
+            created_at={convertUtcToBDTime(part.created_at)}
+            name={part.name}
+            unit={part.unit}
+            description={part.description} />
         </div>
 
         {loadingTable ? (

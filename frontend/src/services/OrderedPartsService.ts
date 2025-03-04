@@ -2,6 +2,7 @@ import { OrderedPart, Part } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 import { fetchPartsByIDs } from "./PartsService";
+import { convertBDTimeToUtc } from "./helper";
 
 export const fetchOrderedPartByPartID = async( part_id:number) => {
     const {data,error} =  await supabase_client.from('order_parts').select(
@@ -283,6 +284,29 @@ export const updateReceivedByFactoryDateByID = async (orderedpart_id: number, re
         toast.error(error.message)
     }
 }
+
+export const getOrdersByPartIDAndDateRange = async (partId: number, startDate: Date, endDate: Date) => {
+    const formattedStartDate = startDate.toISOString().split('T')[0];
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+    
+    const startOfstartDateUTC = convertBDTimeToUtc(`${formattedStartDate}T00:00:00`);
+    const endOfEndDateUTC = convertBDTimeToUtc(`${formattedEndDate}T23:59:59`);
+
+    const { data, error } = await supabase_client
+        .from('order_parts')
+        .select('*')
+        .eq('part_id', partId)
+        .gte('part_purchased_date', startOfstartDateUTC)
+        .lte('part_purchased_date', endOfEndDateUTC);
+
+    if (error) {
+        toast.error(error.message);
+        return [];
+    }
+
+    return data as OrderedPart[];
+};
+
 
 export const updateOrderedPartQtyByID =  async (orderedpart_id:number, new_quantity:number) => {
     const { error } = await supabase_client.from('order_parts').update(
