@@ -31,7 +31,7 @@ const EditPartPage = () => {
 
             try {
                 const data = await fetchPartByID(part_id);
-                const currPart = data[0]
+                const currPart = data
                 setCurrentPart(currPart)
 
             } catch (error) {

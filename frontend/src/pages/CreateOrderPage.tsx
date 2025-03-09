@@ -22,6 +22,8 @@ import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
 import { fetchAppSettings } from "@/services/AppSettingsService"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import AddPartPopup from "@/components/customui/Parts/AddPartPopup"
 
 
 
@@ -103,6 +105,7 @@ const CreateOrderPage = () => {
     const [searchQueryParts, setSearchQueryParts] = useState<string>('');
     const [isPartsSelectOpen, setIsPartsSelectOpen] = useState(false);
 
+    const [isAddPartDialog, setIsAddPartDialogOpen] = useState<boolean>(false)
     const [reqNum, setReqNum] = useState('')
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
@@ -506,6 +509,10 @@ const CreateOrderPage = () => {
         }
     };
 
+    const handleCreateNewPart = () => {
+        setIsAddPartDialogOpen(true)
+    }
+
 
 
     return (
@@ -715,9 +722,7 @@ const CreateOrderPage = () => {
                                                     }))}
                                                 onChange={(selectedOption) =>
                                                     handleSelectPart(Number(selectedOption?.value))
-
                                                 }
-                                                onMenuOpen={reloadParts}
                                                 isSearchable
                                                 placeholder="Search or Select a Part"
                                                 value={partId > 0 ? { value: partId, label: parts.find(p => p.id === partId)?.name } : null}
@@ -725,17 +730,29 @@ const CreateOrderPage = () => {
 
                                             />
                                             {/* Optional Create New Part Button */}
-                                            {addPartEnabled && (
-                                                <div className="mt-2">
-                                                    <Button
-                                                        size="sm"
-                                                        className="w-[220px] bg-blue-950"
-                                                        onClick={() => window.open('/addpart', '_blank')}
-                                                    >
-                                                        Create New Part
-                                                    </Button>
-                                                </div>
-                                            )}
+                                            <div className="mt-2">
+                                                <Dialog open={isAddPartDialog} onOpenChange={setIsAddPartDialogOpen}>
+                                                        <DialogTrigger asChild>
+                                                            <Button 
+                                                                size="sm"
+                                                                className="w-[220px] bg-blue-950"
+                                                                disabled={!addPartEnabled}
+                                                            >
+                                                                
+                                                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                                                    Create New Part
+                                                                </span>
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="sm:max-w-[600px]">
+                                                            <AddPartPopup 
+                                                                addPartEnabled={addPartEnabled}
+                                                                onSuccess={()=>reloadParts()}
+                                                            />
+                                                        </DialogContent>
+                                                </Dialog>
+                                            </div>
+
                                         </div>
 
 

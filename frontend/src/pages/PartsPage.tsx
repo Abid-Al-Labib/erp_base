@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchPageParts } from '../services/PartsService';
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 import { Loader2, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,8 @@ import toast from 'react-hot-toast';
 import { convertUtcToBDTime } from '@/services/helper';
 import SearchAndFilter from "@/components/customui/SearchAndFilter"; // Import the SearchAndFilter component
 import { fetchAppSettings } from '@/services/AppSettingsService';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import AddPartPopup from '@/components/customui/Parts/AddPartPopup';
 
 
 
@@ -24,8 +26,7 @@ const PartsPage = () => {
     const [partsPerPage] = useState(20);                 // Set number of parts per page
     const [totalCount, setTotalCount] = useState(0);     // Track total number of parts
     const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false)
-    const navigate = useNavigate()
-
+    const [isAddPartPopupOpen, setIsAddPartPopupOpen] = useState(false);
    
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -101,9 +102,6 @@ const PartsPage = () => {
         loadAddPartSettings();
     }, []);
 
-    const handleAddPartButtonClick = () => {
-        navigate("/addpart");
-    };
 
     return (
         <>
@@ -117,12 +115,25 @@ const PartsPage = () => {
                                     <SearchAndFilter filterConfig={filterConfig} />
                                 </div>
                                 <div>
-                                    <Button onClick={handleAddPartButtonClick} className="bg-blue-950" disabled={!addPartEnabled}>
-                                        <PlusCircle className="h-3.5 w-3.5" />
-                                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                            Add Part
-                                        </span>
-                                    </Button>
+                                    <Dialog open={isAddPartPopupOpen} onOpenChange={setIsAddPartPopupOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button 
+                                                className="bg-blue-950" 
+                                                disabled={!addPartEnabled}
+                                            >
+                                                <PlusCircle className="h-3.5 w-3.5" />
+                                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                                    Add Part
+                                                </span>
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[600px]">
+                                            <AddPartPopup 
+                                                addPartEnabled={addPartEnabled}
+                                                onSuccess={()=>fetchPartsForPage()}
+                                            />
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
                             </div>
                             <TabsContent value="all">
@@ -157,6 +168,7 @@ const PartsPage = () => {
                                                             name={part.name}
                                                             unit={part.unit}
                                                             created_at={convertUtcToBDTime(part.created_at)}
+                                                            onRefresh={fetchPartsForPage}
                                                         />
                                                     ))}
                                                 </TableBody>

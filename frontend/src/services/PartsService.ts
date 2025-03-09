@@ -61,13 +61,14 @@ export const insertPart = async (name:string, unit:string, description: string) 
         "description": description
          },
     ])
-    .select()
-
+    .select().single()
+    console.log(data)
     if (error) {
         toast.error(error.message)    
     }else{
-        return data;
+        return data as Part;
     }
+
     
 };
 
@@ -80,13 +81,13 @@ export const editPart =  async(part_id:number,name:string,unit:string,descriptio
             description: description
         }
     ).eq('id', part_id)
-    .select()
+    .select().single()
     
 
     if (error) {
         toast.error(error.message)    
     }else{
-        return data;
+        return data as Part;
     }
 }
 
