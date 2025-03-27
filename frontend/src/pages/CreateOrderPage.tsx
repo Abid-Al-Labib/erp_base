@@ -123,7 +123,7 @@ const CreateOrderPage = () => {
     useEffect(() => {
         const loadParts = async () => {
             const fetchedParts = await fetchAllParts();
-            setParts(fetchedParts.data);
+            setParts(fetchedParts);
         };
 
         loadParts();
@@ -433,7 +433,7 @@ const CreateOrderPage = () => {
         const loadMachines = async () => {
             if (selectedFactorySectionId !== -1) {
                 const fetchedMachines = await fetchAllMachines(selectedFactorySectionId);
-                setMachines(fetchedMachines.data);
+                setMachines(fetchedMachines);
                 setSelectedMachineId(-1); // Reset machine ID when the section changes
                 setTimeout(() => setSelectedMachineId(-1), 0); // Clear and reset
             } else {
@@ -456,7 +456,7 @@ const CreateOrderPage = () => {
         if (isPartsSelectOpen) {
             const loadParts = async () => {
                 const fetchedParts = await fetchAllParts();
-                setParts(fetchedParts.data);
+                setParts(fetchedParts);
             };
 
             loadParts(); // Refetch parts when the dropdown is opened
@@ -466,7 +466,7 @@ const CreateOrderPage = () => {
     const reloadParts = async () => {
         try {
             const fetchedParts = await fetchAllParts();
-            setParts(fetchedParts.data);
+            setParts(fetchedParts);
         } catch (error) {
             console.error("Failed to reload parts:", error);
             toast.error("Error loading parts");
