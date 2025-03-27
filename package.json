@@ -4,5 +4,13 @@
     "react-datepicker": "^7.3.0",
     "react-modal": "^3.16.1",
     "react-select": "^5.8.3"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@types/jest": "^29.5.14",
+    "@vitest/coverage-v8": "^3.0.9",
+    "jsdom": "^26.0.0",
+    "ts-jest": "^29.3.0",
+    "vitest": "^3.0.9"
   }
 }

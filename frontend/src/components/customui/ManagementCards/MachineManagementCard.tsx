@@ -200,7 +200,8 @@ const MachineManagementCard = () => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-4 mb-4">
+      {/* Controls Container */}
+      <div className="flex items-center space-x-4 mb-4 overflow-hidden">
         {/* Factory Selection */}
         <Select 
           value={selectedFactoryId?.toString() || ""} 

@@ -174,6 +174,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     if (partNameQuery) params.set("partName", partNameQuery);
 
     setSearchParams(params);
+
+    // Call the onApplyFilters callback if provided
+    
   };
 
   const handleResetFilters = () => {
