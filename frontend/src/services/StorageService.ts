@@ -2,50 +2,57 @@ import toast from "react-hot-toast";
 import { supabase_client } from "./SupabaseClient";
 import { StoragePart } from "@/types";
 
+export const fetchStorageParts = async ({
+  factoryId,
+  partName,
+  partId,
+  page = 1,
+  limit = 10
+}: {
+  factoryId: number;
+  partName?: string;
+  partId?: number;
+  page?: number;
+  limit?: number;
+}) => {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-export const fetchStorageParts = async (factoryId: number, partName: string, partId: number) => {
     let query = supabase_client
         .from('storage_parts')
         .select(`
             id,
             qty,
             factory_id,
+            part_id,
             parts (*)
-        `).order("id", {ascending: true})
+        `, { count: 'exact' })
+        .order("id", {ascending: true})
+        .range(from, to);
     
-        // console.log(factoryId);
     if (factoryId !== undefined) {
         query = query.eq('factory_id', factoryId);
     }
-    // if (storageId !== undefined) {
-    //     query = query.eq('id', storageId);
-    // }
-    // if (partName) {
-    //     query = query.ilike('parts.name', `%${partName}%`);
-    // }
-
 
     if (partId !== undefined) {
         query = query.eq('part_id', partId);
     }
 
-    // console.log("THIS IS STORAGE ID",);
-    const { data, error } = await query;
+    if (partName) {
+        query = query.ilike('parts.name', `%${partName}%`);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
         console.error('Error fetching parts:', error.message);
-        return [];
+        return { data: [], count: 0 };
     }
 
-    let filteredData = data;
-
-    if (partName) {
-        filteredData = filteredData.filter((record: any) =>
-            record.parts && record.parts.name.toLowerCase().includes(partName.toLowerCase())
-        );
-    }
-
-    return filteredData;
+    return { 
+      data: data as unknown as StoragePart[],
+      count
+    };
 };
 
 export const fetchStoragePartQuantityByFactoryID = async (part_id: number, factory_id: number) => {

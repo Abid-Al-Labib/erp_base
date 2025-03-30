@@ -73,14 +73,6 @@ const NavigationBar = () => {
           Machine
         </Link>
         <Link
-          to="/damagedparts"
-          className={`transition-colors whitespace-nowrap hover:text-foreground ${
-            isActive("/damagedparts") ? "font-bold" : "text-foreground"
-          }`}
-        >
-          Damaged-Parts
-        </Link>
-        <Link
           to="/management"
           className={`transition-colors whitespace-nowrap hover:text-foreground ${
             isActive("/management") ? "font-bold" : "text-foreground"
@@ -138,14 +130,6 @@ const NavigationBar = () => {
               }`}
             >
               Machine
-            </Link>
-            <Link
-              to="/damagedparts"
-              className={`hover:text-foreground whitespace-nowrap ${
-                isActive("/damagedparts") ? "font-bold" : "text-foreground"
-              }`}
-            >
-              Damaged-Parts
             </Link>
             <Link
               to="/management"

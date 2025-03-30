@@ -101,12 +101,51 @@ const FactorySectionManagementCard = () => {
   };
 
   return (
-    <>  
-      <h2 className="text-xl font-semibold text-gray-800">Configure Factory Section</h2>
-      {/* Select Factory */}
-      <div className="flex flex-col space-y-2">
-        <label className="text-sm font-medium">Select Factory</label>
-        {/* Factory Selection - Always a Dropdown */}
+    <>
+      {/* Heading and Add Button */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Configure Factory Section</h2>
+        <div className="relative group">
+          <Button
+            onClick={() => {
+              if (isAddingSection) {
+                setIsAddingSection(false);
+                setNewSectionName("");
+              } else {
+                setIsAddingSection(true);
+              }
+            }}
+            disabled={!selectedFactoryId}
+            className={`flex items-center gap-2 ${
+              isAddingSection 
+                ? "bg-red-600 text-white hover:bg-red-700" 
+                : selectedFactoryId
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-400 text-white cursor-not-allowed"
+            }`}
+          >
+            {isAddingSection ? (
+              <>
+                <X size={18} />
+                Cancel
+              </>
+            ) : (
+              <>
+                <PlusCircle size={18} />
+                Add Section
+              </>
+            )}
+          </Button>
+          {!selectedFactoryId && (
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Please select a factory first
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Factory Selection and Add Section Form */}
+      <div className="flex items-center space-x-4 mb-4 overflow-hidden">
         <Select 
           value={selectedFactoryId?.toString() || ""} 
           onValueChange={handleFactoryChange}
@@ -126,101 +165,66 @@ const FactorySectionManagementCard = () => {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Add Section Form */}
+        <AnimatePresence mode="wait">
+          {isAddingSection && (
+            <motion.div
+              key="add-form"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -200 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-4"
+            >
+              <Input
+                placeholder="Factory Section Name"
+                value={newSectionName}
+                onChange={(e) => setNewSectionName(e.target.value)}
+                className="w-[260px]"
+              />
+
+              <Button
+                onClick={handleAddSection}
+                className="bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2 h-10"
+              >
+                <Plus size={18} />
+                Create
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Add New Section */}
+      {/* Sections Table */}
       {selectedFactoryId && (
-        <>
-          <AnimatePresence mode="wait">
-            {!isAddingSection ? (
-              <motion.div
-                key="add-button"
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 200 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Button
-                  onClick={() => setIsAddingSection(true)}
-                  className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
-                >
-                  <PlusCircle size={18} />
-                  Add Factory Section
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="add-input"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -200 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-4"
-              >
-                {/* Input for New Section Name */}
-                <Input
-                  placeholder="Factory Section Name"
-                  value={newSectionName}
-                  onChange={(e) => setNewSectionName(e.target.value)}
-                  className="w-[260px]"
-                />
-
-                {/* Confirm Button */}
-                <button
-                  onClick={() => {
-                    handleAddSection();
-                    setIsAddingSection(false); // Optional: close on add
-                  }}
-                  className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
-                >
-                  <Plus size={18} />
-                </button>
-
-                {/* Cancel Button */}
-                <button
-                  onClick={() => {
-                    setIsAddingSection(false);
-                    setNewSectionName(""); // Optional: clear the input on cancel
-                  }}
-                  className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-                >
-                  <X size={18} />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-
-          
-          {/* List Sections (Scrollable) */}
-            <div className="border rounded-md shadow-sm max-h-80 overflow-y-auto relative">
-              <Table>
-                <TableHeader className="top-0 bg-white shadow-sm z-10">
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {factorySection.map((section) => (
-                    <TableRow key={section.id}>
-                      <TableCell>{section.id}</TableCell>
-                      <TableCell>{section.name}</TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleDeleteSection(section.id)}
-                          className="text-red-600 hover:text-red-800 flex items-center gap-1"
-                        >
-                          <XCircle size={18} />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-        </>
+        <div className="border rounded-md shadow-sm max-h-80 overflow-y-auto relative">
+          <Table>
+            <TableHeader className="top-0 bg-white shadow-sm z-10">
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {factorySection.map((section) => (
+                <TableRow key={section.id}>
+                  <TableCell>{section.id}</TableCell>
+                  <TableCell>{section.name}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleDeleteSection(section.id)}
+                      className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                    >
+                      <XCircle size={18} />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </>
   );

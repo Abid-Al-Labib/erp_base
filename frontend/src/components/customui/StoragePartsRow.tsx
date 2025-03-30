@@ -1,29 +1,27 @@
 import { useState } from 'react';
 import { TableCell, TableRow } from '../ui/table';
 import { editStoragePartQty } from "@/services/StorageService";
+import { updateDamagePartQuantity } from "@/services/DamagedGoodsService";
 import toast from 'react-hot-toast';
 import { Button } from '../ui/button';
-
+import { StoragePart } from "@/types";
 
 interface StoragePartsRowProps {
-    part: {
-        storageId: number;
-        id: number;
-        name: string;
-        description: string;
-        qty: number;
-        factory_name: string;
-        factory_id: number;
-    };
+    part: StoragePart;
+    isDamaged?: boolean;
 }
 
-const StoragePartsRow: React.FC<StoragePartsRowProps> = ({ part }) => {
+const StoragePartsRow: React.FC<StoragePartsRowProps> = ({ part, isDamaged = false }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [newQty, setNewQty] = useState<number>(part.qty);
     
     const handleSave = async () => {
         try {
-            await editStoragePartQty(part.id, part.factory_id, newQty);
+            if (isDamaged) {
+                await updateDamagePartQuantity(part.factory_id, part.part_id, newQty);
+            } else {
+                await editStoragePartQty(part.part_id, part.factory_id, newQty);
+            }
             part.qty = newQty; // Update the part's qty locally
             setIsEditing(false);
             toast.success("Quantity updated successfully");
@@ -35,8 +33,8 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({ part }) => {
     return (
         <TableRow>
             {/* <TableCell>{part.storageId}</TableCell> */}
-            <TableCell>{part.id}</TableCell>
-            <TableCell>{part.name}</TableCell>
+            <TableCell>{part.parts.id}</TableCell>
+            <TableCell>{part.parts.name}</TableCell>
             <TableCell>
                 {isEditing ? (
                     <input
@@ -49,8 +47,7 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({ part }) => {
                     part.qty
                 )}
             </TableCell>
-            <TableCell>{part.factory_name}</TableCell>
-            <TableCell>
+            <TableCell className="text-right">
                 {isEditing ? (
                     <>
                         <Button onClick={handleSave} className="ml-2">Save</Button>

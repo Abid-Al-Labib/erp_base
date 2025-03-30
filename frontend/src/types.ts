@@ -7,16 +7,15 @@ export type Status = Tables<"statuses">
 export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
 // export type MachinePart = Tables<"machine_parts">
-export type StoragePart = Tables<"storage_parts">
-export type ApplicationSettings = Tables<"app_settings">
+export type StoragePart = {
+    id: number;
+    qty: number;
+    factory_id: number;
+    part_id: number;
+    parts: Part;
+};
 
-export type DamagedPart = {
-    id: number,
-    part_id: number,
-    factory_id:number,
-    qty:number,
-    parts: Part
-}
+export type ApplicationSettings = Tables<"app_settings">
 
 export type Machine = {
     id: number,

@@ -1,97 +1,133 @@
-import { useEffect, useState } from "react";
-import { fetchFactories } from "@/services/FactoriesService";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchStorageParts } from "@/services/StorageService";
-import toast from "react-hot-toast";
-import { Loader2 } from "lucide-react";
-import StoragePartsTable from "@/components/customui/StoragePartsTable";
+import { fetchDamagedPartsByFactoryID } from "@/services/DamagedGoodsService";
+import { fetchFactories } from "@/services/FactoriesService";
+import { Factory, StoragePart } from "@/types";
+import SearchAndFilter from "@/components/customui/SearchAndFilter";
+import StoragePartsRow from "@/components/customui/StoragePartsRow";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-
-type StoragePart = {
-  storageId: number;
-  id: number;
-  name: string;
-  description: string;
-  qty: number;
-  factory_name: string;
-  factory_id: number;
-};
+const ITEMS_PER_PAGE = 10;
 
 const StoragePage = () => {
-  const [parts, setParts] = useState<StoragePart[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState<any>({});
-  const [factories, setFactories] = useState<{ id: number; name: string }[]>([]);
-  const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [storageParts, setStorageParts] = useState<StoragePart[]>([]);
+  const [damagedParts, setDamagedParts] = useState<StoragePart[]>([]);
+  const [factories, setFactories] = useState<Factory[]>([]);
+  const [loadingStorage, setLoadingStorage] = useState(false);
+  const [loadingDamaged, setLoadingDamaged] = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "storage");
+  const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(
+    searchParams.get("factory") ? Number(searchParams.get("factory")) : undefined
+  );
+  const [totalItems, setTotalItems] = useState(0);
 
-    useEffect(() => {
-      // Fetch factories when the component mounts
-      const loadFactories = async () => {
-        try {
-          const fetchedFactories = await fetchFactories();
-          if (fetchedFactories.length > 0) {
-            setFactories(fetchedFactories); // Set factories correctly here
-          } else {
-            toast.error("No factories found");
-          }
-        } catch (error) {
-          toast.error("Failed to load factories");
-        }
-      };
-
-      loadFactories();
-    }, []);
-
+  // Load factories on component mount
   useEffect(() => {
-    const loadParts = async () => {
+    const loadFactories = async () => {
       try {
-        const factories = await fetchFactories();
-        const factoryMap: { [key: number]: string } = {};
-        factories.forEach((factory: { id: number; name: string }) => {
-          factoryMap[factory.id] = factory.name;
-        });
-
-        const fetchedParts = await fetchStorageParts(
-          selectedFactoryId || -1,
-          filters.partNameQuery || undefined,
-          filters.partIdQuery || undefined
-        );
-
-        const processedParts = fetchedParts.map((record: any) => ({
-          storageId: record.id,
-          id: record.parts.id,
-          name: record.parts.name,
-          description: record.parts.description,
-          qty: record.qty,
-          factory_name: factoryMap[record.factory_id],
-          factory_id: record.factory_id,
-        }));
-
-        if (processedParts.length > 0) {
-          setParts(processedParts);
-        } else {
-          setParts([]); // Clear parts if no parts are found for the selected factory
-        }
+        const factoriesData = await fetchFactories();
+        setFactories(factoriesData);
       } catch (error) {
-        toast.error("Failed to fetch parts");
-      } finally {
-        setLoading(false); // Stop loading after fetching is complete
+        console.error("Error loading factories:", error);
+      }
+    };
+    loadFactories();
+  }, []);
+
+  // Update URL when factory or tab changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    if (selectedFactoryId) {
+      params.set("factory", selectedFactoryId.toString());
+    } else {
+      params.delete("factory");
+    }
+    params.set("tab", activeTab);
+    setSearchParams(params);
+  }, [selectedFactoryId, activeTab]);
+
+  // Load parts data when factory is selected, tab changes, or search params change
+  useEffect(() => {
+    const loadPartsData = async () => {
+      if (!selectedFactoryId) {
+        setStorageParts([]);
+        setDamagedParts([]);
+        return;
+      }
+
+      const page = Number(searchParams.get("page")) || 1;
+      const partName = searchParams.get("partName") || undefined;
+      const partId = searchParams.get("partId") ? Number(searchParams.get("partId")) : undefined;
+
+      if (activeTab === "storage") {
+        setLoadingStorage(true);
+        try {
+          const { data, count } = await fetchStorageParts({
+            factoryId: selectedFactoryId,
+            partName,
+            partId,
+            page,
+            limit: ITEMS_PER_PAGE
+          });
+          setStorageParts(data);
+          setTotalItems(count || 0);
+        } catch (error) {
+          console.error("Error loading storage parts:", error);
+        } finally {
+          setLoadingStorage(false);
+        }
+      } else {
+        setLoadingDamaged(true);
+        try {
+          const { data, count } = await fetchDamagedPartsByFactoryID({
+            factoryId: selectedFactoryId,
+            partName: partName || null,
+            partId: partId || null,
+            page,
+            limit: ITEMS_PER_PAGE
+          });
+          setDamagedParts(data);
+          setTotalItems(count || 0);
+        } catch (error) {
+          console.error("Error loading damaged parts:", error);
+        } finally {
+          setLoadingDamaged(false);
+        }
       }
     };
 
-    loadParts();
-  }, [selectedFactoryId, filters, factories]);
-  
-  if (loading) {
-    return (
-      <div className="flex flex-row justify-center p-5">
-        <Loader2 className="animate-spin" />
-        <span>Loading...</span>
-      </div>
-    );
-  }
+    loadPartsData();
+  }, [selectedFactoryId, activeTab, searchParams]);
+
+  const handleSearch = async (partName: string | null, partId: number | null) => {
+    if (!selectedFactoryId) return;
+
+    const params = new URLSearchParams(searchParams);
+    if (partName) params.set("partName", partName);
+    else params.delete("partName");
+    if (partId) params.set("partId", partId.toString());
+    else params.delete("partId");
+    params.set("page", "1"); // Reset to first page on new search
+    setSearchParams(params);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", newPage.toString());
+    setSearchParams(params);
+  };
+
+  const currentPage = Number(searchParams.get("page")) || 1;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   return (
     <>
@@ -121,19 +157,155 @@ const StoragePage = () => {
           </div>
 
           {selectedFactoryId === undefined ? (
-             <div className="text-center text-lg">Please select a factory to display data</div>
+            <div className="text-center text-lg">Please select a factory to view parts</div>
           ) : (
-            <StoragePartsTable
-              parts={parts}
-              onApplyFilters={setFilters}
-              onResetFilters={() => setFilters({})}
-            />
+            <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
+              <TabsList className="inline-flex h-10 w-[300px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <TabsTrigger value="storage" className="w-[140px]">Storage Parts</TabsTrigger>
+                <TabsTrigger value="damaged" className="w-[140px]">Damaged Parts</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="storage">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Storage Parts</CardTitle>
+                      <CardDescription>View and manage parts in storage</CardDescription>
+                    </div>
+                    <SearchAndFilter 
+                      filterConfig={[
+                        { type: 'partName', label: 'Part Name' },
+                        { type: 'partId', label: 'Part ID' },
+                      ]}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Part ID</TableHead>
+                          <TableHead>Part Name</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead className="text-right">
+                            <span className="sr-only">Actions</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingStorage ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">
+                              <div className="flex items-center justify-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Loading storage parts...</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          storageParts.map((part) => (
+                            <StoragePartsRow key={part.id} part={part} isDamaged={false} />
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                    {!loadingStorage && totalPages > 1 && (
+                      <div className="flex items-center justify-center space-x-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-sm">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="damaged">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Damaged Parts</CardTitle>
+                      <CardDescription>View and manage damaged parts</CardDescription>
+                    </div>
+                    <SearchAndFilter 
+                      filterConfig={[
+                        { type: 'partName', label: 'Part Name' },
+                        { type: 'partId', label: 'Part ID' },
+                      ]}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Part ID</TableHead>
+                          <TableHead>Part Name</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead className="text-right">
+                            <span className="sr-only">Actions</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingDamaged ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">
+                              <div className="flex items-center justify-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Loading damaged parts...</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          damagedParts.map((part) => (
+                            <StoragePartsRow key={part.id} part={part} isDamaged={true} />
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                    {!loadingDamaged && totalPages > 1 && (
+                      <div className="flex items-center justify-center space-x-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-sm">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           )}
         </main>
       </div>
     </>
   );
 };
-
 
 export default StoragePage;

@@ -1,8 +1,23 @@
-import { DamagedPart } from "@/types";
+import { StoragePart } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
-export const fetchDamagedPartsByFactoryID = async (factoryId: number, partName: string | null, partId: number | null) => {
+export const fetchDamagedPartsByFactoryID = async ({
+  factoryId,
+  partName,
+  partId,
+  page = 1,
+  limit = 10
+}: {
+  factoryId: number;
+  partName: string | null;
+  partId: number | null;
+  page?: number;
+  limit?: number;
+}) => {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
     let query = supabase_client
         .from('damaged_parts')
         .select(`
@@ -11,18 +26,20 @@ export const fetchDamagedPartsByFactoryID = async (factoryId: number, partName: 
             factory_id,
             part_id,
             parts (*)
-        `)
+        `, { count: 'exact' })
         .eq('factory_id', factoryId)
+        .order("id", {ascending: true})
+        .range(from, to);
     
     if (partId) {
         query = query.eq('part_id', partId);
     }
 
-    const { data, error } = await query.order("id", {ascending: true});
+    const { data, error, count } = await query;
 
     if (error) {
         console.error('Error fetching parts:', error.message);
-        return [];
+        return { data: [], count: 0 };
     }
 
     let filteredData = data;
@@ -33,9 +50,11 @@ export const fetchDamagedPartsByFactoryID = async (factoryId: number, partName: 
         );
     }
     
-    return filteredData as unknown as DamagedPart[]
+    return { 
+      data: filteredData as unknown as StoragePart[],
+      count
+    };
 };
-
 
 export const updateDamagePartQuantity = async (factory_id:number, part_id:number, new_quantity:number) => {
     const { error } = await supabase_client
@@ -46,7 +65,6 @@ export const updateDamagePartQuantity = async (factory_id:number, part_id:number
     if (error){
         toast.error(error.message)
     }
-
 }
 
 export const addDamagePartQuantity = async (factory_id: number, part_id: number, added_quantity: number) => {
@@ -83,7 +101,4 @@ export const addDamagePartQuantity = async (factory_id: number, part_id: number,
     if (updateError) {
         toast.error(updateError.message);
     } 
-    // else {
-    //     toast.success("Damaged part quantity updated successfully!");
-    // }
 };
