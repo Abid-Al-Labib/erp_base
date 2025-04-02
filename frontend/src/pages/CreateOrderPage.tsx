@@ -286,8 +286,6 @@ const CreateOrderPage = () => {
 
     const handleFinalCreateOrder = async () => {
 
-
-
         setIsSubmitting(true);
         try {
             // Check if the temporary order details are set
@@ -812,6 +810,16 @@ const CreateOrderPage = () => {
                                                 </li>
                                             ))}
                                         </ul>
+                                        <div className="flex justify-end mt-4">
+                                            <Button
+                                                size="sm"
+                                                onClick={handleFinalCreateOrder}
+                                                disabled={orderedParts.length === 0}
+                                            >
+                                                <CircleCheck className="h-4 w-4" />
+                                                Finalize Order
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (

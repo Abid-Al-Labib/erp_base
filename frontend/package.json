@@ -42,6 +42,7 @@
     "react-router-dom": "^6.26.0",
     "react-select": "5.8.3",
     "react-to-print": "^3.0.2",
+    "recharts": "^2.15.1",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"

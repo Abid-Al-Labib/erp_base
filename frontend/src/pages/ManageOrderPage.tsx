@@ -64,7 +64,7 @@ const ManageOrderPage = () => {
       setPartsLoading(true)
       const parts_data = await fetchAllParts();
       if (parts_data) {
-        setParts(parts_data.data)
+        setParts(parts_data)
       }
       else {
         setParts([])
