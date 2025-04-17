@@ -43,14 +43,14 @@ export default function OrderStatusRadialChart({
 
   return (
     <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
+      <CardHeader className="items-center pb-3">
         <CardTitle>Order Management</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
           className="mx-auto aspect-square max-h-[250px] mb-5"
-          style={{height : 200}}
+          style={{height : 189}}
         >
           <RadialBarChart
             data={chartData}

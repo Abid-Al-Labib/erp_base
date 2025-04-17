@@ -170,7 +170,7 @@ const HomePage = () => {
       <NavigationBar />
   
       {/* Main Page Container */}
-      <div className="w-full px-4 mt-3 space-y-3 overflow-x-hidden" id="homepage-container">
+      <div className="w-full px-4 mt-3 space-y-3 overflow-x-hidden overflow-y-hidden" id="homepage-container">
 
           {/* Chart Section - Most Frequent Parts */}
           <div className="w-full flex flex-row justify-center gap-4" id="top-chart-wrapper">
