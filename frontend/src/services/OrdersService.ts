@@ -422,16 +422,19 @@ export const fetchMetricsHighMaintenanceFactorySections = async () => {
   
     // Build the result in the order of `filteredData`
     const result = filteredData.map((item) => {
-      const section = sectionMap.get(item.factory_section_id);
-      if (section) {
-        const factory = factoryMap.get(section.factory_id);
-        return factory ? `${factory.abbreviation} - ${section.name} - (${item.count})` : `Unknown Factory - ${section.name}`;
-      }
-      return `Unknown Section`;
-    });
-  
-    return result as string[];
-  };
+        const section = sectionMap.get(item.factory_section_id);
+        const factory = section ? factoryMap.get(section.factory_id) : null;
+    
+        return section && factory
+          ? {
+              section: `${factory.abbreviation} - ${section.name}`,
+              order_count: item.count,
+            }
+          : null;
+      });
+    
+      return result.filter(Boolean) as { section: string; order_count: number }[];
+    };
 
 
   export const fetchMetricsHighMaintenanceFactorySectionsCurrentMonth = async () => {
@@ -473,14 +476,17 @@ export const fetchMetricsHighMaintenanceFactorySections = async () => {
   
     // Build the result in the order of `filteredData`
     const result = filteredData.map((item) => {
-      const section = sectionMap.get(item.factory_section_id);
-      if (section) {
-        const factory = factoryMap.get(section.factory_id);
-        return factory ? `${factory.abbreviation} - ${section.name}` : `Unknown Factory - ${section.name}`;
-      }
-      return `Unknown Section`;
-    });
-  
-    return result as string[];
-  };
+        const section = sectionMap.get(item.factory_section_id);
+        const factory = section ? factoryMap.get(section.factory_id) : null;
+    
+        return section && factory
+          ? {
+              section: `${factory.abbreviation} - ${section.name}`,
+              order_count: item.count,
+            }
+          : null;
+      });
+    
+    return result.filter(Boolean) as { section: string; order_count: number }[];
+    };
   

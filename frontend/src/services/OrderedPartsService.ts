@@ -367,17 +367,18 @@ export const fetchMetricMostFrequentOrderedParts = async () => {
   
     // Fetch part details based on the extracted part IDs and create a Map for lookup
     const partsData = await fetchPartsByIDs(partIds);
-    if (!partsData) {
-      console.error('Error fetching parts details');
-      return null;
-    }
-    
-    // Map part details by part ID
-    const partsMap = new Map(partsData.map((part) => [part.id, part]));
-  
-    // Build the result, preserving the order from `data`
-    const result = data.map((item) => partsMap.get(item.part_id)).filter(Boolean);
-    return result as Part[];
+
+    const partsMap = new Map(partsData.map(part => [part.id, part]));
+
+
+    const result = data
+    .map(item => {
+      const part = partsMap.get(item.part_id);
+      return part ? { part, order_count: item.count } : null;
+    })
+    .filter(Boolean) as { part: Part; order_count: number }[];
+
+    return result;
   };
 
 export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
@@ -430,10 +431,15 @@ export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
     // Map part details by part ID
     const partsMap = new Map(partsDetails.map((part) => [part.id, part]));
   
-    // Build the result array with parts in the correct order
-    const result = partsData.map((item) => partsMap.get(item.part_id)).filter(Boolean);
-  
-    return result as Part[];
+    // Build the result array with parts in the correct order with their counts
+    const result = partsData
+    .map(item => {
+      const part = partsMap.get(item.part_id);
+      return part ? { part, order_count: item.count } : null;
+    })
+    .filter(Boolean) as { part: Part; order_count: number }[];
+
+  return result;
   };
   
   

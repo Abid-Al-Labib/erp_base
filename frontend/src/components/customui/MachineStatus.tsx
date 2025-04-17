@@ -46,7 +46,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                 for (const part of fetchedParts) {
                     // console.log("Checking part:", part); 
                     // console.log(part.qty, " ", part.req_qty);
-                    if (part.req_qty > part.qty) {
+                    if (part.req_qty ?? 0 > part.qty) {
                         // console.log("Insufficient part:",  "Qty:", part.qty, "Req Qty:", part.req_qty);
                         allPartsSufficient = false; 
                         break; 

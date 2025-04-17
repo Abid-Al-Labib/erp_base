@@ -286,8 +286,6 @@ const CreateOrderPage = () => {
 
     const handleFinalCreateOrder = async () => {
 
-
-
         setIsSubmitting(true);
         try {
             // Check if the temporary order details are set
@@ -519,190 +517,179 @@ const CreateOrderPage = () => {
         <>
             <NavigationBar />
             <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
-                <Card>
+                <div className="flex gap-4 w-full">
+                    <Card className="flex-1">
+                        <CardHeader>
+                            <CardTitle>Order Details</CardTitle>
+                            <CardDescription>Start creating an order</CardDescription>
+                        </CardHeader>
 
-                    <CardHeader>
-                        <CardTitle>Order Details</CardTitle>
-                        <CardDescription>Start creating an order</CardDescription>
-                    </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-2">
+                                {/* Top row: Req Num, Department, Order Type */}
+                                <div className="flex gap-4">
+                                    {/*Req Num*/}
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="req_num">Requisition Number</Label>
+                                        <Input
+                                            id="req_num"
+                                            value={reqNum}
+                                            className="w-[180px]"
+                                            onChange={e => setReqNum(e.target.value)}
+                                            onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                            disabled={isOrderStarted}
+                                        />
+                                    </div>
 
-                    <CardContent>
-                        <div className="grid gap-6">
-
-                            {/*Req Num*/}
-                            <div className="grid gap-3">
-                                <Label htmlFor="req_num">Requisition Number</Label>
-                                <Input
-                                    id="req_num"
-                                    value={reqNum} // Bind the input value to reqNum state
-                                    className="w-[220px]"
-                                    onChange={e => setReqNum(e.target.value)} // Update state on every keystroke
-                                    onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))} // Remove all spaces on blur
-                                    disabled={isOrderStarted}
-                                />
-                            </div>
-                            {/* Factory */}
-                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
-                                <Label htmlFor="factoryName">Factory Name</Label>
-                                <SelectTrigger className="w-[220px]">
-                                    <SelectValue>{selectedFactoryName}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {factories.map((factory) => (
-                                        <SelectItem key={factory.id} value={factory.id.toString()}>
-                                            {factory.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {/* Department */}
-                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
-                                <Label htmlFor="department">Department</Label>
-                                <SelectTrigger className="w-[220px]">
-                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {departments.map((dept) => (
-                                        <SelectItem key={dept.id} value={dept.id.toString()}>
-                                            {dept.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {/* OrderType */}
-                            <Select onValueChange={setOrderType} disabled={isOrderStarted}>
-                                <Label htmlFor="orderType">Is this Order for Storage or a Machine?</Label>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue>{orderType || "Select an Option"}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Storage">Storage</SelectItem>
-                                    <SelectItem value="Machine">Machine</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {orderType !== "Storage" && (
-                                <>
-                                    {/* Factory Section Id */}
-                                    <Select
-                                        onValueChange={(value) => handleSelectFactorySection(Number(value))}
-                                        disabled={isOrderStarted || selectedFactoryId === -1} // Disabled if no factory is selected
-                                    >
-                                        <Label htmlFor="factorySection">Factory Section</Label>
-                                        <SelectTrigger className="w-[220px]">
-                                            <SelectValue>
-                                                {selectedFactorySectionId !== -1
-                                                    ? factorySections.find(s => s.id === selectedFactorySectionId)?.name
-                                                    : "Select Section"}
-                                            </SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {factorySections.map((section) => (
-                                                <SelectItem key={section.id} value={section.id.toString()}>
-                                                    {section.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-
-                                    {/* Machine Id */}
-                                    <Select
-                                        onValueChange={(value) => handleSelectMachine(Number(value))}
-                                        disabled={isOrderStarted || selectedFactorySectionId === -1} // Disabled if no factory section is selected
-                                    >
-                                        <Label htmlFor="machine">Machine</Label>
-                                        <SelectTrigger className="w-[220px] overflow-hidden text-ellipsis whitespace-nowrap">
-
-                                            <SelectValue>
-                                                {selectedMachineId !== -1
-                                                    ? machines.find(m => m.id === selectedMachineId)?.name // Show the selected machine name if available
-                                                    : tempOrderDetails?.machine_name || "Select Machine" // Fall back to tempOrderDetails.machine_name or "Select Machine"
-                                                }
-                                            </SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {machines
-                                                .sort((a, b) => a.id - b.id) // Sorting machines by ID in ascending order
-                                                .map((machine) => (
-                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                        {machine.name}
+                                    {/* Department */}
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="department">Department</Label>
+                                        <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {departments.map((dept) => (
+                                                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                        {dept.name}
                                                     </SelectItem>
                                                 ))}
-                                        </SelectContent>
-                                    </Select>
-                                </>
-                            )}
-
-                            {/* Order Description */}
-                            <div className="grid gap-3">
-                                <Label htmlFor="description">Description</Label>
-                                <Textarea
-                                    id="description"
-                                    defaultValue=""
-                                    className="min-h-32"
-                                    onChange={e => setDescription(e.target.value)}
-                                    disabled={isOrderStarted}
-                                />
-                            </div>
-                            {/* Buttons for Main Order*/}
-                            <div className="flex flex-1 gap-4 py-5">
-                                {isSubmitting ? (
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <Loader2 className="h-6 w-6 animate-spin" />
-                                        Creating Order..."
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                ) : (
-                                    <>
-                                        {!tempOrderDetails && (
-                                            <Button
-                                                size="sm"
-                                                className="ml-auto gap-2"
-                                                onClick={handleCreateOrder}
-                                                disabled={!isOrderFormComplete}  // Disable the button
-                                            >
-                                                <CirclePlus className="h-4 w-4" />Start Order
-                                            </Button>
-                                        )}
-                                        <Link to="/orders">
-                                            <Button
-                                                size="sm"
-                                                className="ml-auto gap-2"
-                                                onClick={handleCancelOrder}
-                                            >
-                                                <CircleX className="h-4 w-4" />
-                                                Cancel
-                                            </Button>
-                                        </Link>
-                                    </>
-                                )}
+
+                                    {/* OrderType */}
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="orderType">Storage or Machine?</Label>
+                                        <Select onValueChange={(value) => setOrderType(value)} disabled={isOrderStarted}>
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue>{orderType || "Select an Option"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Storage">Storage</SelectItem>
+                                                <SelectItem value="Machine">Machine</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Factory row */}
+                                <div className="flex gap-4">
+                                    {/* Factory */}
+                                    <div className="grid gap-1">
+                                        <Label htmlFor="factoryName">Factory</Label>
+                                        <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue>{selectedFactoryName}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {factories.map((factory) => (
+                                                    <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                        {factory.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {orderType === "Machine" && (
+                                        <>
+                                            {/* Factory Section */}
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="factorySection">Factory Section</Label>
+                                                <Select onValueChange={(value) => setSelectedFactorySectionId(Number(value))} disabled={isOrderStarted}>
+                                                    <SelectTrigger className="w-[180px]">
+                                                        <SelectValue>{selectedFactorySectionName}</SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {factorySections.map((section) => (
+                                                            <SelectItem key={section.id} value={section.id.toString()}>
+                                                                {section.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Machine */}
+                                            <div className="grid gap-1">
+                                                <Label htmlFor="machine">Machine</Label>
+                                                <Select onValueChange={(value) => setSelectedMachineId(Number(value))} disabled={isOrderStarted}>
+                                                    <SelectTrigger className="w-[180px]">
+                                                        <SelectValue>{selectedMachineName || "Select Machine"}</SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {machines.map((machine) => (
+                                                            <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                                {machine.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Description */}
+                                <div className="grid gap-1">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        placeholder="Enter order description"
+                                        className="w-[600px]"
+                                        disabled={isOrderStarted}
+                                    />
+                                </div>
+
+                                {/* Buttons for Main Order*/}
+                                <div className="flex flex-1 gap-4 py-3">
+                                    {isSubmitting ? (
+                                        <div className="ml-auto flex items-center gap-2">
+                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                            Creating Order...
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {!tempOrderDetails && (
+                                                <Button
+                                                    size="sm"
+                                                    className="ml-auto gap-2"
+                                                    onClick={handleCreateOrder}
+                                                    disabled={!isOrderFormComplete}  // Disable the button
+                                                >
+                                                    <CirclePlus className="h-4 w-4" />Start Order
+                                                </Button>
+                                            )}
+                                            <Link to="/orders">
+                                                <Button
+                                                    size="sm"
+                                                    className="ml-auto gap-2"
+                                                    onClick={handleCancelOrder}
+                                                >
+                                                    <CircleX className="h-4 w-4" />
+                                                    Cancel
+                                                </Button>
+                                            </Link>
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                {/* PART SELECTION AND DETAILS CARD */}
-                {showPartForm && (
-                    <div ref={partsSectionRef}>
-                        <Card>
-                            <CardHeader className="flex justify-between items-start w-full flex-row">
-                                {/* Left Side */}
-                                <div className="flex flex-col text-left w-1/2">
-                                    <CardTitle className="text-lg font-bold">Add Parts</CardTitle>
-                                    <CardDescription className="text-sm hidden sm:block">Start adding parts to your order</CardDescription>
-                                </div>
-
-                                {/* Right Side */}
-                                <div className="flex flex-col text-left w-1/2">
-                                    <CardTitle className="text-lg font-bold">{selectedFactoryName}</CardTitle>
-                                    <CardDescription className="text-sm">{
-                                        tempOrderDetails?.order_type === "Storage"
-                                            ? "Storage"
-                                            : `${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} ${tempOrderDetails?.machine_name || "N/A"} `
-
-                                    }</CardDescription>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
+                    {/* PART SELECTION AND DETAILS CARD */}
+                    <Card className="flex-1">
+                        <CardHeader>
+                            <CardTitle>Add Parts</CardTitle>
+                            <CardDescription>
+                                {isOrderStarted ? "Start adding parts to your order" : "Finish creating the order first"}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isOrderStarted ? (
                                 <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
                                     {/* Left side: Part Selection */}
                                     <div className="space-y-4">
@@ -727,35 +714,19 @@ const CreateOrderPage = () => {
                                                 placeholder="Search or Select a Part"
                                                 value={partId > 0 ? { value: partId, label: parts.find(p => p.id === partId)?.name } : null}
                                                 className="w-[260px]"
-
                                             />
-                                            {/* Optional Create New Part Button */}
-                                            <div className="mt-2">
-                                                <Dialog open={isAddPartDialog} onOpenChange={setIsAddPartDialogOpen}>
-                                                        <DialogTrigger asChild>
-                                                            <Button 
-                                                                size="sm"
-                                                                className="w-[220px] bg-blue-950"
-                                                                disabled={!addPartEnabled}
-                                                            >
-                                                                
-                                                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                                                    Create New Part
-                                                                </span>
-                                                            </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent className="sm:max-w-[600px]">
-                                                            <AddPartPopup 
-                                                                addPartEnabled={addPartEnabled}
-                                                                onSuccess={()=>reloadParts()}
-                                                            />
-                                                        </DialogContent>
-                                                </Dialog>
-                                            </div>
-
                                         </div>
 
-
+                                        {/* Add Part Button */}
+                                        <div className="flex justify-start">
+                                            <Button
+                                                size="sm"
+                                                onClick={handleCreateNewPart} // Function to open the AddPartPopup
+                                            >
+                                                <CirclePlus className="h-4 w-4" />
+                                                Add New Part
+                                            </Button>
+                                        </div>
 
                                         {/* Setting QTY */}
                                         <div className="flex flex-col space-y-2">
@@ -773,8 +744,6 @@ const CreateOrderPage = () => {
                                                 className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
-
-
 
                                         {/* Sample Sent to Office */}
                                         <div className="flex items-center gap-2 leading-none">
@@ -794,7 +763,6 @@ const CreateOrderPage = () => {
                                                 {isSampleSentToOffice ? "Yes" : "No"}
                                             </p>
                                         </div>
-
 
                                         {/* Note */}
                                         <div className="flex flex-col space-y-2">
@@ -821,17 +789,12 @@ const CreateOrderPage = () => {
                                     </div>
 
                                     {/* Right side: List of Added Parts */}
-
-
                                     <div className="space-y-4 p-3">
                                         <h4 className="font-bold mb-2">Added Parts</h4>
                                         <ul className="space-y-2">
                                             {orderedParts.map((part, index) => (
                                                 <li key={index} className="border rounded-lg bg-gray-100 ">
                                                     {/* Top right remove button */}
-
-
-                                                    {/* Flex container to align Part and Quantity side by side */}
                                                     <div className="flex justify-between items-center ml-2 mr-2 mt-4 mb-4">
                                                         <p><strong>Part:</strong> {parts.find(p => p.id === part.part_id)?.name || "Unknown"}</p>
                                                         <div className="flex items-center ml-auto">
@@ -844,28 +807,29 @@ const CreateOrderPage = () => {
                                                             </div>
                                                         </div>
                                                     </div>
-
                                                 </li>
                                             ))}
                                         </ul>
+                                        <div className="flex justify-end mt-4">
+                                            <Button
+                                                size="sm"
+                                                onClick={handleFinalCreateOrder}
+                                                disabled={orderedParts.length === 0}
+                                            >
+                                                <CircleCheck className="h-4 w-4" />
+                                                Finalize Order
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
-                                {/* Buttons for adding parts and finalizing the order */}
-                                <div className="flex justify-end mt-4">
-                                    <Button
-                                        size="sm"
-                                        onClick={handleFinalCreateOrder}
-                                        disabled={orderedParts.length === 0}
-                                    >
-                                        <CircleCheck className="h-4 w-4" />
-                                        Finalize Order
-                                    </Button>
+                            ) : (
+                                <div className="flex justify-center items-center h-full">
+                                    <p className="text-gray-500">Finish creating the order first.</p>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                )}
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </>
     );
