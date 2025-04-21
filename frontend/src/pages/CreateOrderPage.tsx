@@ -718,14 +718,27 @@ const CreateOrderPage = () => {
                                         </div>
 
                                         {/* Add Part Button */}
-                                        <div className="flex justify-start">
-                                            <Button
-                                                size="sm"
-                                                onClick={handleCreateNewPart} // Function to open the AddPartPopup
-                                            >
-                                                <CirclePlus className="h-4 w-4" />
-                                                Add New Part
-                                            </Button>
+                                        <div className="mt-2">
+                                            <Dialog open={isAddPartDialog} onOpenChange={setIsAddPartDialogOpen}>
+                                                    <DialogTrigger asChild>
+                                                        <Button 
+                                                            size="sm"
+                                                            className="w-[220px] bg-blue-950"
+                                                            disabled={!addPartEnabled}
+                                                        >
+                                                            
+                                                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                                                Create New Part
+                                                            </span>
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-[600px]">
+                                                        <AddPartPopup 
+                                                            addPartEnabled={addPartEnabled}
+                                                            onSuccess={()=>reloadParts()}
+                                                        />
+                                                    </DialogContent>
+                                            </Dialog>
                                         </div>
 
                                         {/* Setting QTY */}
