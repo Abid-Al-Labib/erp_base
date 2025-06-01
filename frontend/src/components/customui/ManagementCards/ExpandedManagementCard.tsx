@@ -7,6 +7,9 @@ import MachineManagementCard from "./MachineManagementCard";
 import DepartmentManagementCard from "./DepartmentManagementCard";
 import { useSearchParams } from "react-router-dom";
 import MachinePartsManagementCard from "./MachinePartsManagementCard";
+import AddUserCard from "./AddUserCard";
+import ManageUserManagementCard from "./ManageUserManagementCard";
+import AllowDenyActionManagementCard from "./AllowDenyActionManagementCard";
 
 interface ExpandedManagementCardProps {
   type: ManagementType;
@@ -19,7 +22,10 @@ const managementCards: Record<ManagementType, JSX.Element> = {
   factorySections: <FactorySectionManagementCard />,
   machines: <MachineManagementCard />,
   machineParts: <MachinePartsManagementCard />, // Placeholder
-  departments: <DepartmentManagementCard />, // Placeholder
+  departments: <DepartmentManagementCard />,
+  addUser: <AddUserCard/>,
+  manageUser: <ManageUserManagementCard/>,
+  allowDenyAction: <AllowDenyActionManagementCard/>
 };
 
 const ExpandedManagementCard: React.FC<ExpandedManagementCardProps> = ({ type, onClose }) => {

@@ -113,5 +113,7 @@ export type Filter = {
     
 };
 
-export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments";
- 
+export type FactoryManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments";
+export type UserManagementType = "addUser" | "manageUser";
+export type AppManagementType = "allowDenyAction";
+export type ManagementType = FactoryManagementType | UserManagementType | AppManagementType;
