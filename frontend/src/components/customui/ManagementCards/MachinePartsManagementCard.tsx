@@ -398,6 +398,7 @@ const MachinePartsManagementCard = () => {
               {/* Confirm (✔) Button */}
               <button 
                 onClick={handleAddPart}
+                aria-label="Add part"
                 className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
               >
                 <Plus size={18} />
@@ -437,6 +438,7 @@ const MachinePartsManagementCard = () => {
                           type="number"
                           value={editedQty ?? part.qty}
                           onChange={(e) => setEditedQty(Number(e.target.value))}
+                          aria-label="Edit quantity"
                           className="border rounded-md p-1 w-16 text-center"
                         />
                       ) : (
@@ -449,6 +451,7 @@ const MachinePartsManagementCard = () => {
                           type="number"
                           value={editedReqQty ?? part.req_qty}
                           onChange={(e) => setEditedReqQty(Number(e.target.value))}
+                          aria-label="Edit required quantity"
                           className="border rounded-md p-1 w-16 text-center"
                         />
                       ) : (
@@ -463,6 +466,7 @@ const MachinePartsManagementCard = () => {
                         {/* Cancel Edit Button */}
                           <button
                             onClick={() => setEditingPartId(null)}
+                            aria-label="Cancel editing"
                             className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
                           >
                             <PencilOff size={18} />
@@ -471,6 +475,7 @@ const MachinePartsManagementCard = () => {
                           {/* Confirm Edit Button */}
                           <button
                             onClick={() => handleUpdateMachineParts(part)}
+                            aria-label="Save changes"
                             className="text-green-600 hover:text-green-800 flex items-center gap-1 px-2 py-1 rounded-md border border-green-600 hover:bg-blue-100 transition"
                           >
                             <Check size={18} />
@@ -482,6 +487,7 @@ const MachinePartsManagementCard = () => {
                           {/* Edit Button */}
                           <button
                             onClick={() => startEditing(part)}
+                            aria-label="Edit part"
                             className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
                           >
                             <PencilRuler size={18} />
@@ -490,6 +496,7 @@ const MachinePartsManagementCard = () => {
                           {/* Delete Button */}
                           <button
                             onClick={() => handleDeleteMachinePart(part.id)}
+                            aria-label="Delete part"
                             className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
                           >
                             <XCircle size={18} />

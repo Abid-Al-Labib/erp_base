@@ -1,4 +1,3 @@
-
 import { Part } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
@@ -7,7 +6,8 @@ import toast from "react-hot-toast";
 export const fetchPageParts = async ({
     page = 1,
     partsPerPage = 10,
-    filters = {}
+    filters = {},
+    sortBy = "name"
 }: {
     page: number;
     partsPerPage: number;
@@ -15,6 +15,7 @@ export const fetchPageParts = async ({
         partIdQuery?: string;
         partNameQuery?: string;
     };
+    sortBy?: "name" | "id";
 }) => {
     const from = (page - 1) * partsPerPage;
     const to = from + partsPerPage - 1;
@@ -33,7 +34,7 @@ export const fetchPageParts = async ({
         queryBuilder = queryBuilder.ilike("name", `%${filters.partNameQuery}%`);
     }
 
-    const { data, count, error } = await queryBuilder.order("name");
+    const { data, count, error } = await queryBuilder.order(sortBy);
 
     if (error) {
         throw new Error(error.message);
@@ -42,6 +43,19 @@ export const fetchPageParts = async ({
     return { data, count }; //  Returning data and count
 };
 
+export const searchPartsByName = async (nameQuery: string) => {
+    const { data, error } = await supabase_client
+      .from('parts')
+      .select('id, name, unit')
+      .ilike('name', `%${nameQuery}%`)
+      .order('name');
+  
+    if (error) {
+      throw new Error(error.message);
+    }
+  
+    return data as Part[];
+  };
 
 export const fetchAllParts = async () => {
     const { data, error } = await supabase_client.from('parts').select('*');

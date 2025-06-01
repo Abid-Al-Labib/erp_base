@@ -6,7 +6,7 @@ import { convertUtcToBDTime } from "@/services/helper";
 import { fetchOrderedPartByPartID } from "@/services/OrderedPartsService";
 import { fetchPartByID } from "@/services/PartsService";
 import { OrderedPart, Part } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -17,6 +17,8 @@ const ViewPartPage = () => {
   const [linkedOrderedParts, setLinkedOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingPartInfo, setLoadingPartInfo] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
+  const [sortField, setSortField] = useState<'id' | 'name' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const navigate = useNavigate();
   
@@ -59,6 +61,49 @@ const ViewPartPage = () => {
     loadParts();
   }, [id, navigate]);
 
+  const handleSort = (field: 'id' | 'name') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedLinkedOrderedParts = [...linkedOrderedParts].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let valueA: string | number;
+    let valueB: string | number;
+    
+    if (sortField === 'id') {
+      valueA = a.id;
+      valueB = b.id;
+    } else if (sortField === 'name') {
+      valueA = a.parts.name.toLowerCase();
+      valueB = b.parts.name.toLowerCase();
+    } else {
+      return 0;
+    }
+    
+    if (valueA < valueB) {
+      return sortDirection === 'asc' ? -1 : 1;
+    }
+    if (valueA > valueB) {
+      return sortDirection === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  const getSortIcon = (field: 'id' | 'name') => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="h-4 w-4" /> : 
+      <ArrowDown className="h-4 w-4" />;
+  };
+
   if (loadingPartInfo) {
     return (
       <div className='flex flex-row justify-center p-5'>
@@ -92,8 +137,30 @@ const ViewPartPage = () => {
             <Loader2 />
           </div>
         ) : (
-          <LinkedOrdersTable
-            linkedOrderedParts={linkedOrderedParts} />
+          <div>
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSort('id')}
+                className="flex items-center gap-2"
+              >
+                Sort by ID
+                {getSortIcon('id')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSort('name')}
+                className="flex items-center gap-2"
+              >
+                Sort by Name
+                {getSortIcon('name')}
+              </Button>
+            </div>
+            <LinkedOrdersTable
+              linkedOrderedParts={sortedLinkedOrderedParts} />
+          </div>
         )}
       </main>
       <div className="flex justify-end">

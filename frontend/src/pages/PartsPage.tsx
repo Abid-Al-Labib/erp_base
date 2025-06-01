@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchPageParts } from '../services/PartsService';
 import { useSearchParams } from "react-router-dom"
-import { Loader2, PlusCircle } from "lucide-react"
+import { Loader2, PlusCircle, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
@@ -27,6 +27,7 @@ const PartsPage = () => {
     const [totalCount, setTotalCount] = useState(0);     // Track total number of parts
     const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false)
     const [isAddPartPopupOpen, setIsAddPartPopupOpen] = useState(false);
+    const [sortBy, setSortBy] = useState<"name" | "id">("name");
    
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -61,7 +62,7 @@ const PartsPage = () => {
 
     useEffect(() => {
         fetchPartsForPage();
-    }, [filters]);
+    }, [filters, sortBy]);
 
     const fetchPartsForPage = async (page = currentPage) => {
         try {
@@ -70,6 +71,7 @@ const PartsPage = () => {
                 page,
                 partsPerPage,
                 filters: filters,
+                sortBy: sortBy,
         });
             setParts(fetchedParts);
             setTotalCount(count ?? 0);
@@ -81,7 +83,9 @@ const PartsPage = () => {
         }
     };
 
-
+    const toggleSort = () => {
+        setSortBy(prevSort => prevSort === "name" ? "id" : "name");
+    };
 
     useEffect(() => {
         const loadAddPartSettings = async () => {
@@ -111,8 +115,17 @@ const PartsPage = () => {
                     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                         <Tabs defaultValue="all">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center">
+                                <div className="flex items-center gap-2">
                                     <SearchAndFilter filterConfig={filterConfig} />
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={toggleSort}
+                                        className="flex items-center gap-1"
+                                    >
+                                        <ArrowUpDown className="h-3.5 w-3.5" />
+                                        Sort by {sortBy === "name" ? "Name" : "ID"}
+                                    </Button>
                                 </div>
                                 <div>
                                     <Dialog open={isAddPartPopupOpen} onOpenChange={setIsAddPartPopupOpen}>

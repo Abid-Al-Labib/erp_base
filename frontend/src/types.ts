@@ -114,4 +114,33 @@ export type Filter = {
 };
 
 export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments";
- 
+
+export interface InputOrder {
+    req_num: string,
+    order_note: string,
+    created_by_user_id: number,
+    department_id: number,
+    factory_id: number,
+    factory_section_id: number,
+    machine_id: number,
+    machine_name: string,
+    current_status_id: number,
+    order_type: string,
+}
+
+export interface InputOrderedPart {
+    qty: number;
+    unit: string | null;
+    order_id: number;
+    part_id: number;
+    part_name: string;
+    factory_id: number;
+    machine_id: number;
+    factory_section_id: number;
+    factory_section_name: string;
+    machine_name: string;
+    is_sample_sent_to_office: boolean,
+    note?: string | null;
+    in_storage: boolean;
+    approved_storage_withdrawal: boolean;
+}
