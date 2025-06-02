@@ -3,17 +3,22 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fetchStorageParts } from "@/services/StorageService";
-import { fetchDamagedPartsByFactoryID } from "@/services/DamagedGoodsService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { fetchStorageParts, upsertStoragePart } from "@/services/StorageService";
+import { fetchDamagedPartsByFactoryID, upsertDamagedPart } from "@/services/DamagedGoodsService";
 import { fetchFactories } from "@/services/FactoriesService";
-import { Factory, StoragePart } from "@/types";
+import { fetchAllParts, searchPartsByName } from "@/services/PartsService";
+import { Factory, StoragePart, Part } from "@/types";
 import SearchAndFilter from "@/components/customui/SearchAndFilter";
 import StoragePartsRow from "@/components/customui/StoragePartsRow";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import toast from "react-hot-toast";
+import AsyncSelect from 'react-select/async';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -22,6 +27,7 @@ const StoragePage = () => {
   const [storageParts, setStorageParts] = useState<StoragePart[]>([]);
   const [damagedParts, setDamagedParts] = useState<StoragePart[]>([]);
   const [factories, setFactories] = useState<Factory[]>([]);
+  const [allParts, setAllParts] = useState<Part[]>([]);
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [loadingDamaged, setLoadingDamaged] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "storage");
@@ -30,7 +36,14 @@ const StoragePage = () => {
   );
   const [totalItems, setTotalItems] = useState(0);
 
-  // Load factories on component mount
+  // Add part to storage dialog state
+  const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
+  const [selectedPart, setSelectedPart] = useState<Part | undefined>();
+  const [quantity, setQuantity] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
+
+  // Load factories and parts on component mount
   useEffect(() => {
     const loadFactories = async () => {
       try {
@@ -40,7 +53,18 @@ const StoragePage = () => {
         console.error("Error loading factories:", error);
       }
     };
+
+    const loadAllParts = async () => {
+      try {
+        const partsData = await fetchAllParts();
+        setAllParts(partsData);
+      } catch (error) {
+        console.error("Error loading parts:", error);
+      }
+    };
+
     loadFactories();
+    loadAllParts();
   }, []);
 
   // Update URL when factory or tab changes
@@ -126,8 +150,98 @@ const StoragePage = () => {
     setSearchParams(params);
   };
 
+  const handleAddPartToStorage = async () => {
+    if (!selectedPart || !quantity || !selectedFactoryId) {
+      toast.error("Please select a part and enter quantity");
+      return;
+    }
+
+    const quantityNum = Number(quantity);
+    if (quantityNum <= 0) {
+      toast.error("Quantity must be greater than 0");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (activeTab === "storage") {
+        await upsertStoragePart(selectedPart.id, selectedFactoryId, quantityNum);
+        toast.success("Part added to storage successfully");
+      } else {
+        await upsertDamagedPart(selectedPart.id, selectedFactoryId, quantityNum);
+        toast.success("Part added to damaged parts successfully");
+      }
+      
+      // Reset form
+      setSelectedPart(undefined);
+      setQuantity("");
+      setIsAddPartDialogOpen(false);
+      
+      // Reload current tab data
+      refreshCurrentData();
+    } catch (error) {
+      console.error("Error adding part:", error);
+      toast.error(`Failed to add part to ${activeTab === "storage" ? "storage" : "damaged parts"}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Create default options for AsyncSelect - sorted alphabetically
+  const allPartOptions = allParts
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((part) => ({
+      value: part,
+      label: `${part.name} (${part.unit || 'units'})`,
+    }));
+
   const currentPage = Number(searchParams.get("page")) || 1;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  // Add this function to refresh the current data
+  const refreshCurrentData = async () => {
+    if (!selectedFactoryId) return;
+
+    const page = Number(searchParams.get("page")) || 1;
+    const partName = searchParams.get("partName") || undefined;
+    const partId = searchParams.get("partId") ? Number(searchParams.get("partId")) : undefined;
+
+    if (activeTab === "storage") {
+      setLoadingStorage(true);
+      try {
+        const { data, count } = await fetchStorageParts({
+          factoryId: selectedFactoryId,
+          partName,
+          partId,
+          page,
+          limit: ITEMS_PER_PAGE
+        });
+        setStorageParts(data);
+        setTotalItems(count || 0);
+      } catch (error) {
+        console.error("Error reloading storage parts:", error);
+      } finally {
+        setLoadingStorage(false);
+      }
+    } else {
+      setLoadingDamaged(true);
+      try {
+        const { data, count } = await fetchDamagedPartsByFactoryID({
+          factoryId: selectedFactoryId,
+          partName: partName || null,
+          partId: partId || null,
+          page,
+          limit: ITEMS_PER_PAGE
+        });
+        setDamagedParts(data);
+        setTotalItems(count || 0);
+      } catch (error) {
+        console.error("Error reloading damaged parts:", error);
+      } finally {
+        setLoadingDamaged(false);
+      }
+    }
+  };
 
   return (
     <>
@@ -168,6 +282,21 @@ const StoragePage = () => {
                       {activeTab === "storage" ? "View and manage parts in storage" : "View and manage damaged parts"}
                     </CardDescription>
                   </div>
+                  <SearchAndFilter 
+                    filterConfig={[
+                      { type: 'partName', label: 'Part Name' },
+                      { type: 'partId', label: 'Part ID' },
+                    ]}
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Button 
+                    onClick={() => setIsAddPartDialogOpen(true)}
+                    className="bg-blue-700 hover:bg-blue-800"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Part
+                  </Button>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList className="inline-flex h-10 w-[300px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                       <TabsTrigger value="storage" className="w-[140px]">Storage Parts</TabsTrigger>
@@ -175,12 +304,6 @@ const StoragePage = () => {
                     </TabsList>
                   </Tabs>
                 </div>
-                <SearchAndFilter 
-                  filterConfig={[
-                    { type: 'partName', label: 'Part Name' },
-                    { type: 'partId', label: 'Part ID' },
-                  ]}
-                />
               </CardHeader>
               <CardContent>
                 <Table>
@@ -206,7 +329,12 @@ const StoragePage = () => {
                       </TableRow>
                     ) : (
                       (activeTab === "storage" ? storageParts : damagedParts).map((part) => (
-                        <StoragePartsRow key={part.id} part={part} isDamaged={activeTab === "damaged"} />
+                        <StoragePartsRow 
+                          key={part.id} 
+                          part={part} 
+                          isDamaged={activeTab === "damaged"} 
+                          onDelete={refreshCurrentData}
+                        />
                       ))
                     )}
                   </TableBody>
@@ -237,6 +365,100 @@ const StoragePage = () => {
           )}
         </main>
       </div>
+
+      {/* Add Part to Storage Dialog */}
+      <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {activeTab === "storage" ? "Add Part to Storage" : "Add Part to Damaged Parts"}
+            </DialogTitle>
+            <DialogDescription>
+              Add a part to the {activeTab === "storage" ? "storage" : "damaged parts"} of {factories.find(f => f.id === selectedFactoryId)?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="part-select">Select Part</Label>
+              <AsyncSelect
+                id="part-select"
+                cacheOptions
+                defaultOptions={allPartOptions}
+                loadOptions={async (inputValue: string) => {
+                  if (!inputValue) {
+                    return allPartOptions;
+                  }
+                  
+                  setIsLoadingParts(true);
+                  try {
+                    const response = await searchPartsByName(inputValue);
+                    return response
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((part) => ({
+                        value: part,
+                        label: `${part.name} (${part.unit || 'units'})`,
+                      }));
+                  } catch (error) {
+                    console.error("Error searching parts:", error);
+                    return [];
+                  } finally {
+                    setIsLoadingParts(false);
+                  }
+                }}
+                onChange={(selectedOption) => {
+                  setSelectedPart(selectedOption?.value);
+                }}
+                placeholder="Search or Select a Part"
+                className="mt-1"
+                isSearchable
+                isLoading={isLoadingParts}
+                value={selectedPart ? { value: selectedPart, label: `${selectedPart.name} (${selectedPart.unit || 'units'})` } : null}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="quantity">
+                Quantity{selectedPart ? ` (${selectedPart.unit || 'units'})` : ''}
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                placeholder="Enter quantity"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                min="1"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddPartDialogOpen(false);
+                setSelectedPart(undefined);
+                setQuantity("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddPartToStorage}
+              disabled={isSubmitting || !selectedPart || !quantity}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Adding...
+                </>
+              ) : (
+                `Add to ${activeTab === "storage" ? "Storage" : "Damaged Parts"}`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

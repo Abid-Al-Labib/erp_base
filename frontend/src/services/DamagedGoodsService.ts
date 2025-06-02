@@ -102,3 +102,34 @@ export const addDamagePartQuantity = async (factory_id: number, part_id: number,
         toast.error(updateError.message);
     } 
 };
+
+export const deleteDamagedPart = async (part_id: number, factory_id: number) => {
+    const { error } = await supabase_client
+    .from('damaged_parts')
+    .delete()
+    .eq('part_id', part_id)
+    .eq('factory_id', factory_id)
+
+    if (error) {
+        toast.error(error.message)
+        throw error;
+    }
+
+    toast.success("Damaged part deleted successfully");
+}
+
+export const upsertDamagedPart = async (part_id: number, factory_id: number, quantity: number) => {
+    const { error } = await supabase_client
+    .from('damaged_parts')
+    .upsert({ 
+        part_id: part_id,
+        factory_id: factory_id,
+        qty: quantity 
+    }, {onConflict: 'part_id, factory_id'}
+    )
+
+    if (error) {
+        toast.error(error.message)
+        throw error;
+    }
+}
