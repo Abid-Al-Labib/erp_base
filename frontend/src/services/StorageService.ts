@@ -153,3 +153,18 @@ export const editStoragePartQty = async (part_id: number, factory_id: number, ne
     }
         
 }
+
+export const deleteStoragePart = async (part_id: number, factory_id: number) => {
+    const { error } = await supabase_client
+    .from('storage_parts')
+    .delete()
+    .eq('part_id', part_id)
+    .eq('factory_id', factory_id)
+
+    if (error) {
+        toast.error(error.message)
+        throw error;
+    }
+
+    toast.success("Storage part deleted successfully");
+}
