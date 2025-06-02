@@ -850,7 +850,7 @@ const CreateOrderPage = () => {
                         <CardHeader className="pb-4">
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <CardTitle className={`text-lg ${!tempOrderDetails ? 'text-gray-400' : ''}`}>3. Added Parts ({orderedParts.length})</CardTitle>
+                                    <CardTitle className={`text-lg ${!tempOrderDetails ? 'text-gray-400' : ''}`}>Added Parts ({orderedParts.length})</CardTitle>
                                     <CardDescription className={`text-sm ${!tempOrderDetails ? 'text-gray-300' : ''}`}>
                                         {!tempOrderDetails ? "Initialize order first" : "Parts in this order"}
                                     </CardDescription>
