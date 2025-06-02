@@ -159,148 +159,81 @@ const StoragePage = () => {
           {selectedFactoryId === undefined ? (
             <div className="text-center text-lg">Please select a factory to view parts</div>
           ) : (
-            <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-              <TabsList className="inline-flex h-10 w-[300px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                <TabsTrigger value="storage" className="w-[140px]">Storage Parts</TabsTrigger>
-                <TabsTrigger value="damaged" className="w-[140px]">Damaged Parts</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="storage">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Storage Parts</CardTitle>
-                      <CardDescription>View and manage parts in storage</CardDescription>
-                    </div>
-                    <SearchAndFilter 
-                      filterConfig={[
-                        { type: 'partName', label: 'Part Name' },
-                        { type: 'partId', label: 'Part ID' },
-                      ]}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Part ID</TableHead>
-                          <TableHead>Part Name</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead className="text-right">
-                            <span className="sr-only">Actions</span>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loadingStorage ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center">
-                              <div className="flex items-center justify-center space-x-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span>Loading storage parts...</span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          storageParts.map((part) => (
-                            <StoragePartsRow key={part.id} part={part} isDamaged={false} />
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                    {!loadingStorage && totalPages > 1 && (
-                      <div className="flex items-center justify-center space-x-2 mt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage === 1}
-                        >
-                          Previous
-                        </Button>
-                        <span className="text-sm">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <CardTitle>{activeTab === "storage" ? "Storage Parts" : "Damaged Parts"}</CardTitle>
+                    <CardDescription>
+                      {activeTab === "storage" ? "View and manage parts in storage" : "View and manage damaged parts"}
+                    </CardDescription>
+                  </div>
+                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="inline-flex h-10 w-[300px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                      <TabsTrigger value="storage" className="w-[140px]">Storage Parts</TabsTrigger>
+                      <TabsTrigger value="damaged" className="w-[140px]">Damaged Parts</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                <SearchAndFilter 
+                  filterConfig={[
+                    { type: 'partName', label: 'Part Name' },
+                    { type: 'partId', label: 'Part ID' },
+                  ]}
+                />
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Part ID</TableHead>
+                      <TableHead>Part Name</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead className="text-right">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(activeTab === "storage" ? loadingStorage : loadingDamaged) ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Loading {activeTab === "storage" ? "storage" : "damaged"} parts...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      (activeTab === "storage" ? storageParts : damagedParts).map((part) => (
+                        <StoragePartsRow key={part.id} part={part} isDamaged={activeTab === "damaged"} />
+                      ))
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="damaged">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Damaged Parts</CardTitle>
-                      <CardDescription>View and manage damaged parts</CardDescription>
-                    </div>
-                    <SearchAndFilter 
-                      filterConfig={[
-                        { type: 'partName', label: 'Part Name' },
-                        { type: 'partId', label: 'Part ID' },
-                      ]}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Part ID</TableHead>
-                          <TableHead>Part Name</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead className="text-right">
-                            <span className="sr-only">Actions</span>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loadingDamaged ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center">
-                              <div className="flex items-center justify-center space-x-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span>Loading damaged parts...</span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          damagedParts.map((part) => (
-                            <StoragePartsRow key={part.id} part={part} isDamaged={true} />
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                    {!loadingDamaged && totalPages > 1 && (
-                      <div className="flex items-center justify-center space-x-2 mt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage === 1}
-                        >
-                          Previous
-                        </Button>
-                        <span className="text-sm">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                  </TableBody>
+                </Table>
+                {!(activeTab === "storage" ? loadingStorage : loadingDamaged) && totalPages > 1 && (
+                  <div className="flex items-center justify-center space-x-2 mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
         </main>
       </div>
