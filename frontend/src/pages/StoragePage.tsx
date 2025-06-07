@@ -30,7 +30,10 @@ const StoragePage = () => {
   const [allParts, setAllParts] = useState<Part[]>([]);
   const [loadingStorage, setLoadingStorage] = useState(false);
   const [loadingDamaged, setLoadingDamaged] = useState(false);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "storage");
+  
+  // Main tab state - storage, damaged, or repair
+  const [mainTab, setMainTab] = useState(searchParams.get("mainTab") || "storage");
+  
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(
     searchParams.get("factory") ? Number(searchParams.get("factory")) : undefined
   );
@@ -75,9 +78,9 @@ const StoragePage = () => {
     } else {
       params.delete("factory");
     }
-    params.set("tab", activeTab);
+    params.set("mainTab", mainTab);
     setSearchParams(params);
-  }, [selectedFactoryId, activeTab]);
+  }, [selectedFactoryId, mainTab]);
 
   // Load parts data when factory is selected, tab changes, or search params change
   useEffect(() => {
@@ -92,7 +95,7 @@ const StoragePage = () => {
       const partName = searchParams.get("partName") || undefined;
       const partId = searchParams.get("partId") ? Number(searchParams.get("partId")) : undefined;
 
-      if (activeTab === "storage") {
+      if (mainTab === "storage") {
         setLoadingStorage(true);
         try {
           const { data, count } = await fetchStorageParts({
@@ -109,7 +112,7 @@ const StoragePage = () => {
         } finally {
           setLoadingStorage(false);
         }
-      } else {
+      } else if (mainTab === "damaged") {
         setLoadingDamaged(true);
         try {
           const { data, count } = await fetchDamagedPartsByFactoryID({
@@ -127,10 +130,11 @@ const StoragePage = () => {
           setLoadingDamaged(false);
         }
       }
+      // Note: Repair management will have its own data loading logic when implemented
     };
 
     loadPartsData();
-  }, [selectedFactoryId, activeTab, searchParams]);
+  }, [selectedFactoryId, mainTab, searchParams]);
 
   const handleSearch = async (partName: string | null, partId: number | null) => {
     if (!selectedFactoryId) return;
@@ -164,10 +168,10 @@ const StoragePage = () => {
 
     setIsSubmitting(true);
     try {
-      if (activeTab === "storage") {
+      if (mainTab === "storage") {
         await upsertStoragePart(selectedPart.id, selectedFactoryId, quantityNum);
         toast.success("Part added to storage successfully");
-      } else {
+      } else if (mainTab === "damaged") {
         await upsertDamagedPart(selectedPart.id, selectedFactoryId, quantityNum);
         toast.success("Part added to damaged parts successfully");
       }
@@ -181,7 +185,7 @@ const StoragePage = () => {
       refreshCurrentData();
     } catch (error) {
       console.error("Error adding part:", error);
-      toast.error(`Failed to add part to ${activeTab === "storage" ? "storage" : "damaged parts"}`);
+      toast.error(`Failed to add part to ${mainTab === "storage" ? "storage" : "damaged parts"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -206,7 +210,7 @@ const StoragePage = () => {
     const partName = searchParams.get("partName") || undefined;
     const partId = searchParams.get("partId") ? Number(searchParams.get("partId")) : undefined;
 
-    if (activeTab === "storage") {
+    if (mainTab === "storage") {
       setLoadingStorage(true);
       try {
         const { data, count } = await fetchStorageParts({
@@ -223,7 +227,7 @@ const StoragePage = () => {
       } finally {
         setLoadingStorage(false);
       }
-    } else {
+    } else if (mainTab === "damaged") {
       setLoadingDamaged(true);
       try {
         const { data, count } = await fetchDamagedPartsByFactoryID({
@@ -248,133 +252,283 @@ const StoragePage = () => {
       <NavigationBar />
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <main className="p-4 sm:px-6 sm:py-0 mt-2">
-          {/* Factory Selection Dropdown */}
-          <div className="mb-4">
-            <Label className="mb-2">Select Factory</Label>
-            <Select
-              value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
-              onValueChange={(value) => setSelectedFactoryId(value === "" ? undefined : Number(value))}
-            >
-              <SelectTrigger className="w-[220px] mt-2">
-                <SelectValue>
-                  {selectedFactoryId === undefined ? "Select a Factory" : factories.find(f => f.id === selectedFactoryId)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {factories.map(factory => (
-                  <SelectItem key={factory.id} value={factory.id.toString()}>
-                    {factory.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Top Level Controls */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+              {/* Main Tab Switcher */}
+              <Tabs value={mainTab} onValueChange={setMainTab}>
+                <TabsList className="inline-flex h-12 w-[600px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  <TabsTrigger value="storage" className="w-[190px] text-base">Storage Management</TabsTrigger>
+                  <TabsTrigger value="damaged" className="w-[190px] text-base">Damaged Management</TabsTrigger>
+                  <TabsTrigger value="repair" className="w-[190px] text-base">Repair Management</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Factory Selection */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">
+                  {mainTab === "repair" ? "Factory Filter:" : "Select Factory:"}
+                </Label>
+                <Select
+                  value={selectedFactoryId === undefined ? (mainTab === "repair" ? "all" : "") : selectedFactoryId.toString()}
+                  onValueChange={(value) => setSelectedFactoryId(value === "" || value === "all" ? undefined : Number(value))}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue>
+                      {selectedFactoryId === undefined ? 
+                        (mainTab === "repair" ? "All Factories" : "Select a Factory") : 
+                        factories.find(f => f.id === selectedFactoryId)?.name
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mainTab === "repair" && <SelectItem value="all">All Factories</SelectItem>}
+                    {factories.map(factory => (
+                      <SelectItem key={factory.id} value={factory.id.toString()}>
+                        {factory.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          {selectedFactoryId === undefined ? (
+                    {(mainTab === "storage" || mainTab === "damaged") && selectedFactoryId === undefined ? (
             <div className="text-center text-lg">Please select a factory to view parts</div>
           ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <CardTitle>{activeTab === "storage" ? "Storage Parts" : "Damaged Parts"}</CardTitle>
-                    <CardDescription>
-                      {activeTab === "storage" ? "View and manage parts in storage" : "View and manage damaged parts"}
-                    </CardDescription>
-                  </div>
-                  <SearchAndFilter 
-                    filterConfig={[
-                      { type: 'partName', label: 'Part Name' },
-                      { type: 'partId', label: 'Part ID' },
-                    ]}
-                  />
-                </div>
-                <div className="flex items-center gap-4">
-                  <Button 
-                    onClick={() => setIsAddPartDialogOpen(true)}
-                    className="bg-blue-700 hover:bg-blue-800"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Part
-                  </Button>
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="inline-flex h-10 w-[300px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                      <TabsTrigger value="storage" className="w-[140px]">Storage Parts</TabsTrigger>
-                      <TabsTrigger value="damaged" className="w-[140px]">Damaged Parts</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Part ID</TableHead>
-                      <TableHead>Part Name</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead className="text-right">
-                        <span className="sr-only">Actions</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(activeTab === "storage" ? loadingStorage : loadingDamaged) ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center">
-                          <div className="flex items-center justify-center space-x-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Loading {activeTab === "storage" ? "storage" : "damaged"} parts...</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      (activeTab === "storage" ? storageParts : damagedParts).map((part) => (
-                        <StoragePartsRow 
-                          key={part.id} 
-                          part={part} 
-                          isDamaged={activeTab === "damaged"} 
-                          onDelete={refreshCurrentData}
-                        />
-                      ))
+            <>
+              {/* Storage Management Section */}
+              {mainTab === "storage" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <CardTitle>Storage Parts</CardTitle>
+                        <CardDescription>View and manage parts in storage</CardDescription>
+                      </div>
+                      <SearchAndFilter 
+                        filterConfig={[
+                          { type: 'partName', label: 'Part Name' },
+                          { type: 'partId', label: 'Part ID' },
+                        ]}
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        onClick={() => setIsAddPartDialogOpen(true)}
+                        className="bg-blue-700 hover:bg-blue-800"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Part
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Part ID</TableHead>
+                          <TableHead>Part Name</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead className="text-right">
+                            <span className="sr-only">Actions</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingStorage ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">
+                              <div className="flex items-center justify-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Loading storage parts...</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          storageParts.map((part) => (
+                            <StoragePartsRow 
+                              key={part.id} 
+                              part={part} 
+                              isDamaged={false} 
+                              onDelete={refreshCurrentData}
+                            />
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                    {!loadingStorage && totalPages > 1 && (
+                      <div className="flex items-center justify-center space-x-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-sm">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
                     )}
-                  </TableBody>
-                </Table>
-                {!(activeTab === "storage" ? loadingStorage : loadingDamaged) && totalPages > 1 && (
-                  <div className="flex items-center justify-center space-x-2 mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Damaged Parts Section */}
+              {mainTab === "damaged" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <CardTitle>Damaged Parts</CardTitle>
+                        <CardDescription>View and manage damaged parts</CardDescription>
+                      </div>
+                      <SearchAndFilter 
+                        filterConfig={[
+                          { type: 'partName', label: 'Part Name' },
+                          { type: 'partId', label: 'Part ID' },
+                        ]}
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        onClick={() => setIsAddPartDialogOpen(true)}
+                        className="bg-blue-700 hover:bg-blue-800"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Damaged Part
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Part ID</TableHead>
+                          <TableHead>Part Name</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead className="text-right">
+                            <span className="sr-only">Actions</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingDamaged ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">
+                              <div className="flex items-center justify-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Loading damaged parts...</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          damagedParts.map((part) => (
+                            <StoragePartsRow 
+                              key={part.id} 
+                              part={part} 
+                              isDamaged={true} 
+                              onDelete={refreshCurrentData}
+                            />
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                    {!loadingDamaged && totalPages > 1 && (
+                      <div className="flex items-center justify-center space-x-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-sm">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Repair Management Section */}
+              {mainTab === "repair" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Repair Orders Management</CardTitle>
+                      <CardDescription>Track ongoing repairs and manage repair status across all factories</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        onClick={() => {/* TODO: Create new repair order */}}
+                        className="bg-green-700 hover:bg-green-800"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Repair Order
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Order ID</TableHead>
+                          <TableHead>Factory</TableHead>
+                          <TableHead>Part Name</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created Date</TableHead>
+                          <TableHead>Expected Completion</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {/* Placeholder data - this will be replaced with actual repair orders */}
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8">
+                            <div className="flex flex-col items-center space-y-2 text-muted-foreground">
+                              <div className="text-lg">No repair orders found</div>
+                              <div className="text-sm">Repair orders will appear here once the backend functionality is implemented</div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </main>
       </div>
 
-      {/* Add Part to Storage Dialog */}
+      {/* Add Part Dialog */}
       <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {activeTab === "storage" ? "Add Part to Storage" : "Add Part to Damaged Parts"}
+              {mainTab === "storage" ? "Add Part to Storage" : "Add Damaged Part"}
             </DialogTitle>
             <DialogDescription>
-              Add a part to the {activeTab === "storage" ? "storage" : "damaged parts"} of {factories.find(f => f.id === selectedFactoryId)?.name}
+              Add a part to the {mainTab === "storage" ? "storage" : "damaged parts"} of {factories.find(f => f.id === selectedFactoryId)?.name}
             </DialogDescription>
           </DialogHeader>
           
@@ -453,7 +607,7 @@ const StoragePage = () => {
                   Adding...
                 </>
               ) : (
-                `Add to ${activeTab === "storage" ? "Storage" : "Damaged Parts"}`
+                `Add to ${mainTab === "storage" ? "Storage" : "Damaged Parts"}`
               )}
             </Button>
           </DialogFooter>
