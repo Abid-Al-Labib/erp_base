@@ -9,37 +9,14 @@ import { CirclePlus, CircleX, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { insertPart } from "@/services/PartsService"
 import toast from 'react-hot-toast'
-import { fetchAppSettings } from "@/services/AppSettingsService"
+import { useAuth } from "@/context/AuthContext"
 
 const AddPartPage = () => {
     const [addPartEnabled,setAddPartEnabled] = useState(false)
     const [isSubmitting, setisSubmitting] = useState(false);
-
-    const loadAddPartSettings = async () => {
-        try {
-            const settings_data = await fetchAppSettings()
-            if (settings_data) {
-                const addPartSetting = settings_data.find(
-                    (setting) => setting.name === "Add Part"
-                );
-                if (addPartSetting) {
-                    setAddPartEnabled(addPartSetting.enabled)
-                    return addPartSetting.enabled;
-                }
-            }
-        } catch (error) {
-            toast.error("Could not load settings data")
-            setAddPartEnabled(false)
-            return false
-        }
-    }
-
-    useEffect(() => {
-        loadAddPartSettings();
-    },[]);
+    const appSetting = useAuth().appSettings
 
     const handleAddPart = async () => {
-        const enabled = await loadAddPartSettings();
         {
             setisSubmitting(true);
             try{
@@ -55,7 +32,7 @@ const AddPartPage = () => {
                     toast.error("Please fill out all the fields");
                     return;
                 }
-                if (enabled)
+                if (appSetting)
                 {
                     const response = await insertPart(name,unit,description)
                     if (response){

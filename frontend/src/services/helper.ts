@@ -1,4 +1,4 @@
-import { OrderedPart, Status, StatusTracker } from "@/types";
+import { ApplicationSettings, OrderedPart, Status, StatusTracker } from "@/types";
 
 
 export function mergeStatusWithTracker(statuses: Status[],statusTracker: StatusTracker[])
@@ -278,4 +278,11 @@ export const managePermission = (status: string, role: string): boolean => {
     return false;
   };
 
-
+export function isFeatureSettingEnabled(
+  app_settings: ApplicationSettings[]| null,
+  setting_name: string
+): boolean {
+  return (
+    app_settings?.some(s => s.name === setting_name && s.enabled === true) ?? false
+  );
+}

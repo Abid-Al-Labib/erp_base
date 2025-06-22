@@ -42,7 +42,7 @@ const ProfilePage = () => {
             const settings_data = await fetchAppSettings()
             if (settings_data) {
                 settings_data.forEach((setting) => {
-                    if (setting.name === "Reset Password") {
+                    if (setting.name === "Create Order") {
                         setEnableResetPassword(setting.enabled)
                         return setting.enabled
                     }
@@ -58,10 +58,10 @@ const ProfilePage = () => {
     const handleResetPasswordToggle = async (checked: boolean) => {
         try {
             setEnableResetPassword(checked)
-            await updateEnabledSettings("Reset Password", checked)
-            toast.success("Updated Reset Password setting")
+            await updateEnabledSettings("Create Order", checked)
+            toast.success("Updated Create Order setting")
         } catch (error) {
-            toast.error("Failed to update app settings")
+            toast.error("Failed to update Create Order settings")
         }
         
 
@@ -100,7 +100,7 @@ const ProfilePage = () => {
                         if (setting.name === "Add Part") {
                             setEnableAddPart(setting.enabled)
                         }
-                        if (setting.name === "Reset Password") {
+                        if (setting.name === "Create Order") {
                             setEnableResetPassword(setting.enabled)
                         }
                     })
@@ -186,7 +186,7 @@ const ProfilePage = () => {
                                             </div>
                                             <div className="flex flex-row items-center justify-between rounded-lg border p-4">
                                                 <div className="space-y-0.5">
-                                                    <label className="text-base">Reset Password</label>
+                                                    <label className="text-base">Create Order</label>
                                                     <p className="text-sm text-muted-foreground">Control if the users can reset their password</p>
                                                 </div>
                                                 <div>

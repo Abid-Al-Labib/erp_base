@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { fetchOrders } from "@/services/OrdersService";
 import { supabase_client } from "@/services/SupabaseClient";
 import SearchAndFilter from "@/components/customui/SearchAndFilter";
@@ -26,9 +26,10 @@ const OrderPage = () => {
     const [ordersPerPage] = useState(20);
     const [count, setCount] = useState(0);
     const profile = useAuth().profile;
-
+    const appSettings = useAuth().appSettings;
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-
+    const [createOrderEnabled,setCreateOrderEnabled] = useState<boolean>(false)
     const [showCompleted, setShowCompleted] = useState<boolean>(searchParams.has("showCompleted"));
 
     const [currentPage, setCurrentPage] = useState(
@@ -115,6 +116,24 @@ const OrderPage = () => {
         }
     };
     
+    useEffect(() => {
+        const loadCreateOrderSettings = async () => {
+            try {
+                if (appSettings) {
+                    appSettings.forEach((setting) => {
+                        if (setting.name === "Create Order") {
+                            console.log("Create order" + setting.enabled)
+                            setCreateOrderEnabled(setting.enabled);
+                        }
+                    });
+                }
+            } catch (error) {
+                toast.error("Could not load settings data");
+                setCreateOrderEnabled(false);
+            }
+        };
+        loadCreateOrderSettings();
+    }, []);
 
     useEffect(() => {
         const channel = supabase_client
@@ -177,14 +196,19 @@ const OrderPage = () => {
 
                                 {/* Create Order Button - Positioned on the right */}
                                 { (profile?.permission==='department' || profile?.permission==="admin" || profile?.permission==='finance') &&
-                                    <Link to="/createorder">
-                                        <Button size="sm" className="h-8 gap-1 bg-blue-950">
-                                            <PlusCircle className="h-3.5 w-3.5" />
-                                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                                Create New Order
-                                            </span>
-                                        </Button>
-                                    </Link>
+
+                                    <Button 
+                                    size="sm" 
+                                    className="h-8 gap-1 bg-blue-950"
+                                    disabled={!createOrderEnabled}
+                                    onClick={()=>navigate("/createorder")}
+                                    >
+                                        <PlusCircle className="h-3.5 w-3.5" />
+                                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                            Create New Order
+                                        </span>
+                                    </Button>
+
                                 }
                             </div>
                             <TabsContent value="all">

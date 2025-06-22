@@ -18,6 +18,9 @@ import PrivateRoute from './components/customui/routing/PrivateRouting'; // Impo
 import InvoicePage from './pages/InvoicePage';
 import ManagementPage from './pages/ManagementPage';
 import ExpenseLensPage from './pages/ExpenseLensPart';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import NoProfilePage from './pages/NoProfilePage';
+import DisabledPage from './pages/DisabledPage';
 
 const App: React.FC = () => {
   return (
@@ -94,7 +97,7 @@ const App: React.FC = () => {
           <Route
             path="/management"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={['admin']}>
                 <ManagementPage/>
               </PrivateRoute>
             }
@@ -147,7 +150,19 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
-        </Routes>
+          <Route 
+            path="/unauthorized" 
+            element={<UnauthorizedPage />} 
+          />
+          <Route 
+            path="/profileNotFound" 
+            element={<NoProfilePage />} 
+          />
+          <Route 
+            path="/PageDisabled" 
+            element={<DisabledPage />} 
+          />
+        </Routes>  
       </Router>
     </AuthProvider>
   );

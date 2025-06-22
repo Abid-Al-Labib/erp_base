@@ -32,11 +32,13 @@ import {
     InputOrderedPart 
 } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { isFeatureSettingEnabled } from "@/services/helper"
 
 
 const CreateOrderPage = () => {
 
     const profile = useAuth().profile
+    const appSettings = useAuth().appSettings
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [factories, setFactories] = useState<Factory[]>([]);
@@ -106,6 +108,21 @@ const CreateOrderPage = () => {
 
 
     const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false);
+
+    useEffect(() => {
+        const checkCreatingOrderIsEnabled = async () => {
+            if (appSettings){
+                if(!isFeatureSettingEnabled(appSettings,'Create Order')){
+                    navigate('/PageDisabled')
+                }
+            }
+            else { navigate('/PageDisabled')}
+
+        };
+
+        checkCreatingOrderIsEnabled();
+    }, []);
+
 
     // Array to store all parts
 
@@ -344,11 +361,10 @@ const CreateOrderPage = () => {
     useEffect(() => {
         const loadAddPartSettings = async () => {
             try {
-                const settings_data = await fetchAppSettings()
-                if (settings_data) {
-                    settings_data.forEach((setting) => {
-                        if (setting.name === "Add Part") {
-                            setaddPartEnabled(setting.enabled)
+                if (appSettings) {
+                    appSettings.forEach((appSettings) => {
+                        if (appSettings.name === "Add Part") {
+                            setaddPartEnabled(appSettings.enabled)
                         }
                     })
                 }
@@ -778,15 +794,16 @@ const CreateOrderPage = () => {
                                                     isSearchable
                                                     isLoading={isLoadingMoreParts}
                                                 />
-                                                {addPartEnabled && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="mt-2 w-full bg-blue-950"
-                                                        onClick={() => window.open('/addpart', '_blank')}
-                                                    >
-                                                        Create New Part
-                                                    </Button>
-                                                )}
+                                                
+                                                <Button
+                                                    size="sm"
+                                                    className="mt-2 w-full bg-blue-950"
+                                                    onClick={() => window.open('/addpart', '_blank')}
+                                                    disabled={!addPartEnabled}
+                                                >
+                                                    Create New Part
+                                                </Button>
+                                                
                                             </div>
 
                                             {/* Quantity */}

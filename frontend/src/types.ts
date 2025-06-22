@@ -6,6 +6,7 @@ export type Department = Tables<"departments">
 export type Status = Tables<"statuses">
 export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
+export type ApplicationSettings = Tables<"app_settings">
 // export type MachinePart = Tables<"machine_parts">
 export type StoragePart = {
     id: number;
@@ -15,7 +16,7 @@ export type StoragePart = {
     parts: Part;
 };
 
-export type ApplicationSettings = Tables<"app_settings">
+
 
 export type Machine = {
     id: number,

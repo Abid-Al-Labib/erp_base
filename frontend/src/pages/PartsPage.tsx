@@ -12,9 +12,9 @@ import { Part } from '@/types';
 import toast from 'react-hot-toast';
 import { convertUtcToBDTime } from '@/services/helper';
 import SearchAndFilter from "@/components/customui/SearchAndFilter"; // Import the SearchAndFilter component
-import { fetchAppSettings } from '@/services/AppSettingsService';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import AddPartPopup from '@/components/customui/Parts/AddPartPopup';
+import { useAuth } from '@/context/AuthContext';
 
 
 
@@ -28,7 +28,7 @@ const PartsPage = () => {
     const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false)
     const [isAddPartPopupOpen, setIsAddPartPopupOpen] = useState(false);
     const [sortBy, setSortBy] = useState<"name" | "id">("name");
-   
+    const appSettings = useAuth().appSettings
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [currentPage, setCurrentPage] = useState(
@@ -90,9 +90,8 @@ const PartsPage = () => {
     useEffect(() => {
         const loadAddPartSettings = async () => {
             try {
-                const settings_data = await fetchAppSettings();
-                if (settings_data) {
-                    settings_data.forEach((setting) => {
+                if (appSettings) {
+                    appSettings.forEach((setting) => {
                         if (setting.name === "Add Part") {
                             setaddPartEnabled(setting.enabled);
                         }
