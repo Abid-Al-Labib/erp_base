@@ -182,6 +182,9 @@ const HomePage = () => {
                 getName={(item) => item.part.name}
                 title="Most Frequently Ordered Parts"
                 description="View by this month or all-time"
+                onLabelClick={(item) => {
+                  window.open(`/viewpart/${item.part.id}`, '_blank');
+                }}
             />              
             )}
           </div>
@@ -193,6 +196,9 @@ const HomePage = () => {
                   getName={(item) => item.section}
                   title="High Maintenance Factory Sections"
                   description="Based on order frequency per factory section"
+                  onLabelClick={(item) => {
+                    window.open(`/management?card=factorySections`, '_blank');
+                  }}
               />
               )}
           </div>

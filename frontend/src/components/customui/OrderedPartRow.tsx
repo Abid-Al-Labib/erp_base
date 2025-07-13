@@ -16,9 +16,9 @@ import { convertUtcToBDTime} from "@/services/helper"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { Textarea } from "../ui/textarea"
-import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, updateStoragePartQty } from "@/services/StorageService"
+import { fetchStoragePartQuantityByFactoryID, reduceStoragePartQty, upsertStoragePart, updateStoragePartQty } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
-import { updateMachinePartQty } from "@/services/MachinePartsService"
+import { reduceMachinePartQty, updateMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
 import { Separator } from "../ui/separator"
@@ -31,10 +31,10 @@ interface OrderedPartRowProp{
     current_status: Status,
     factory_id: number
     machine_id: number,
-    order_type: string,
+    order_workflow_id: number,
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, orderedPartInfo, current_status, factory_id, machine_id, order_type}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, orderedPartInfo, current_status, factory_id, machine_id, order_workflow_id}) => {
   const profile = useAuth().profile
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
@@ -85,7 +85,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
           {
             const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && orderedPartInfo.qty===0
             setDisableTakeStorageRow(disableRow)
-            if (order_type === "Machine")
+            if (order_workflow_id == 1)
             {
               const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
               if (storage_data && storage_data.length>0) {
@@ -96,7 +96,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
               }
             }
           }
-          if(order_type == "Machine"){
+          if(order_workflow_id == 1){
             const past_purchase_result = await fetchLastCostAndPurchaseDate(orderedPartInfo.part_id);
             const last_change_result = await fetchLastChangeDate(machine_id,orderedPartInfo.part_id);
               if (past_purchase_result) {
@@ -127,12 +127,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
         toast.success("Ordered part has been approved!");
 
         //Logic to update storage and machine part quantity
-        if (order_type=="Machine"){
-          await updateMachinePartQty(
+        if (order_workflow_id == 1){
+          await reduceMachinePartQty(
             machine_id,
             orderedPartInfo.part_id,
             orderedPartInfo.qty,
-            'subtract'
           )
 
           // Call addDamagePartQuantity only if parts were subtracted
@@ -159,7 +158,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,new_storage_quantity)
               setCurrentStorageQty(new_storage_quantity)
               await updateOrderedPartQtyByID(orderedPartInfo.id,0)
-              await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty, 'add');
+              await reduceMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
               await updateSentDateByID(orderedPartInfo.id, new Date())
               await updateReceivedByFactoryDateByID(orderedPartInfo.id,new Date())
               
@@ -171,7 +170,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,0)
               setCurrentStorageQty(0)
               await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
-              await updateMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty,'add')
+              await updateMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty)
             }
             let takingFromStorageQty
             if(currentStorageQty <= orderedPartInfo.qty){
@@ -434,11 +433,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
             //if order type storage
             toast.success("Part received by factory date set!")
-            if (order_type=="Storage"){
-              await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty,'add');
+            if (order_workflow_id == 2){
+              await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
             }
-            if (order_type == "Machine") {
-              await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'add');
+            if (order_workflow_id == 1) {
+              await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
             }
           } catch (error) {
             toast.error("Error occured could not complete action");
@@ -478,11 +477,11 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
     const returnOrderedPart = async () => {
       try {
         await returnOrderedPartByID(orderedPartInfo.id)
-        if (order_type=="Storage"){
-          await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty,'subtract');
+        if (order_workflow_id == 2){
+          await reduceStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
         }
-        if (order_type == "Machine") {
-          await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'subtract');
+        if (order_workflow_id == 1) {
+          await reduceMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
         }
       } catch (error) {
         toast.error("Error returning Part")

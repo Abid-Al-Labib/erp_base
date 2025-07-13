@@ -87,6 +87,8 @@ const OrderPage = () => {
 
         });
         setCurrentPage(searchParams.get("page") ? Number(searchParams.get("page")) : 1);
+        // Sync showCompleted state with URL params whenever they change
+        setShowCompleted(searchParams.has("showCompleted"));
     }, [searchParams]);
 
 

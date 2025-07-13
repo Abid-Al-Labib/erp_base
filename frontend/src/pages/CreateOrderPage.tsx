@@ -56,7 +56,7 @@ const CreateOrderPage = () => {
     const [departmentId, setDepartmentId] = useState<number>(-1);
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
 
-    const [orderType, setOrderType] = useState('');
+    const [orderWorkflowId, setOrderWorkflowId] = useState<number>();
     const [description, setDescription] = useState('');
     const [note, setNote] = useState('');
 
@@ -68,11 +68,10 @@ const CreateOrderPage = () => {
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
     const isOrderFormComplete =
-        reqNum.trim() &&
         selectedFactoryId !== -1 &&
         departmentId !== -1 &&
-        description.trim() &&
-        (orderType !== 'Machine' || (selectedFactorySectionId !== -1 && selectedMachineId !== -1));
+        orderWorkflowId &&
+        (orderWorkflowId !== 1 || (selectedFactorySectionId !== -1 && selectedMachineId !== -1));  // This is where the order type and form completion is checked
     const [isOrderStarted, setIsOrderStarted] = useState(false);
 
 
@@ -160,11 +159,14 @@ const CreateOrderPage = () => {
                 return
             }
 
-            const fetchedReqNum = (await fetchOrderByReqNumandFactory(reqNum, selectedFactoryId)) ?? [];
-            if (fetchedReqNum.length > 0) {
-                toast.error("This Requisition Number has already been used in another order for this factory");
-                setReqNum('');
-                return;
+            // Only check for duplicate requisition number if one is provided
+            if (reqNum.trim()) {
+                const fetchedReqNum = (await fetchOrderByReqNumandFactory(reqNum, selectedFactoryId)) ?? [];
+                if (fetchedReqNum.length > 0) {
+                    toast.error("This Requisition Number has already been used in another order for this factory");
+                    setReqNum('');
+                    return;
+                }
             }
 
             setReqNum(reqNum.trim())
@@ -180,7 +182,7 @@ const CreateOrderPage = () => {
                 machine_id: selectedMachineId,
                 machine_name: selectedMachineName,
                 current_status_id: statusId,
-                order_type: orderType,
+                order_workflow_id: orderWorkflowId,
             };
             setTempOrderDetails(orderData);
             setShowPartForm(true); // This triggers the scroll due to useEffect
@@ -213,9 +215,7 @@ const CreateOrderPage = () => {
     });
 
     // Helper function to check if part is in storage
-    const checkPartInStorage = async (): Promise<boolean> => {
-        if (orderType !== "Machine") return false;
-        
+    const checkPartInStorage = async (): Promise<boolean> => {        
         const storage_data = await fetchStoragePartQuantityByFactoryID(partId, selectedFactoryId);
         return storage_data.length > 0 && storage_data[0].qty > 0;
     };
@@ -240,7 +240,7 @@ const CreateOrderPage = () => {
 
     // Helper function to create order based on type
     const createOrderByType = async (tempOrderDetails: InputOrder) => {
-        if (orderType === "Machine") {
+        if (orderWorkflowId == 1) {
             return await insertOrder(
                 tempOrderDetails.req_num,
                 tempOrderDetails.order_note,
@@ -250,7 +250,7 @@ const CreateOrderPage = () => {
                 tempOrderDetails.factory_section_id,
                 tempOrderDetails.machine_id,
                 1, // Current Status
-                tempOrderDetails.order_type,
+                tempOrderDetails.order_workflow_id,
             );
         } else {
             return await insertOrderStorage(
@@ -260,7 +260,7 @@ const CreateOrderPage = () => {
                 tempOrderDetails.department_id,
                 tempOrderDetails.factory_id,
                 1, // Current Status
-                tempOrderDetails.order_type,
+                tempOrderDetails.order_workflow_id,
             );
         }
     };
@@ -312,7 +312,7 @@ const CreateOrderPage = () => {
             setOrderedParts([]);
 
             await InsertStatusTracker(new Date(), orderId, 1, 1);
-            if (orderType === "Machine") {
+            if (orderWorkflowId == 1) {
                 setMachineIsRunningById(selectedMachineId, false);
             }
             
@@ -327,7 +327,7 @@ const CreateOrderPage = () => {
     const handleCancelOrder = () => {
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
-        setOrderType('');
+        setOrderWorkflowId(0);
         setDescription('')
         setTempOrderDetails(null);
     };
@@ -553,69 +553,84 @@ const CreateOrderPage = () => {
                         </CardHeader>
                         <CardContent className="flex-1 overflow-y-auto">
                             <div className="space-y-4">
-                                {/* Requisition Number */}
-                                <div>
-                                    <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number</Label>
-                                    <Input
-                                        id="req_num"
-                                        value={reqNum}
-                                        className="mt-1"
-                                        onChange={e => setReqNum(e.target.value)}
-                                        onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
-                                        disabled={isOrderStarted}
-                                    />
-                                </div>
-
-                                {/* Factory */}
-                                <div>
-                                    <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
-                                    <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue>{selectedFactoryName}</SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {factories.map((factory) => (
-                                                <SelectItem key={factory.id} value={factory.id.toString()}>
-                                                    {factory.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Department */}
-                                <div>
-                                    <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                    <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {departments.map((dept) => (
-                                                <SelectItem key={dept.id} value={dept.id.toString()}>
-                                                    {dept.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Order Type */}
+                                {/* Order Type - Main Dropdown */}
                                 <div>
                                     <Label htmlFor="orderType" className="text-sm font-medium">Order Type</Label>
-                                    <Select onValueChange={setOrderType} disabled={isOrderStarted}>
+                                    <Select onValueChange={(value) => setOrderWorkflowId(Number(value))} disabled={isOrderStarted}>
                                         <SelectTrigger className="mt-1">
-                                            <SelectValue>{orderType || "Storage or Machine?"}</SelectValue>
+                                            <SelectValue>
+                                            {orderWorkflowId == 1 ? "1 - Order for Machine" :
+                                             orderWorkflowId == 2 ? "2 - Order for Storage" :
+                                             orderWorkflowId == 3 ? "3 - Storage to Machine" :
+                                             orderWorkflowId == 4 ? "4 - Machine to Storage" :
+                                             "Select Order Type"}
+                                        </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Storage">Storage</SelectItem>
-                                            <SelectItem value="Machine">Machine</SelectItem>
+                                            <SelectItem value="1">1 - Order for Machine</SelectItem>
+                                            <SelectItem value="2">2 - Order for Storage</SelectItem>
+                                            <SelectItem value="3">3 - Storage to Machine</SelectItem>
+                                            <SelectItem value="4">4 - Machine to Storage</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
+                                {/* Requisition Number - Show only after Order Type is selected */}
+                                {orderWorkflowId && (
+                                    <div>
+                                        <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
+                                        <Input
+                                            id="req_num"
+                                            value={reqNum}
+                                            className="mt-1"
+                                            placeholder="Enter requisition number (optional)"
+                                            onChange={e => setReqNum(e.target.value)}
+                                            onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                            disabled={isOrderStarted}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Factory - Show only after Order Type is selected */}
+                                {orderWorkflowId && (
+                                    <div>
+                                        <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
+                                        <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue>{selectedFactoryName}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {factories.map((factory) => (
+                                                    <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                        {factory.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                {/* Department - Show only after Order Type is selected */}
+                                {orderWorkflowId && (
+                                    <div>
+                                        <Label htmlFor="department" className="text-sm font-medium">Department</Label>
+                                        <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {departments.map((dept) => (
+                                                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                        {dept.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
                                 {/* Factory Section and Machine (only for Machine orders) */}
-                                {orderType === "Machine" && (
+                                {orderWorkflowId == 1 && (
                                     <>
                                         <div>
                                             <Label htmlFor="factorySection" className="text-sm font-medium">Factory Section</Label>
@@ -666,18 +681,20 @@ const CreateOrderPage = () => {
                                     </>
                                 )}
 
-                                {/* Description */}
-                                <div>
-                                    <Label htmlFor="description" className="text-sm font-medium">Description</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={description}
-                                        className={`mt-1 ${tempOrderDetails ? 'min-h-16' : 'min-h-20'}`}
-                                        onChange={e => setDescription(e.target.value)}
-                                        disabled={isOrderStarted}
-                                        placeholder="Enter order description..."
-                                    />
-                                </div>
+                                {/* Description - Show only after Order Type is selected */}
+                                {orderWorkflowId && (
+                                    <div>
+                                        <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                                        <Textarea
+                                            id="description"
+                                            value={description}
+                                            className={`mt-1 ${tempOrderDetails ? 'min-h-16' : 'min-h-20'}`}
+                                            onChange={e => setDescription(e.target.value)}
+                                            disabled={isOrderStarted}
+                                            placeholder="Enter order description (optional)"
+                                        />
+                                    </div>
+                                )}
 
                             </div>
                         </CardContent>
@@ -738,8 +755,8 @@ const CreateOrderPage = () => {
                                         <div className="text-right">
                                             <CardTitle className="text-lg">{selectedFactoryName}</CardTitle>
                                             <CardDescription className="text-sm">
-                                                {tempOrderDetails?.order_type === "Storage"
-                                                    ? "Storage"
+                                                {tempOrderDetails?.order_workflow_id == 2
+                                                    ? "Storage Order"
                                                     : `${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} - ${tempOrderDetails?.machine_name || "N/A"}`}
                                             </CardDescription>
                                         </div>
@@ -912,7 +929,7 @@ const CreateOrderPage = () => {
                                                     <TableCell>
                                                         <span className={`inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ${
                                                             part.is_sample_sent_to_office 
-                                                                ? 'bg-green-100 text-green-800' 
+                                                                ? 'bg-green-100 text-green-600' 
                                                                 : 'bg-gray-100 text-gray-800'
                                                         }`}>
                                                             {part.is_sample_sent_to_office ? 'Yes' : 'No'}
@@ -921,7 +938,7 @@ const CreateOrderPage = () => {
                                                     <TableCell>
                                                         <span className={`inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ${
                                                             part.in_storage 
-                                                                ? 'bg-blue-100 text-blue-800' 
+                                                                ? 'bg-green-100 text-green-600' 
                                                                 : 'bg-orange-100 text-orange-800'
                                                         }`}>
                                                             {part.in_storage ? 'Yes' : 'No'}

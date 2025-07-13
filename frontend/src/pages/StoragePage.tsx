@@ -76,6 +76,7 @@ const StoragePage = () => {
       params.delete("factory");
     }
     params.set("tab", activeTab);
+    params.set("page", "1"); // Reset to first page when tab changes
     setSearchParams(params);
   }, [selectedFactoryId, activeTab]);
 
@@ -103,6 +104,7 @@ const StoragePage = () => {
             limit: ITEMS_PER_PAGE
           });
           setStorageParts(data);
+          console.log("Storage parts loaded:", data);
           setTotalItems(count || 0);
         } catch (error) {
           console.error("Error loading storage parts:", error);

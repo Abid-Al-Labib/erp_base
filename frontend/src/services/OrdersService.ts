@@ -48,7 +48,7 @@ export const fetchOrders = async ({
             factory_id,
             machine_id,
             factory_section_id,
-            order_type,
+            order_workflow_id,
             departments(*),
             profiles(*),
             statuses(*),
@@ -127,7 +127,7 @@ export const fetchOrders = async ({
 
     if (filters.selectedOrderType && filters.selectedOrderType !== 'all') {
         console.log('Fetching orders with orderType', filters.selectedOrderType);
-        queryBuilder = queryBuilder.eq('order_type', filters.selectedOrderType);
+        queryBuilder = queryBuilder.eq('order_workflow_id', filters.selectedOrderType);
     }
 
     const { data, error, count } = await queryBuilder;
@@ -153,7 +153,7 @@ export const fetchOrderByID = async (order_id:number) => {
             factory_id,
             machine_id,
             factory_section_id,
-            order_type,
+            order_workflow_id,
             departments(*),
             profiles(*),
             statuses(*),
@@ -184,7 +184,7 @@ export const fetchOrderByReqNum = async (reqNum: string) => {
             factory_id,
             machine_id,
             factory_section_id,
-            order_type,
+            order_workflow_id,
             departments(*),
             profiles(*),
             statuses(*),
@@ -215,7 +215,7 @@ export const fetchOrderByReqNumandFactory = async (reqNum: string, factoryId: nu
             factory_id,
             machine_id,
             factory_section_id,
-            order_type,
+            order_workflow_id,
             departments(*),
             profiles(*),
             statuses(*),
@@ -265,7 +265,7 @@ export const insertOrder = async (
     factory_section_id: number,
     machine_id: number,
     current_status_id: number,
-    order_type: string, ) => {
+    order_workflow_id: number, ) => {
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -277,7 +277,7 @@ export const insertOrder = async (
             "factory_section_id": factory_section_id,
             "machine_id": machine_id,
             "current_status_id": current_status_id,
-            "order_type": order_type,
+            "order_workflow_id": order_workflow_id,
             
         },
         ])
@@ -296,7 +296,7 @@ export const insertOrderStorage = async (
     department_id: number,
     factory_id: number,
     current_status_id: number,
-    order_type: string, ) => {
+    order_workflow_id: number, ) => {
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -306,7 +306,7 @@ export const insertOrderStorage = async (
             "department_id": department_id,
             "factory_id": factory_id,
             "current_status_id": current_status_id,
-            "order_type": order_type,
+            "order_workflow_id": order_workflow_id,
         },
     ])
         .select()
@@ -331,7 +331,7 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
             factory_id,
             machine_id,
             factory_section_id,
-            order_type,
+            order_workflow_id,
             departments(*),
             profiles(*),
             statuses(*),
