@@ -100,45 +100,89 @@ export const upsertStoragePart = async (part_id: number, factory_id: number, qua
         
 // }
 
-export const updateStoragePartQty = async (part_id: number, factory_id: number, quantity: number, type: 'add'|'subtract') => {
-
-    const { data: currentData, error } = await supabase_client
+export const updateStoragePartQty = async (part_id: number, factory_id: number, quantity: number) => {
+    const { data: currentData, error: fetchError } = await supabase_client
         .from('storage_parts')
         .select('qty')
         .eq('part_id', part_id).eq('factory_id', factory_id)
 
+
+    toast.success("Updating part " + part_id + " in factory " + factory_id + " with quantity " + quantity)
+    if (fetchError) {
+        toast.error(fetchError.message)
+        return
+    }
+
     let updatedQuantity = 0
     
-    if (type === 'add') {
-        if (currentData){
-            updatedQuantity = currentData[0].qty+quantity;
-        }
-        else updatedQuantity = updatedQuantity + quantity
+    if (currentData && currentData.length > 0){
+        updatedQuantity = currentData[0].qty + quantity;
     }
-    else 
-    {
-        if(currentData){
-            if (currentData[0].qty>=quantity){
-                updatedQuantity = currentData[0].qty - quantity;
-            }
-        } 
+    else {
+        updatedQuantity = quantity; // For new parts, just use the quantity being added
     }
     
+    const { error: upsertError } = await supabase_client
+        .from('storage_parts')
+        .upsert({
+            part_id: part_id,
+            factory_id: factory_id,
+            qty: updatedQuantity
+        }, { onConflict: 'part_id, factory_id' }
+        )
 
-    
-    const {  } = await supabase_client
-    .from('storage_parts')
-    .upsert({
-        part_id: part_id,
-        factory_id: factory_id,
-        qty: updatedQuantity
-    }, { onConflict: 'part_id, factory_id' }
-    )
-
-    if (error) {
-        toast.error(error.message)
+    if (upsertError) {
+        toast.error(upsertError.message)
     }   
+}
 
+export const reduceStoragePartQty = async (part_id: number, factory_id: number, quantity: number) => {
+    const { data: currentData, error: fetchError } = await supabase_client
+        .from('storage_parts')
+        .select('qty')
+        .eq('part_id', part_id).eq('factory_id', factory_id)
+
+    if (fetchError) {
+        toast.error(fetchError.message)
+        return
+    }
+
+    if (!currentData || currentData.length === 0) {
+        toast.error('Part not found in storage')
+        return
+    }
+
+    const currentQuantity = currentData[0].qty
+    const newQuantity = currentQuantity - quantity
+
+    if (newQuantity < 0) {
+        toast.error('Insufficient quantity in storage')
+        return
+    }
+
+    if (newQuantity === 0) {
+        // Remove the part from storage if quantity becomes 0
+        const { error: deleteError } = await supabase_client
+            .from('storage_parts')
+            .delete()
+            .eq('part_id', part_id)
+            .eq('factory_id', factory_id)
+
+        if (deleteError) {
+            toast.error(deleteError.message)
+        }
+    } else {
+        // Update the quantity
+        const { error: updateError } = await supabase_client
+            .from('storage_parts')
+            .update({ qty: newQuantity })
+            .eq('part_id', part_id)
+            .eq('factory_id', factory_id)
+
+        if (updateError) {
+            toast.error(updateError.message)
+        }
+    }
 }
 
 export const editStoragePartQty = async (part_id: number, factory_id: number, new_quantity: number) => {

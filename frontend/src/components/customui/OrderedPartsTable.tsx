@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { showAddPartButton , showAllBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
-import { updateMachinePartQty } from "@/services/MachinePartsService";
+import { reduceMachinePartQty, updateMachinePartQty } from "@/services/MachinePartsService";
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
 import { setMachineIsRunningById } from "@/services/MachineServices";
 import { Label } from "../ui/label";
@@ -71,12 +71,11 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, parts, 
         }
    
         // If order type is "Machine" and the part is not approved, update quantities
-        if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
-          await updateMachinePartQty(
+        if (order.order_workflow_id == 1 && !ordered_part.approved_pending_order) {
+          await reduceMachinePartQty(
             order.machine_id,
             ordered_part.part_id,
             ordered_part.qty,
-            'subtract'
           )
           promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, ordered_part.qty));
           
@@ -178,7 +177,7 @@ const handleAdvanceOrderStatus = async () => {
     if (next_status_id && next_status_id!==-1 && current_status.id !== next_status_id){
       await UpdateStatusByID(order.id,next_status_id)
       await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
-      if(order.order_type == "Machine"){
+      if(order.order_workflow_id == 1){
         if(next_status_id == 8){
           if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
             setMachineIsRunningById(order.machine_id,true)
@@ -254,7 +253,7 @@ const handleAddPart = async () => {
   try {
 
       const storage_data =  await fetchStoragePartQuantityByFactoryID(selectedPartId,order.factory_id)
-      if (order.order_type==="Machine" && storage_data.length>0 && storage_data[0].qty>0)
+      if (order.order_workflow_id == 1 && storage_data.length>0 && storage_data[0].qty>0)
       {
         //machine and there is part in storage so send true for in_storage param  
         insertOrderedParts(
@@ -435,7 +434,7 @@ const handleOrderManagement = async () => {
               current_status={current_status}
               factory_id={order.factory_id}
               machine_id={order.machine_id}
-              order_type={order.order_type}/>
+              order_workflow_id={order.order_workflow_id}/>
             ))}
               {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
                 <TableCell className="font-bold">Total:</TableCell>
@@ -482,7 +481,7 @@ const handleOrderManagement = async () => {
               current_status={current_status}
               factory_id={order.factory_id}
               machine_id={order.machine_id}
-              order_type={order.order_type}/>
+              order_workflow_id={order.order_workflow_id}/>
             ))}
             <TableRow>
               <TableCell></TableCell>
@@ -579,7 +578,7 @@ const handleOrderManagement = async () => {
               current_status={current_status}
               factory_id={order.factory_id}
               machine_id={order.machine_id}
-              order_type={order.order_type}/>
+              order_workflow_id={order.order_workflow_id}/>
             ))}
               {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
                 <TableCell className="font-bold">Total:</TableCell>

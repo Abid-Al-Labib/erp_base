@@ -91,9 +91,8 @@ export const updateMachinePartQuantities = async (
 export const updateMachinePartQty = async (
     machine_id: number,
     part_id: number,
-    new_quantity: number,
-    direction: 'add' | 'subtract'
-): Promise<number | void> => {
+    quantity: number
+): Promise<void> => {
     // Fetch the current quantity for the given machine_id and part_id
     const { data: currentData, error: fetchError } = await supabase_client
         .from("machine_parts")
@@ -106,29 +105,9 @@ export const updateMachinePartQty = async (
         toast.error(fetchError.message);
         return;
     }
-    let returnFlag = 0
-    let updatedQuantity = 0
-    // Check if data is present and calculate the updated quantity
+
     const currentQty = currentData && currentData.length > 0 ? currentData[0].qty : 0;
-    if(direction == 'subtract') {
-        if (currentQty < new_quantity) {
-            updatedQuantity = new_quantity;
-            returnFlag = currentQty
-            console.log("currentlt", currentQty, "new", updatedQuantity);
-        }
-        if (currentQty == 0){
-            updatedQuantity = 0;
-            returnFlag = 0;
-        }
-        else {
-            updatedQuantity = currentQty - new_quantity;
-            returnFlag = new_quantity;
-        }
-    } else { 
-        //This is for adding new parts
-        updatedQuantity = new_quantity + currentQty;
-        // console.log("new_quantity",new_quantity, " current_quantity", currentQty, " updated quantity", updatedQuantity)
-    }
+    const updatedQuantity = currentQty + quantity;
 
     // Upsert the new quantity value into the database
     const { error: upsertError } = await supabase_client
@@ -139,17 +118,69 @@ export const updateMachinePartQty = async (
                 machine_id: machine_id,
                 qty: updatedQuantity,
             },
-            { onConflict: "part_id, machine_id" } // Ensure conflict is managed correctly
+            { onConflict: "part_id, machine_id" }
         );
 
     // Handle upsert error if it occurs
     if (upsertError) {
         toast.error(upsertError.message);
-    } 
-    // else {
-    //     toast.success("Machine part quantity updated successfully!");
-    // }
-    return returnFlag;
+    }
+};
+
+export const reduceMachinePartQty = async (
+    machine_id: number,
+    part_id: number,
+    quantity: number
+): Promise<number> => {
+    // Fetch the current quantity for the given machine_id and part_id
+    const { data: currentData, error: fetchError } = await supabase_client
+        .from("machine_parts")
+        .select("qty")
+        .eq("part_id", part_id)
+        .eq("machine_id", machine_id);
+
+    // Handle error if the fetch fails
+    if (fetchError) {
+        toast.error(fetchError.message);
+        return 0;
+    }
+
+    if (!currentData || currentData.length === 0) {
+        toast.error('Part not found in machine');
+        return 0;
+    }
+
+    const currentQty = currentData[0].qty;
+    
+    // If trying to reduce more than available, reduce only what's available
+    const actualReductionAmount = Math.min(quantity, currentQty);
+    const newQuantity = currentQty - actualReductionAmount;
+
+    if (newQuantity === 0) {
+        // Remove the part from machine if quantity becomes 0
+        const { error: deleteError } = await supabase_client
+            .from("machine_parts")
+            .delete()
+            .eq("part_id", part_id)
+            .eq("machine_id", machine_id);
+
+        if (deleteError) {
+            toast.error(deleteError.message);
+        }
+    } else {
+        // Update the quantity
+        const { error: updateError } = await supabase_client
+            .from("machine_parts")
+            .update({ qty: newQuantity })
+            .eq("part_id", part_id)
+            .eq("machine_id", machine_id);
+
+        if (updateError) {
+            toast.error(updateError.message);
+        }
+    }
+
+    return actualReductionAmount;
 };
 
 export const updateRequiredQuantity = async (partId: number, newCurQty: number, newReqQty: number) => {

@@ -341,7 +341,7 @@ export type Database = {
           id: number
           machine_id: number | null
           order_note: string | null
-          order_type: string | null
+          order_workflow_id: number | null
           req_num: string | null
         }
         Insert: {
@@ -354,7 +354,7 @@ export type Database = {
           id?: number
           machine_id?: number | null
           order_note?: string | null
-          order_type?: string | null
+          order_workflow_id?: number | null
           req_num?: string | null
         }
         Update: {
@@ -367,7 +367,7 @@ export type Database = {
           id?: number
           machine_id?: number | null
           order_note?: string | null
-          order_type?: string | null
+          order_workflow_id?: number | null
           req_num?: string | null
         }
         Relationships: [

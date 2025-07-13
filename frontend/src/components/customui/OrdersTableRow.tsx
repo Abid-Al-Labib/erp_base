@@ -31,8 +31,8 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
   
   const handleDeleteOrder = async () => {
     try {
-      if (order.order_type == "Machine") {
-          if(order.current_status_id === 1) {
+      if (order.order_workflow_id == 1) {
+          if(order.current_status_id == 1) {
             if ((await (fetchRunningOrdersByMachineId(order.machine_id))).length == 1) {
               setMachineIsRunningById(order.machine_id, true)
               toast.success("Machine is now running")

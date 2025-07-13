@@ -86,7 +86,7 @@ export type Order = {
     machines: Machine | null,
     factories: Factory, 
     factory_sections: FactorySection | null
-    order_type: string
+    order_workflow_id: number
 };
 
 export type StatusTracker = {
@@ -126,7 +126,7 @@ export interface InputOrder {
     machine_id: number,
     machine_name: string,
     current_status_id: number,
-    order_type: string,
+    order_workflow_id: number,
 }
 
 export interface InputOrderedPart {
