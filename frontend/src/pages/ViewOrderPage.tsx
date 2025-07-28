@@ -4,41 +4,66 @@ import StatusTracker from "@/components/customui/StatusTracker";
 import OrderInfo from "@/components/customui/OrderInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Order } from "@/types";
+import { Order, OrderedPart } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
 import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 import { supabase_client } from "@/services/SupabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import NavigationBar from "@/components/customui/NavigationBar";
+import ViewOrderedPartsSection from "@/components/customui/ViewOrderedPartsSection";
+import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
+  const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingOrderedParts, setLoadingOrderedParts] = useState(true);
   const navigate = useNavigate();
   const profile = useAuth().profile;
-  const loadOrders = async () => {
-    if (!id || isNaN(parseInt(id))) {
-      toast.error("Invalid order ID");
-      navigate("/orders");
-      return;
-    }
-    const order_id = parseInt(id);
-    try {
-      const data = await fetchOrderByID(order_id);
-      if (data) {
-        setOrder(data);
-      } else {
-        toast.error("Order not found");
-        navigate("/orders");
+  
+   const loadOrderData = async () => {
+        if (!id || isNaN(parseInt(id))) {
+          toast.error("Invalid order ID");
+          navigate("/orders");
+          return;
+        }
+        const order_id = parseInt(id);
+        try {
+          const data = await fetchOrderByID(order_id);
+          loadOrderedParts(order_id)
+          if (data) {
+            setOrder(data);
+          } else {
+            toast.error("Order not found");
+            navigate("/orders");
+          }
+
+
+        } catch (error) {
+          toast.error("Failed to fetch order info");
+          navigate("/orders");
+        } finally {
+          setLoading(false);
+        }
+    };
+
+  const loadOrderedParts = async (order_id:number) => {
+      try {
+        setLoadingOrderedParts(true)
+        const orderedPartsList = await fetchOrderedPartsByOrderID(order_id)
+        if (orderedPartsList) {
+          setOrderedParts(orderedPartsList)
+        }
+        else {
+          toast.error("Could not load ordered parts for this order")
+        }
+      } catch (error) {
+        toast.error("Error loading parts")
+      } finally {
+        setLoadingOrderedParts(false);
       }
-    } catch (error) {
-      toast.error("Failed to fetch order info");
-      navigate("/orders");
-    } finally {
-      setLoading(false);
     }
-  };
 
   useEffect(() => {
       const channel = supabase_client
@@ -52,11 +77,11 @@ const ViewOrderPage = () => {
           },
           () => {
               console.log("Changes detect, processing realtime")
-              loadOrders();
+              loadOrderData();
           }
       )
       .subscribe()
-    loadOrders();
+    loadOrderData();
   }, [id, navigate,supabase_client]);
 
   
@@ -88,7 +113,7 @@ const ViewOrderPage = () => {
               </div>
             </div>
             <div className="w-full mt-4 overflow-x-auto">
-              <OrderedPartsTable mode="view" order={order} parts={[]} current_status={order.statuses} />
+              <ViewOrderedPartsSection order={order} orderPartList={orderedParts} orderedPartsLoading={loadingOrderedParts} />
             </div>
           </div>
         </main>

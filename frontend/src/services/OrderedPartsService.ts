@@ -1,4 +1,4 @@
-import { OrderedPart, Part } from "@/types";
+import { Order, OrderedPart, Part, PartHistory } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 import { fetchPartsByIDs } from "./PartsService";
@@ -454,3 +454,43 @@ export const updateQtyTakenFromStorage = async (orderedpart_id: number, quantity
     }
 }
 
+
+export const getOrderedPartHistory = async (orderedPartList: OrderedPart[], order: Order) => {
+    const newHistoryMap: Record<number, PartHistory> = {};
+
+      for (const part of orderedPartList) {
+        const part_id = part.part_id;
+
+        const [pastPurchase, lastChange] = await Promise.all([
+          fetchLastCostAndPurchaseDate(part_id),
+          order.machine_id
+            ? fetchLastChangeDate(order.machine_id, part_id)
+            : Promise.resolve(null),
+        ]);
+
+        newHistoryMap[part_id] = {
+          lastUnitCost: pastPurchase?.unit_cost ?? null,
+          lastPurchaseDate: pastPurchase?.part_purchase_date ?? null,
+          lastVendor: pastPurchase?.vendor ?? null,
+          lastChangeDate: lastChange ?? null,
+        };
+      }
+
+    return newHistoryMap
+}
+
+
+export const calculateTotalCost = (orderPartList:OrderedPart[]) => {
+  if (orderPartList.length === 0) {
+      return "-"
+  }
+  let total = 0;
+  orderPartList.forEach((part) => {
+    if (part.qty && part.unit_cost) {
+      const cost = part.qty * part.unit_cost;
+      total += cost;
+    }
+  });
+
+    return total > 0 ? `BDT ${total}` : "-";
+};

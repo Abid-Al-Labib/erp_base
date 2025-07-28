@@ -7,6 +7,7 @@ export type Status = Tables<"statuses">
 export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
 export type ApplicationSettings = Tables<"app_settings">
+export type OrderWorkflow = Tables<"order_workflows">
 // export type MachinePart = Tables<"machine_parts">
 export type StoragePart = {
     id: number;
@@ -16,6 +17,12 @@ export type StoragePart = {
     parts: Part;
 };
 
+export type PartHistory = {
+  lastUnitCost: number | null;
+  lastPurchaseDate: string | null;
+  lastVendor: string | null;
+  lastChangeDate: string | null;
+};
 
 
 export type Machine = {
@@ -80,13 +87,15 @@ export type Order = {
     machine_id: number,
     factory_section_id: number,
     current_status_id: number,
+    order_workflow_id: number,
+    order_type: string,
     departments: Department,
     profiles: Profile,
     statuses: Status,
     machines: Machine | null,
     factories: Factory, 
-    factory_sections: FactorySection | null
-    order_type: string
+    factory_sections: FactorySection | null,
+    order_workflows: OrderWorkflow
 };
 
 export type StatusTracker = {

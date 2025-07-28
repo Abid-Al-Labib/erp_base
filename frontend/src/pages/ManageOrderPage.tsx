@@ -13,6 +13,7 @@ import { DialogContent, Dialog, DialogDescription, DialogTitle } from "@/compone
 
 import NavigationBar from "../components/customui/NavigationBar"
 import { fetchAllParts } from "@/services/PartsService";
+import ManageOrderedPartsSection from "@/components/customui/ManageOrderedParts/ManageOrderedPartsSection";
 
 const ManageOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -123,6 +124,10 @@ const ManageOrderPage = () => {
           order={order}
           parts = {parts}
           current_status={order.statuses}
+        />
+        <ManageOrderedPartsSection
+          order={order} 
+          parts={parts}
         />
       <div className="flex justify-end">
         <div className="my-3 mx-3">

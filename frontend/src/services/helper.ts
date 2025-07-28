@@ -91,6 +91,89 @@ export const isRevertStatusAllowed = (ordered_parts: OrderedPart[], current_stat
   return false
 }
 
+
+export const isLastStatusInWorkflow = (statusSequence: number[], currentStatusId: number): boolean => {
+  if (!Array.isArray(statusSequence) || statusSequence.length === 0) return false;
+  return statusSequence[statusSequence.length - 1] === currentStatusId;
+};
+
+
+
+/**
+ * Given the current status ID and the full sequence of statuses,
+ * returns the next status ID, or null if already at the end.
+ */
+export const getNextStatusIdFromSequence = (statusSequence: number[],currentStatusId: number): number | null => {
+  const currentIndex = statusSequence.indexOf(currentStatusId);
+  if (currentIndex === -1 || currentIndex >= statusSequence.length - 1) {
+    return null;
+  }
+  return statusSequence[currentIndex + 1];
+};
+
+export const isStatusActionsComplete = (orderedParts: OrderedPart[], currentStatus: string): boolean => {
+  const partsToCheck = orderedParts.filter(
+    (part) => !(part.in_storage && part.approved_storage_withdrawal && part.qty === 0)
+  );
+
+  switch (currentStatus) {
+    case "Pending":
+      return orderedParts.every((part) => part.approved_pending_order === true);
+
+    case "Order Sent To Head Office":
+      return (
+        (partsToCheck.length === 0 && orderedParts.length !== 0) ||
+        partsToCheck.every((part) => part.approved_office_order === true)
+      );
+
+    case "Waiting For Quotation":
+      return partsToCheck.every(
+        (part) =>
+          part.vendor !== null && part.unit_cost !== null && part.brand !== null
+      );
+
+    case "Budget Released":
+      return partsToCheck.every(
+        (part) =>
+          part.approved_budget === true &&
+          part.vendor !== null &&
+          part.unit_cost !== null &&
+          part.brand !== null
+      );
+
+    case "Waiting For Purchase":
+      return partsToCheck.every(
+        (part) =>
+          part.part_purchased_date !== null &&
+          part.vendor !== null &&
+          part.unit_cost !== null &&
+          part.brand !== null
+      );
+
+    case "Purchase Complete":
+      return partsToCheck.every((part) => part.part_sent_by_office_date !== null);
+
+    case "Parts Sent To Factory":
+      return orderedParts.every(
+        (part) =>
+          part.part_received_by_factory_date !== null &&
+          part.mrr_number !== null
+      );
+    case "Parts Received":
+      return true;
+    
+    case "Transferred To Machine":
+      return true;
+    
+    case "Transferred To Storage":
+      return true;  
+
+    default:
+      return false;
+  }
+};
+
+
 export const isChangeStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
   // Filter parts that have in_storage === false and approved_storage_withdrawal === false
   const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));

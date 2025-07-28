@@ -25,7 +25,7 @@ import { Textarea } from "../ui/textarea";
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService";
 
 interface OrderedPartsTableProp {
-  mode:  "view" | "manage" | "invoice"
+  mode:  "view" | "manage"
   order: Order
   parts: Part[]
   current_status: Status
@@ -379,128 +379,7 @@ const handleOrderManagement = async () => {
     navigate('/orders'); 
   };
 
-  if (mode==="view"){
-    return(      
-      <Card x-chunk="dashboard-06-chunk-0" className="mt-1">
-      <CardHeader>
-          <CardTitle>Parts Ordered</CardTitle>
-          <CardDescription>
-          <p>This is a list of parts that were ordered.</p>
-          </CardDescription>
-      </CardHeader>
-      {(loadingTable===true)? (
-                  <div className='animate-spin flex flex-row justify-center p-5'>
-                      <Loader2 />
-                  </div>
-        ):
-      <CardContent>
-        <Table>
-        <TableHeader>
-        <TableRow>
-            <TableHead></TableHead>
-            <TableHead className="whitespace-nowrap">Part</TableHead>
-            <TableHead className="whitespace-nowrap">In Storage</TableHead>
-            <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
-            <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
-            <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
-            <TableHead className="whitespace-nowrap">Last Change Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
-            <TableHead className="whitespace-nowrap">MRR number</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
-            <TableHead className="md:hidden">Info</TableHead>
-        </TableRow>
-        </TableHeader>
-        {loadingTable? (
-            <div className='flex flex-row justify-center'>
-                <Loader2 className='h-8 w-8 animate-spin'/>
-            </div>
-        ):
-        
-            <TableBody>
-            {orderedParts.map((orderedPart,index) => (                                        
-                <OrderedPartRow key={orderedPart.id}
-              index={index + 1}
-              mode="view"
-              orderedPartInfo={orderedPart}
-              current_status={current_status}
-              factory_id={order.factory_id}
-              machine_id={order.machine_id}
-              order_type={order.order_type}/>
-            ))}
-              {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
-                <TableCell className="font-bold">Total:</TableCell>
-                <TableCell className="font-bold">{totalCost}</TableCell>
-              </TableRow>
-              )}
-            </TableBody>
-        }  
-      </Table>
-      </CardContent>
-    }
-    </Card>
-    )
-  }
-  else if (mode==="invoice"){
-    return(      
-
-        <div>
-          <h2 className="text-lg font-bold">Parts Ordered</h2>
-          <p>The list of parts that were ordered.</p>
-        <Table className="">
-          <TableHeader>
-          <TableRow>
-            <TableHead></TableHead>
-            <TableHead>Part</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead>Brand</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead>Vendor</TableHead>}
-            <TableHead>Qty(Unit)</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead>Cost/Unit</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead>Subtotal</TableHead>}
-          </TableRow>
-          </TableHeader>
-          {loadingTable? (
-            <div className='flex flex-row justify-center'>
-                <Loader2 className='h-8 w-8 animate-spin'/>
-            </div>
-          ):
-            <TableBody>
-            {orderedParts.map((orderedPart,index) => (                                        
-                <OrderedPartRow key={orderedPart.id}
-              index={index+1}
-              mode="invoice"
-              orderedPartInfo={orderedPart}
-              current_status={current_status}
-              factory_id={order.factory_id}
-              machine_id={order.machine_id}
-              order_type={order.order_type}/>
-            ))}
-            <TableRow>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-            </TableBody>
-          }  
-        </Table>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <div className="flex justify-end">
-          <span className="font-bold">Total: {totalCost}</span>
-        </div>}
-        </div>
-    )
-  }
-  else if (mode==="manage"){
+  if (mode==="manage"){
     return(
       <Card x-chunk="dashboard-06-chunk-0" className="mt-5">
       <CardHeader>
