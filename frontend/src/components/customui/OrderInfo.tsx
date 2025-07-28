@@ -26,6 +26,10 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
                 <span>{order.id}</span>
             </li>
             <li className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Order Type</span>
+                <span>{order.order_type}</span>
+            </li>
+            <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Requisition Number</span>
                 <span>{order.req_num??'-'}</span>
             </li>

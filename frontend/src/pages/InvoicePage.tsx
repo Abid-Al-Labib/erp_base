@@ -1,4 +1,4 @@
-import { Order } from '@/types';
+import { Order, OrderedPart } from '@/types';
 import { convertUtcToBDTime } from '@/services/helper';
 import OrderedPartsTable from '@/components/customui/OrderedPartsTable';
 import { useEffect, useRef, useState } from 'react';
@@ -8,10 +8,14 @@ import { fetchOrderByID } from '@/services/OrdersService';
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from "react-to-print";
 import { Separator } from '@/components/ui/separator';
+import InvoiceSection from '@/components/customui/InvoiceSection';
+import { fetchOrderedPartsByOrderID } from '@/services/OrderedPartsService';
 const InvoicePage = () => {
     const { id } = useParams<{ id: string }>();
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingOrderedParts, setLoadingOrderedParts] = useState(true);
+    const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
     const navigate = useNavigate();
     const invoiceRef = useRef<HTMLDivElement | null>(null);
     
@@ -21,7 +25,7 @@ const InvoicePage = () => {
       });
     
 
-    const loadOrders = async () => {
+    const loadOrderData = async () => {
         if (!id || isNaN(parseInt(id))) {
           toast.error("Invalid order ID");
           navigate("/orders");
@@ -30,12 +34,15 @@ const InvoicePage = () => {
         const order_id = parseInt(id);
         try {
           const data = await fetchOrderByID(order_id);
+          loadOrderedParts(order_id)
           if (data) {
             setOrder(data);
           } else {
             toast.error("Order not found");
             navigate("/orders");
           }
+
+
         } catch (error) {
           toast.error("Failed to fetch order info");
           navigate("/orders");
@@ -44,8 +51,25 @@ const InvoicePage = () => {
         }
     };
 
+    const loadOrderedParts = async (order_id:number) => {
+      try {
+        setLoadingOrderedParts(true)
+        const orderedPartsList = await fetchOrderedPartsByOrderID(order_id)
+        if (orderedPartsList) {
+          setOrderedParts(orderedPartsList)
+        }
+        else {
+          toast.error("Could not load ordered parts for this order")
+        }
+      } catch (error) {
+        toast.error("Error loading parts")
+      } finally {
+        setLoadingOrderedParts(false);
+      }
+    }
+
     useEffect(() => {
-        loadOrders()
+        loadOrderData()
     }, []);
 
     
@@ -126,7 +150,7 @@ const InvoicePage = () => {
               <div className="max-w-xl text-balance leading-relaxed"><span className="font-semibold text-muted-foreground">Note: </span>{order.order_note}</div>
               <Separator/>
               <div className="w-full mt-2 overflow-x-auto">
-                <OrderedPartsTable mode="invoice" order={order} parts={[]} current_status={order.statuses} />
+                <InvoiceSection order={order} orderPartList={orderedParts} orderedPartsLoading={loadingOrderedParts}/>
               </div>
             </div>
           </main>

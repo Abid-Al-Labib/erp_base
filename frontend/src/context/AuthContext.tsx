@@ -2,19 +2,22 @@ import React, { createContext, ReactNode, useContext, useEffect, useState } from
 import { Session } from "@supabase/supabase-js";
 import { supabase_client } from "@/services/SupabaseClient";
 import { getUserProfile } from "../services/ProfilesService";
-import { ApplicationSettings, Profile } from "@/types";
+import { ApplicationSettings, Profile, Status } from "@/types";
 import { fetchAppSettings } from "@/services/AppSettingsService";
 import FullScreenLoader from "@/pages/FullScreenLoader";
+import { fetchStatuses } from "@/services/StatusesService";
 
 interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
+  allStatuses: Status[] | null
   role: string | null;
   appSettings: ApplicationSettings[] | null;
   loading: boolean;
   setSession: React.Dispatch<React.SetStateAction<Session | null>>;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   setAppSettings: React.Dispatch<React.SetStateAction<ApplicationSettings[] | null>>;
+  setAllStatuses: React.Dispatch<React.SetStateAction<Status[] | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -26,6 +29,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [allStatuses, setAllStatuses] = useState<Status[] | null>(null);
   const [appSettings, setAppSettings] = useState<ApplicationSettings[] | null>(null); 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -36,7 +40,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(session);
         await Promise.all([
           loadProfile(session.user.id),
-          loadAppSettings()
+          loadAppSettings(),
+          loadStatuses()
         ]);
       }
       setLoading(false);
@@ -86,10 +91,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const loadStatuses = async () => {
+    const all_statuses = await fetchStatuses();
+    if (all_statuses) {
+      setAllStatuses(all_statuses)
+    } else {
+      console.warn("Could not load all stasuses")
+    }
+  }
+
   const role = profile?.permission ?? null;
 
   return (
-    <AuthContext.Provider value={{ session, profile, role, appSettings, loading, setSession, setProfile, setAppSettings }}>
+    <AuthContext.Provider value={{ session, profile, role, appSettings, allStatuses, loading, setSession, setProfile, setAppSettings, setAllStatuses }}>
       {loading ? <FullScreenLoader /> : children}
     </AuthContext.Provider>
   );

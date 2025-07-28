@@ -2,7 +2,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import { ExternalLink, MoreHorizontal, Notebook, NotebookPen,  } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 import React, { useEffect, useState } from "react"
 import { Calendar } from "../ui/calendar"
 import { OrderedPart, Status } from "@/types"
@@ -21,7 +21,7 @@ import { useAuth } from "@/context/AuthContext"
 import { reduceMachinePartQty, updateMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
-import { Separator } from "../ui/separator"
+
 
 
 interface OrderedPartRowProp{
@@ -493,129 +493,8 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
     
   }
 
-  if(mode==='view'){
-    return (
-      <TableRow>
-        <TableCell>{index}.</TableCell>
-        <TableCell className="whitespace-nowrap"><a className="hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a></TableCell>
-        <TableCell className="whitespace-nowrap">
-          <Badge
-          className={orderedPartInfo.in_storage ? "bg-green-100" : "bg-red-100"}
-          variant="secondary"
-        >
-          {orderedPartInfo.in_storage ? "Yes" : "No"}
-         </Badge>
-        </TableCell>
-        <TableCell className="whitespace-nowrap">
-          <Badge
-            className={orderedPartInfo.approved_storage_withdrawal ? "bg-green-100" : "bg-red-100"}
-            variant="secondary"
-          >
-            {orderedPartInfo.approved_storage_withdrawal ? `${orderedPartInfo.qty_taken_from_storage}` : "No"}
-          </Badge>
-        </TableCell>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
-        <TableCell className="whitespace-nowrap">{lastVendor? lastVendor: '-'}</TableCell>
-        <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</TableCell>
-        <TableCell className="whitespace-nowrap">{lastChangeDate? convertUtcToBDTime(lastChangeDate).split(',')[0]: '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
-        <TableCell className="hidden md:table-cell">
-          {
-            orderedPartInfo.note?
-            (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Notebook className="hover:cursor-pointer"/>
-                </DialogTrigger>
-                  <DialogContent>
-                    <div>{orderedPartInfo.note}</div>    
-                  </DialogContent>
-              </Dialog>
-            ) : '-'
-          }
-        </TableCell>
-        {(profile?.permission === 'admin' || profile?.permission === 'finance') && <TableCell className="hidden md:table-cell">
-          {
-            orderedPartInfo.office_note?
-            ( <Dialog>
-                <DialogTrigger asChild>
-                  <NotebookPen className="hover:cursor-pointer"/>
-                </DialogTrigger>
-                  <DialogContent>
-                    <DialogTitle>Office Note</DialogTitle>
-                    {orderedPartInfo.office_note.split('\n').map((line, index) => (
-                    <p key={index}>
-                      {line}
-                    </p>
-                   ))}
-                  </DialogContent>
-              </Dialog>
-            ) : '-'
-          }
-        </TableCell>}
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_purchased_date? (convertUtcToBDTime(orderedPartInfo.part_purchased_date)).split(',')[0] : '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_sent_by_office_date ? (convertUtcToBDTime(orderedPartInfo.part_sent_by_office_date)).split(',')[0] : '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.part_received_by_factory_date ? (convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date)).split(',')[0] : '-'}</TableCell>
-        <TableCell className="whitespace-nowrap">{orderedPartInfo.mrr_number? orderedPartInfo.mrr_number: '-'}</TableCell>
-        <TableCell className="whitespace-nowrap hidden md:table-cell">{`${orderedPartInfo.is_sample_sent_to_office? 'Yes': 'No'} / ${orderedPartInfo.is_sample_received_by_office? 'Yes': 'No'}`}</TableCell>
-
-        <TableCell className="md:hidden">
-            <Dialog>
-              <DialogTrigger asChild>
-                <ExternalLink className="hover:cursor-pointer"/>
-              </DialogTrigger>
-                <DialogContent className="">
-                  <OrderedPartInfo 
-                    orderedPart={orderedPartInfo}                
-                  />    
-                </DialogContent>
-            </Dialog>
-        </TableCell>
-    </TableRow>
-    )
-  }
-  else if(mode==='invoice'){
-    return (
-      <TableRow>
-      <TableCell>{index}.</TableCell>
-      <TableCell>
-        <div className="flex-row gap-2">
-          <a className="font-bold text-lg hover:underline" target="_blank" href={`/viewpart/${orderedPartInfo.part_id}`}>{orderedPartInfo.parts.name}</a>
-          {(profile?.permission === 'admin' || profile?.permission=== 'finance') && 
-          <div className="flex gap-2">
-            <div className="whitespace-nowrap text-xs font-bold">MRR: {orderedPartInfo.mrr_number? orderedPartInfo.mrr_number : '-'}</div>
-            <div className="text-xs">Received Date: {orderedPartInfo.part_received_by_factory_date? convertUtcToBDTime(orderedPartInfo.part_received_by_factory_date).split(',')[0]: '-'}</div>
-          </div>}
-          {(profile?.permission === 'admin' || profile?.permission=== 'finance') && 
-          <div className="mt-1 text-xs">
-            History:
-          </div>}
-          { (profile?.permission === 'admin' || profile?.permission=== 'finance') && 
-          <div className="flex gap-2">
-            <div className="whitespace-nowrap text-xs">Cost: {lastUnitCost?`BDT ${lastUnitCost}` : '-'}</div>
-            <div className="text-xs">Vendor: {lastVendor? lastVendor: '-'}</div>
-          </div>}
-          { (profile?.permission === 'admin' || profile?.permission=== 'finance') && 
-          <div className="flex gap-2">
-            <div className="text-xs">LP Date: {lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</div>
-            <div className="text-xs">Change Date: {lastChangeDate? convertUtcToBDTime(lastChangeDate).split(',')[0]: '-'}</div>
-          </div>}
-        </div>
-      </TableCell>
-      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell>{orderedPartInfo.brand || '-'}</TableCell>}
-      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell>{orderedPartInfo.vendor || '-'}</TableCell>}
-      <TableCell className="whitespace-nowrap">{orderedPartInfo.qty}({orderedPartInfo.parts.unit})</TableCell>
-      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{orderedPartInfo.unit_cost || '-'}</TableCell>}
-      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{`${orderedPartInfo.unit_cost?orderedPartInfo.unit_cost*orderedPartInfo.qty: "-"}`}</TableCell>}
-
-      </TableRow>
-    )
-  }
-  else if(mode==="manage"){
+  
+  if(mode==="manage"){
     return(
         <TableRow className={`${
           disableTakeStorageRow ? 'bg-gray-300 pointer-events-none' : ''

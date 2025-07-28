@@ -79,7 +79,7 @@ export const showOfficeNoteButton = (status: string): boolean => {
 }
 
 export const showQuotationButton = (status: string, brand: string | null, vendor: string | null, unit_cost: number | null): boolean => {
-  if ((status === "Waiting For Quotation") && (brand === null || vendor === null || unit_cost === null)) {
+  if ((status === "Waiting For Purchase") && (brand === null || vendor === null || unit_cost === null)) {
     return true;
   }
   return false;
@@ -148,7 +148,6 @@ export const showSampleReceivedButton = (is_sample_sent_to_office: boolean, is_s
 }
 
 export const showReturnButton = (status: string, ordered_part: OrderedPart): boolean => {
-    console.log("return order part:",ordered_part)
     if (status === "Parts Received" && 
         ordered_part.brand!==null &&
         ordered_part.vendor!==null &&
