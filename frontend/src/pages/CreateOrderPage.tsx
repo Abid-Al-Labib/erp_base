@@ -56,7 +56,7 @@ const CreateOrderPage = () => {
     const [departmentId, setDepartmentId] = useState<number>(-1);
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
 
-    const [orderWorkflowId, setOrderWorkflowId] = useState<number>();
+    const [orderType, setOrderType] = useState<string>();
     const [description, setDescription] = useState('');
     const [note, setNote] = useState('');
 
@@ -70,8 +70,8 @@ const CreateOrderPage = () => {
     const isOrderFormComplete =
         selectedFactoryId !== -1 &&
         departmentId !== -1 &&
-        orderWorkflowId &&
-        (orderWorkflowId !== 1 || (selectedFactorySectionId !== -1 && selectedMachineId !== -1));  // This is where the order type and form completion is checked
+        orderType &&
+        (orderType !== "PFM" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1));  // This is where the order type and form completion is checked
     const [isOrderStarted, setIsOrderStarted] = useState(false);
 
 
@@ -182,7 +182,7 @@ const CreateOrderPage = () => {
                 machine_id: selectedMachineId,
                 machine_name: selectedMachineName,
                 current_status_id: statusId,
-                order_workflow_id: orderWorkflowId,
+                order_type: orderType,
             };
             setTempOrderDetails(orderData);
             setShowPartForm(true); // This triggers the scroll due to useEffect
@@ -240,7 +240,7 @@ const CreateOrderPage = () => {
 
     // Helper function to create order based on type
     const createOrderByType = async (tempOrderDetails: InputOrder) => {
-        if (orderWorkflowId == 1) {
+        if (orderType == "PFM") {
             return await insertOrder(
                 tempOrderDetails.req_num,
                 tempOrderDetails.order_note,
@@ -250,7 +250,7 @@ const CreateOrderPage = () => {
                 tempOrderDetails.factory_section_id,
                 tempOrderDetails.machine_id,
                 1, // Current Status
-                tempOrderDetails.order_workflow_id,
+                tempOrderDetails.order_type,
             );
         } else {
             return await insertOrderStorage(
@@ -260,7 +260,7 @@ const CreateOrderPage = () => {
                 tempOrderDetails.department_id,
                 tempOrderDetails.factory_id,
                 1, // Current Status
-                tempOrderDetails.order_workflow_id,
+                tempOrderDetails.order_type,
             );
         }
     };
@@ -312,7 +312,7 @@ const CreateOrderPage = () => {
             setOrderedParts([]);
 
             await InsertStatusTracker(new Date(), orderId, 1, 1);
-            if (orderWorkflowId == 1) {
+            if (orderType == "PFM") {
                 setMachineIsRunningById(selectedMachineId, false);
             }
             
@@ -327,7 +327,7 @@ const CreateOrderPage = () => {
     const handleCancelOrder = () => {
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
-        setOrderWorkflowId(0);
+        setOrderType("");
         setDescription('')
         setTempOrderDetails(null);
     };
@@ -556,27 +556,27 @@ const CreateOrderPage = () => {
                                 {/* Order Type - Main Dropdown */}
                                 <div>
                                     <Label htmlFor="orderType" className="text-sm font-medium">Order Type</Label>
-                                    <Select onValueChange={(value) => setOrderWorkflowId(Number(value))} disabled={isOrderStarted}>
+                                    <Select onValueChange={(value) => setOrderType(value)} disabled={isOrderStarted}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue>
-                                            {orderWorkflowId == 1 ? "1 - Order for Machine" :
-                                             orderWorkflowId == 2 ? "2 - Order for Storage" :
-                                             orderWorkflowId == 3 ? "3 - Storage to Machine" :
-                                             orderWorkflowId == 4 ? "4 - Machine to Storage" :
+                                            {orderType == "PFM" ? "1 - Order for Machine" :
+                                             orderType == "PFS" ? "2 - Order for Storage" :
+                                             orderType == "STM" ? "3 - Storage to Machine" :
+                                             orderType == "MTS" ? "4 - Machine to Storage" :
                                              "Select Order Type"}
                                         </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="1">1 - Order for Machine</SelectItem>
-                                            <SelectItem value="2">2 - Order for Storage</SelectItem>
-                                            <SelectItem value="3">3 - Storage to Machine</SelectItem>
-                                            <SelectItem value="4">4 - Machine to Storage</SelectItem>
+                                            <SelectItem value="PFM">1 - Order for Machine</SelectItem>
+                                            <SelectItem value="PFS">2 - Order for Storage</SelectItem>
+                                            <SelectItem value="STM">3 - Storage to Machine</SelectItem>
+                                            <SelectItem value="MTS">4 - Machine to Storage</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 {/* Requisition Number - Show only after Order Type is selected */}
-                                {orderWorkflowId && (
+                                {orderType && (
                                     <div>
                                         <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
                                         <Input
@@ -592,7 +592,7 @@ const CreateOrderPage = () => {
                                 )}
 
                                 {/* Factory - Show only after Order Type is selected */}
-                                {orderWorkflowId && (
+                                {orderType && (
                                     <div>
                                         <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
                                         <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
@@ -611,7 +611,7 @@ const CreateOrderPage = () => {
                                 )}
 
                                 {/* Department - Show only after Order Type is selected */}
-                                {orderWorkflowId && (
+                                {orderType && (
                                     <div>
                                         <Label htmlFor="department" className="text-sm font-medium">Department</Label>
                                         <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
@@ -630,7 +630,7 @@ const CreateOrderPage = () => {
                                 )}
 
                                 {/* Factory Section and Machine (only for Machine orders) */}
-                                {orderWorkflowId == 1 && (
+                                {orderType == "PFM" && (
                                     <>
                                         <div>
                                             <Label htmlFor="factorySection" className="text-sm font-medium">Factory Section</Label>
@@ -682,7 +682,7 @@ const CreateOrderPage = () => {
                                 )}
 
                                 {/* Description - Show only after Order Type is selected */}
-                                {orderWorkflowId && (
+                                {orderType && (
                                     <div>
                                         <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
                                         <Textarea
@@ -755,7 +755,7 @@ const CreateOrderPage = () => {
                                         <div className="text-right">
                                             <CardTitle className="text-lg">{selectedFactoryName}</CardTitle>
                                             <CardDescription className="text-sm">
-                                                {tempOrderDetails?.order_workflow_id == 2
+                                                {tempOrderDetails?.order_type == "PFS"
                                                     ? "Storage Order"
                                                     : `${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} - ${tempOrderDetails?.machine_name || "N/A"}`}
                                             </CardDescription>

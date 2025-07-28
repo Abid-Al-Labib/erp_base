@@ -71,7 +71,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, parts, 
         }
    
         // If order type is "Machine" and the part is not approved, update quantities
-        if (order.order_workflow_id == 1 && !ordered_part.approved_pending_order) {
+        if (order.order_type == "PFM" && !ordered_part.approved_pending_order) {
           await reduceMachinePartQty(
             order.machine_id,
             ordered_part.part_id,
@@ -177,7 +177,7 @@ const handleAdvanceOrderStatus = async () => {
     if (next_status_id && next_status_id!==-1 && current_status.id !== next_status_id){
       await UpdateStatusByID(order.id,next_status_id)
       await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
-      if(order.order_workflow_id == 1){
+      if(order.order_type == "PFM"){
         if(next_status_id == 8){
           if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
             setMachineIsRunningById(order.machine_id,true)
@@ -253,7 +253,7 @@ const handleAddPart = async () => {
   try {
 
       const storage_data =  await fetchStoragePartQuantityByFactoryID(selectedPartId,order.factory_id)
-      if (order.order_workflow_id == 1 && storage_data.length>0 && storage_data[0].qty>0)
+      if (order.order_type == "PFM" && storage_data.length>0 && storage_data[0].qty>0)
       {
         //machine and there is part in storage so send true for in_storage param  
         insertOrderedParts(
@@ -434,7 +434,7 @@ const handleOrderManagement = async () => {
               current_status={current_status}
               factory_id={order.factory_id}
               machine_id={order.machine_id}
-              order_workflow_id={order.order_workflow_id}/>
+              order_type={order.order_type}/>
             ))}
               {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
                 <TableCell className="font-bold">Total:</TableCell>
@@ -481,7 +481,7 @@ const handleOrderManagement = async () => {
               current_status={current_status}
               factory_id={order.factory_id}
               machine_id={order.machine_id}
-              order_workflow_id={order.order_workflow_id}/>
+              order_type={order.order_type}/>
             ))}
             <TableRow>
               <TableCell></TableCell>
@@ -578,7 +578,7 @@ const handleOrderManagement = async () => {
               current_status={current_status}
               factory_id={order.factory_id}
               machine_id={order.machine_id}
-              order_workflow_id={order.order_workflow_id}/>
+              order_type={order.order_type}/>
             ))}
               {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
                 <TableCell className="font-bold">Total:</TableCell>

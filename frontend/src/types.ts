@@ -87,7 +87,6 @@ export type Order = {
     machine_id: number,
     factory_section_id: number,
     current_status_id: number,
-    order_workflow_id: number,
     order_type: string,
     departments: Department,
     profiles: Profile,
@@ -135,7 +134,7 @@ export interface InputOrder {
     machine_id: number,
     machine_name: string,
     current_status_id: number,
-    order_workflow_id: number,
+    order_type: string,
 }
 
 export interface InputOrderedPart {

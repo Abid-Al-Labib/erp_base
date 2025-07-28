@@ -17,6 +17,21 @@ export async function getOrderWorkflowByID(workflow_id: number): Promise<OrderWo
   return data;
 }
 
+export async function getOrderWorkflowByType(order_type: string): Promise<OrderWorkflow | null> {
+  const { data, error } = await supabase_client
+    .from("order_workflows")
+    .select("*")
+    .eq("order_type", order_type)
+    .single();
+
+  if (error) {
+    toast.error(error.message);
+    return null;
+  }
+
+  return data;
+}
+
 
 export async function getAllOrderWorkflows(): Promise<OrderWorkflow[] | null> {
   const { data, error } = await supabase_client

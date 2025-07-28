@@ -31,10 +31,10 @@ interface OrderedPartRowProp{
     current_status: Status,
     factory_id: number
     machine_id: number,
-    order_workflow_id: number,
+    order_type: string,
 }
 
-export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, orderedPartInfo, current_status, factory_id, machine_id, order_workflow_id}) => {
+export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, orderedPartInfo, current_status, factory_id, machine_id, order_type}) => {
   const profile = useAuth().profile
   const [datePurchased, setDatePurchased] = useState<Date | undefined>(orderedPartInfo.part_purchased_date? new Date(orderedPartInfo.part_purchased_date): new Date())
   const [dateSent, setDateSent] = useState<Date | undefined>(orderedPartInfo.part_sent_by_office_date? new Date(orderedPartInfo.part_sent_by_office_date): new Date())
@@ -85,7 +85,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
           {
             const disableRow = orderedPartInfo.in_storage && orderedPartInfo.approved_storage_withdrawal && orderedPartInfo.qty===0
             setDisableTakeStorageRow(disableRow)
-            if (order_workflow_id == 1)
+            if (order_type == "PFM")
             {
               const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
               if (storage_data && storage_data.length>0) {
@@ -96,7 +96,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
               }
             }
           }
-          if(order_workflow_id == 1){
+          if(order_type == "PFM"){
             const past_purchase_result = await fetchLastCostAndPurchaseDate(orderedPartInfo.part_id);
             const last_change_result = await fetchLastChangeDate(machine_id,orderedPartInfo.part_id);
               if (past_purchase_result) {
@@ -127,7 +127,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
         toast.success("Ordered part has been approved!");
 
         //Logic to update storage and machine part quantity
-        if (order_workflow_id == 1){
+        if (order_type == "PFM"){
           await reduceMachinePartQty(
             machine_id,
             orderedPartInfo.part_id,
@@ -433,10 +433,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
             //if order type storage
             toast.success("Part received by factory date set!")
-            if (order_workflow_id == 2){
+            if (order_type == "PFS"){
               await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
             }
-            if (order_workflow_id == 1) {
+            if (order_type == "PFM") {
               await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
             }
           } catch (error) {
@@ -477,10 +477,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
     const returnOrderedPart = async () => {
       try {
         await returnOrderedPartByID(orderedPartInfo.id)
-        if (order_workflow_id == 2){
+        if (order_type == "PFS"){
           await reduceStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
         }
-        if (order_workflow_id == 1) {
+        if (order_type == "PFM") {
           await reduceMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
         }
       } catch (error) {
