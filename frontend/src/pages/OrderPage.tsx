@@ -124,7 +124,7 @@ const OrderPage = () => {
                 if (appSettings) {
                     appSettings.forEach((setting) => {
                         if (setting.name === "Create Order") {
-                            console.log("Create order" + setting.enabled)
+                            console.log("Create order " + setting.enabled)
                             setCreateOrderEnabled(setting.enabled);
                         }
                     });
@@ -135,7 +135,7 @@ const OrderPage = () => {
             }
         };
         loadCreateOrderSettings();
-    }, []);
+    }, [appSettings]);
 
     useEffect(() => {
         const channel = supabase_client

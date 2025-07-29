@@ -10,7 +10,7 @@ import { fetchStatuses } from "@/services/StatusesService";
 interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
-  allStatuses: Status[] | null
+  allStatuses: Status[] | null;
   role: string | null;
   appSettings: ApplicationSettings[] | null;
   loading: boolean;
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [allStatuses, setAllStatuses] = useState<Status[] | null>(null);
-  const [appSettings, setAppSettings] = useState<ApplicationSettings[] | null>(null); 
+  const [appSettings, setAppSettings] = useState<ApplicationSettings[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -54,17 +54,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(null);
         setProfile(null);
         setAppSettings(null);
+        setAllStatuses(null);
       } else if (event === 'SIGNED_IN' && session) {
-        setSession(session);
-        
-        (async () => {
-          setLoading(true);
-          await Promise.all([
-            loadProfile(session.user.id),
-            loadAppSettings()
-          ]);
-          setLoading(false);
-        })();
+        setSession(prevSession => {
+          const isNewUser = !prevSession || prevSession.user.id !== session.user.id;
+
+          if (isNewUser) {
+            (async () => {
+              setLoading(true);
+              await Promise.all([
+                loadProfile(session.user.id),
+                loadAppSettings(),
+                loadStatuses()
+              ]);
+              setLoading(false);
+            })();
+          }
+
+          return session;
+        });
       }
     });
 
@@ -73,12 +81,86 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const profileChannel = supabase_client
+      .channel('user_profile_updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${session.user.id}`
+      }, (payload) => {
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          setProfile(prev => prev ? { ...prev, ...(payload.new as Partial<Profile>) } : payload.new as Profile);
+        } else if (payload.eventType === 'DELETE') {
+          setProfile(null);
+        }
+      })
+      .subscribe();
+
+    const settingsChannel = supabase_client
+      .channel('app_settings_updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'app_settings'
+      }, (payload) => {
+        setAppSettings(prevSettings => {
+          if (!prevSettings) return prevSettings;
+
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            return prevSettings.map(setting =>
+              setting.id === (payload.new as any).id ? { ...setting, ...(payload.new as Partial<ApplicationSettings>) } : setting
+            );
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            return [...prevSettings, payload.new as ApplicationSettings];
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            return prevSettings.filter(setting => setting.id !== (payload.old as any).id);
+          }
+          return prevSettings;
+        });
+      })
+      .subscribe();
+
+    const statusesChannel = supabase_client
+      .channel('statuses_updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'statuses'
+      }, (payload) => {
+        setAllStatuses(prevStatuses => {
+          if (!prevStatuses) return prevStatuses;
+
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            return prevStatuses.map(status =>
+              status.id === (payload.new as any).id ? { ...status, ...(payload.new as Partial<Status>) } : status
+            );
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            return [...prevStatuses, payload.new as Status];
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            return prevStatuses.filter(status => status.id !== (payload.old as any).id);
+          }
+          return prevStatuses;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      profileChannel.unsubscribe();
+      settingsChannel.unsubscribe();
+      statusesChannel.unsubscribe();
+    };
+  }, [session?.user?.id]);
+
   const loadProfile = async (user_id: string) => {
     const curr_profile = await getUserProfile(user_id);
     if (curr_profile) {
       setProfile(curr_profile);
     } else {
-      console.warn("Could not load profile");
+      console.warn("⚠️ Could not load profile");
     }
   };
 
@@ -87,23 +169,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (curr_settings) {
       setAppSettings(curr_settings);
     } else {
-      console.warn("Could not load app settings");
+      console.warn("⚠️ Could not load app settings");
     }
   };
 
   const loadStatuses = async () => {
     const all_statuses = await fetchStatuses();
     if (all_statuses) {
-      setAllStatuses(all_statuses)
+      setAllStatuses(all_statuses);
     } else {
-      console.warn("Could not load all stasuses")
+      console.warn("⚠️ Could not load all statuses");
     }
-  }
+  };
 
   const role = profile?.permission ?? null;
 
   return (
-    <AuthContext.Provider value={{ session, profile, role, appSettings, allStatuses, loading, setSession, setProfile, setAppSettings, setAllStatuses }}>
+    <AuthContext.Provider value={{
+      session,
+      profile,
+      role,
+      appSettings,
+      allStatuses,
+      loading,
+      setSession,
+      setProfile,
+      setAppSettings,
+      setAllStatuses
+    }}>
       {loading ? <FullScreenLoader /> : children}
     </AuthContext.Provider>
   );

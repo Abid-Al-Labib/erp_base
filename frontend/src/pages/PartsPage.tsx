@@ -103,7 +103,7 @@ const PartsPage = () => {
             }
         };
         loadAddPartSettings();
-    }, []);
+    }, [appSettings]);
 
 
     return (

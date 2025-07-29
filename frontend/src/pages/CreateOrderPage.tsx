@@ -33,6 +33,8 @@ import {
 } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { isFeatureSettingEnabled } from "@/services/helper"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import AddPartPopup from "@/components/customui/Parts/AddPartPopup"
 
 
 const CreateOrderPage = () => {
@@ -64,6 +66,8 @@ const CreateOrderPage = () => {
     const [isPartsSelectOpen, setIsPartsSelectOpen] = useState(false);
 
     const [reqNum, setReqNum] = useState('')
+
+    const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
@@ -374,7 +378,7 @@ const CreateOrderPage = () => {
             }
         }
         loadAddPartSettings();
-    }, []);
+    }, [appSettings]);
 
     useEffect(() => {
         if (selectedFactoryId !== null) {
@@ -420,6 +424,18 @@ const CreateOrderPage = () => {
         }
     }, [isPartsSelectOpen]); // Run when dropdown is opened
 
+    const handlePartCreated = (newPart: Part) => {
+
+        handleSelectPart(newPart);
+        
+        // Close the dialog after a short delay to show the success state
+        setTimeout(() => {
+            setIsAddPartDialogOpen(false);
+        }, 2000); // Wait 2 seconds to show the success animation
+        
+        console.log('New part created and selected:', newPart);
+    };
+    
     const handleSelectPart = (value: Part | undefined) => {
         if(value){
 
@@ -812,15 +828,25 @@ const CreateOrderPage = () => {
                                                     isLoading={isLoadingMoreParts}
                                                 />
                                                 
-                                                <Button
-                                                    size="sm"
-                                                    className="mt-2 w-full bg-blue-950"
-                                                    onClick={() => window.open('/addpart', '_blank')}
-                                                    disabled={!addPartEnabled}
-                                                >
-                                                    Create New Part
-                                                </Button>
-                                                
+                                                <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+                                                    <DialogTrigger asChild>
+                                                        <Button
+                                                            size="sm"
+                                                            className="mt-2 w-full bg-blue-950"
+                                                            disabled={!addPartEnabled}
+                                                        >
+                                                            Create New Part
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="max-w-2xl">
+                                                        <AddPartPopup 
+                                                            addPartEnabled={addPartEnabled}
+                                                            onSuccess={handlePartCreated}
+                                                            showPostAddOptions={true}
+                                                        />
+                                                    </DialogContent>
+                                                </Dialog>
+                                                                                            
                                             </div>
 
                                             {/* Quantity */}
