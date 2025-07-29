@@ -4,33 +4,18 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";import toast from "react-hot-toast"
-import { supabase_client } from "@/services/SupabaseClient"
-import { useNavigate } from "react-router-dom"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import UserDropdownPanel from "./UserDropdownPanel"; // adjust path if needed
 
 const NavigationBar = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
-    const navigate = useNavigate()
-    const handleLogout = async () => {
-        const { error } = await supabase_client.auth.signOut()
-        if (error) {
-            toast.error(error.message);
-        }
-        navigate('/login')
-    }
-  
-    const handleProfileButtonClick = async () => {
-        navigate('/profile')
-    }
-    return (
+  return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-muted px-4 md:px-6">
+      {/* Main nav links */}
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-base lg:gap-6">
         <Link
           to="/"
@@ -82,6 +67,7 @@ const NavigationBar = () => {
         </Link>
       </nav>
 
+      {/* Mobile menu */}
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -143,25 +129,22 @@ const NavigationBar = () => {
         </SheetContent>
       </Sheet>
 
-        <div className="flex justify-end w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <CircleUser className="h-5 w-5" />
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleProfileButtonClick}>Profile</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-  )
-}
+      {/* Profile dropdown */}
+      <div className="flex justify-end w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" size="icon" className="rounded-full">
+              <CircleUser className="h-5 w-5" />
+              <span className="sr-only">Toggle user menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="p-0">
+            <UserDropdownPanel />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+};
 
 export default NavigationBar;
