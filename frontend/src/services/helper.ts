@@ -78,15 +78,15 @@ export const convertBDTimeToUtc = (bdTimestamp: string): string => {
 };
 
 export const isRevertStatusAllowed = (ordered_parts: OrderedPart[], current_status: string) => {
-  const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));
+  // const partsToCheck = ordered_parts.filter(part =>!(part.in_storage && part.approved_storage_withdrawal && part.qty===0));
 
-  if (current_status==="Budget Released" || current_status==="Waiting For Purchase"){
-    return partsToCheck.some(part => part.vendor === null || part.unit_cost === null || part.brand === null);
-  }
-  else if (current_status==="Parts Received"){
-    return partsToCheck.some(part => (part.vendor === null || part.unit_cost === null || part.brand === null || part.approved_budget=== false || part.part_purchased_date===null || part.part_received_by_factory_date===null|| part.part_sent_by_office_date===null
-    ));
-  }
+  // if (current_status==="Budget Released" || current_status==="Waiting For Purchase"){
+  //   return partsToCheck.some(part => part.vendor === null || part.unit_cost === null || part.brand === null);
+  // }
+  // else if (current_status==="Parts Received"){
+  //   return partsToCheck.some(part => (part.vendor === null || part.unit_cost === null || part.brand === null || part.approved_budget=== false || part.part_purchased_date===null || part.part_received_by_factory_date===null|| part.part_sent_by_office_date===null
+  //   ));
+  // }
 
   return false
 }
@@ -156,8 +156,7 @@ export const isStatusActionsComplete = (orderedParts: OrderedPart[], currentStat
     case "Parts Sent To Factory":
       return orderedParts.every(
         (part) =>
-          part.part_received_by_factory_date !== null &&
-          part.mrr_number !== null
+          part.part_received_by_factory_date !== null
       );
     case "Parts Received":
       return true;

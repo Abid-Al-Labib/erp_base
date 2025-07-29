@@ -25,30 +25,33 @@ const SentAction: React.FC<SentActionProps> = ({
       : new Date()
   );
 
-  const handleUpdateSentDate = async () => {
-    if (dateSent && orderedPartInfo.part_purchased_date) {
-      const sentDateStr = new Date(dateSent).toDateString();
-      const purchasedDateStr = new Date(orderedPartInfo.part_purchased_date).toDateString();
+ const handleUpdateSentDate = async () => {
+  if (!dateSent) {
+    toast.error("Sent date is missing.");
+    return;
+  }
 
-      if (sentDateStr >= purchasedDateStr) {
-        try {
-          await updateSentDateByID(orderedPartInfo.id, dateSent);
-          toast.success("Part sent to factory date set!");
-        } catch (error) {
-          toast.error("Error occurred. Could not complete action.");
-        }
-      } else {
-        toast.error("Sent date must be after or equal to purchased date.");
-        return;
-      }
-    } else {
-      toast.error("Sent or purchase date missing.");
+    const sentTime = dateSent.getTime();
+    const purchasedTime = orderedPartInfo.part_purchased_date
+      ? new Date(orderedPartInfo.part_purchased_date).getTime()
+      : null;
+
+    if (purchasedTime !== null && sentTime < purchasedTime) {
+      toast.error("Sent date must be after or equal to purchased date.");
       return;
+    }
+
+    try {
+      await updateSentDateByID(orderedPartInfo.id, dateSent);
+      toast.success("Part sent to factory date set!");
+    } catch (error) {
+      toast.error("Error occurred. Could not complete action.");
     }
 
     setOpenThisActionDialog(false);
     setActionMenuOpen(false);
   };
+
 
   return (
     <Dialog open={openThisActionDialog} onOpenChange={setOpenThisActionDialog}>

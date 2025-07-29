@@ -7,7 +7,7 @@ import {
   updateReceivedByFactoryDateByID,
   updateSentDateByID
 } from '@/services/OrderedPartsService';
-import { updateMachinePartQty } from '@/services/MachinePartsService';
+import { increaseMachinePartQty } from '@/services/MachinePartsService';
 import { OrderedPart } from '@/types';
 import toast from 'react-hot-toast';
 import React from 'react';
@@ -44,7 +44,7 @@ const ApproveTakingFromStorageAction: React.FC<ApproveTakingFromStorageProps> = 
                 const new_storage_quantity = currentStorageQty - orderedPartInfo.qty;
                 await upsertStoragePart(orderedPartInfo.part_id, factory_id, new_storage_quantity);
                 await updateOrderedPartQtyByID(orderedPartInfo.id, 0);
-                await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty, 'add');
+                await increaseMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
                 await updateSentDateByID(orderedPartInfo.id, new Date());
                 await updateReceivedByFactoryDateByID(orderedPartInfo.id, new Date());
             } else {
@@ -52,7 +52,7 @@ const ApproveTakingFromStorageAction: React.FC<ApproveTakingFromStorageProps> = 
                 const new_orderedpart_qty = orderedPartInfo.qty - currentStorageQty;
                 await upsertStoragePart(orderedPartInfo.part_id, factory_id, 0);
                 await updateOrderedPartQtyByID(orderedPartInfo.id, new_orderedpart_qty);
-                await updateMachinePartQty(machine_id, orderedPartInfo.part_id, currentStorageQty, 'add');
+                await increaseMachinePartQty(machine_id, orderedPartInfo.part_id, currentStorageQty);
             }
 
             const takingFromStorageQty = Math.min(currentStorageQty, orderedPartInfo.qty);

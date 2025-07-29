@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
 import { updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
-import { updateMachinePartQty } from "@/services/MachinePartsService";
+import { reduceMachinePartQty } from "@/services/MachinePartsService";
 
 interface ApproveAllPendingActionProps {
   isApprovePendingDialogOpen: boolean;
@@ -38,11 +38,10 @@ const ApproveAllPendingAction: React.FC<ApproveAllPendingActionProps> = ({
 
         // If order type is "Machine" and the part is not approved, update quantities
         if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
-          await updateMachinePartQty(
+          await reduceMachinePartQty(
             order.machine_id,
             ordered_part.part_id,
-            ordered_part.qty,
-            'subtract'
+            ordered_part.qty
           );
           promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, ordered_part.qty));
         }

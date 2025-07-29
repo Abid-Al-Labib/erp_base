@@ -2,7 +2,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import { ExternalLink, MoreHorizontal, Notebook, NotebookPen,  } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "../ui/dialog"
 import React, { useEffect, useState } from "react"
 import { Calendar } from "../ui/calendar"
 import { OrderedPart, Status } from "@/types"
@@ -16,9 +16,9 @@ import { convertUtcToBDTime} from "@/services/helper"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { Textarea } from "../ui/textarea"
-import { fetchStoragePartQuantityByFactoryID, reduceStoragePartQty, upsertStoragePart, updateStoragePartQty } from "@/services/StorageService"
+import { fetchStoragePartQuantityByFactoryID, reduceStoragePartQty, upsertStoragePart, increaseStoragePartQty } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
-import { reduceMachinePartQty, updateMachinePartQty } from "@/services/MachinePartsService"
+import { reduceMachinePartQty, increaseMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
 
@@ -170,7 +170,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
               await upsertStoragePart(orderedPartInfo.part_id,factory_id,0)
               setCurrentStorageQty(0)
               await updateOrderedPartQtyByID(orderedPartInfo.id,new_orderedpart_qty)
-              await updateMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty)
+              await increaseMachinePartQty(machine_id,orderedPartInfo.part_id,currentStorageQty)
             }
             let takingFromStorageQty
             if(currentStorageQty <= orderedPartInfo.qty){
@@ -434,10 +434,10 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             //if order type storage
             toast.success("Part received by factory date set!")
             if (order_type == "PFS"){
-              await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
+              await increaseStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
             }
             if (order_type == "PFM") {
-              await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+              await increaseMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
             }
           } catch (error) {
             toast.error("Error occured could not complete action");

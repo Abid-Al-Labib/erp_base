@@ -85,6 +85,14 @@ export const showQuotationButton = (status: string, brand: string | null, vendor
   return false;
 }
 
+export const showEditQuotationButton = (status: string, brand: string | null, vendor: string | null, unit_cost: number | null): boolean => {
+  if ((status === "Waiting For Purchase") && (brand !== null || vendor !== null || unit_cost !== null)) {
+    return true;
+  }
+  return false;
+}
+
+
 export const showAllBudgetApproveButton = (status: string, ordered_parts: OrderedPart[] ) => {
     //here it is assumed that all 
     if (status === "Budget Released"){
@@ -103,10 +111,10 @@ export const showBudgetApproveButton = (status:string, isApproved:boolean, qty:n
 
 export const showReviseBudgetButton = (status:string, isApproved:boolean): boolean =>{
     if (status === "Budget Released" && !isApproved) {
-        return true;
+        return false;
     }
     else if (status === "Waiting For Purchase") {
-        return true;
+        return false;
     }
     return false;
 }
@@ -146,6 +154,8 @@ export const showSampleReceivedButton = (is_sample_sent_to_office: boolean, is_s
     }
     return false;
 }
+
+
 
 export const showReturnButton = (status: string, ordered_part: OrderedPart): boolean => {
     if (status === "Parts Received" && 

@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { returnOrderedPartByID } from "@/services/OrderedPartsService";
-import { updateMachinePartQty } from "@/services/MachinePartsService";
-import { updateStoragePartQty } from "@/services/StorageService";
+import { reduceMachinePartQty } from "@/services/MachinePartsService";
+import { reduceStoragePartQty } from "@/services/StorageService";
 import { OrderedPart } from "@/types";
 import toast from "react-hot-toast";
 
@@ -30,11 +30,11 @@ const ReturnPartAction: React.FC<ReturnPartActionProps> = ({
       await returnOrderedPartByID(orderedPartInfo.id);
 
       if (order_type === "Storage" && factory_id !== null) {
-        await updateStoragePartQty(orderedPartInfo.part_id, factory_id, orderedPartInfo.qty, "subtract");
+        await reduceStoragePartQty(orderedPartInfo.part_id, factory_id, orderedPartInfo.qty);
       }
 
       if (order_type === "Machine" && machine_id !== null) {
-        await updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty, "subtract");
+        await reduceMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
       }
 
       toast.success("Part returned successfully");

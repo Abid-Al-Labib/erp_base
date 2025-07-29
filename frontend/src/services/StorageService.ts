@@ -100,7 +100,7 @@ export const upsertStoragePart = async (part_id: number, factory_id: number, qua
         
 // }
 
-export const updateStoragePartQty = async (part_id: number, factory_id: number, quantity: number) => {
+export const increaseStoragePartQty = async (part_id: number, factory_id: number, quantity: number) => {
     const { data: currentData, error: fetchError } = await supabase_client
         .from('storage_parts')
         .select('qty')

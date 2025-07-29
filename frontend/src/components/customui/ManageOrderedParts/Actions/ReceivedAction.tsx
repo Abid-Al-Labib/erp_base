@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
-import { updateMachinePartQty } from "@/services/MachinePartsService"
+import { increaseMachinePartQty } from "@/services/MachinePartsService"
 import { updateReceivedByFactoryDateByID } from "@/services/OrderedPartsService"
-import { updateStoragePartQty } from "@/services/StorageService"
+import { increaseStoragePartQty } from "@/services/StorageService"
 import { OrderedPart } from "@/types"
 import { useState } from "react"
 import toast from "react-hot-toast"
@@ -35,38 +35,60 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
 
   const handleUpdateReceivedDate = () => {
     const updateReceivedDate = async () => {
-      if (dateReceived && orderedPartInfo.part_sent_by_office_date) {
-        const receivedDateStr = new Date(dateReceived).toDateString()
-        const sentDateStr = new Date(orderedPartInfo.part_sent_by_office_date).toDateString()
-
-        if (receivedDateStr >= sentDateStr) {
-          try {
-            await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
-            toast.success("Part received by factory date set!")
-
-            if (order_type === "Storage") {
-              await updateStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty,"add")
-            }
-
-            if (order_type === "Machine") {
-              await updateMachinePartQty(machine_id,orderedPartInfo.part_id,orderedPartInfo.qty,"add")
-            }
-          } catch (error) {
-            toast.error("Error occurred, could not complete action")
-          }
-        } else {
-          toast.error("Received date must be after or equal to sent date")
-        }
-      } else {
-        toast.error("Received date or sent date was not found")
+      if (!dateReceived) {
+        toast.error("Received date is missing.");
+        return;
       }
-    }
 
-    updateReceivedDate()
-    setOpenThisActionDialog(false)
-    setActionMenuOpen(false)
-  }
+      const receivedTime = dateReceived.getTime();
 
+      const sentTime = orderedPartInfo.part_sent_by_office_date
+        ? new Date(orderedPartInfo.part_sent_by_office_date).getTime()
+        : null;
+
+      const purchasedTime = orderedPartInfo.part_purchased_date
+        ? new Date(orderedPartInfo.part_purchased_date).getTime()
+        : null;
+
+      if (sentTime !== null && receivedTime < sentTime) {
+        toast.error("Received date must be after or equal to sent date.");
+        return;
+      }
+
+      if (sentTime === null && purchasedTime !== null && receivedTime < purchasedTime) {
+        toast.error("Received date must be after or equal to purchased date.");
+        return;
+      }
+
+      try {
+        await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived);
+        toast.success("Part received by factory date set!");
+
+        if (order_type === "Storage") {
+          await increaseStoragePartQty(
+            orderedPartInfo.part_id,
+            factory_id,
+            orderedPartInfo.qty,
+          );
+        }
+
+        if (order_type === "Machine") {
+          await increaseMachinePartQty(
+            machine_id,
+            orderedPartInfo.part_id,
+            orderedPartInfo.qty,
+          );
+        }
+      } catch (error) {
+        toast.error("Error occurred, could not complete action.");
+      }
+
+      setOpenThisActionDialog(false);
+      setActionMenuOpen(false);
+    };
+
+    updateReceivedDate();
+  };
   return (
     <Dialog open={openThisActionDialog} onOpenChange={setOpenThisActionDialog}>
       <DialogContent className="sm:max-w-[425px]">

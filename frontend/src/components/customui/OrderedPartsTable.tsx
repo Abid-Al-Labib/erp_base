@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { showAddPartButton , showAllBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
-import { reduceMachinePartQty, updateMachinePartQty } from "@/services/MachinePartsService";
+import { reduceMachinePartQty } from "@/services/MachinePartsService";
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
 import { setMachineIsRunningById } from "@/services/MachineServices";
 import { Label } from "../ui/label";

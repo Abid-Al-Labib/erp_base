@@ -88,7 +88,7 @@ export const updateMachinePartQuantities = async (
   };
 
 
-export const updateMachinePartQty = async (
+export const increaseMachinePartQty = async (
     machine_id: number,
     part_id: number,
     quantity: number

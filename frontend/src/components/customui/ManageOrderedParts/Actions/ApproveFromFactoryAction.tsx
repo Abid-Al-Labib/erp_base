@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { addDamagePartQuantity } from '@/services/DamagedGoodsService';
-import { updateMachinePartQty } from '@/services/MachinePartsService';
+import { reduceMachinePartQty } from '@/services/MachinePartsService';
 import { updateApprovedPendingOrderByID } from '@/services/OrderedPartsService';
 import { OrderedPart } from '@/types';
 import React from 'react'
@@ -35,11 +35,10 @@ const ApproveFromFactoryAction: React.FC<ApproveFromFactoryActionProps> = ({
         toast.success("Ordered part has been approved!");
 
         if (order_type === "Machine") {
-        await updateMachinePartQty(
+        await reduceMachinePartQty(
             machine_id,
             orderedPartInfo.part_id,
-            orderedPartInfo.qty,
-            "subtract"
+            orderedPartInfo.qty
         );
 
         await addDamagePartQuantity(
