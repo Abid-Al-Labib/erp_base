@@ -33,19 +33,20 @@ const ApproveFromFactoryAction: React.FC<ApproveFromFactoryActionProps> = ({
     try {
         await updateApprovedPendingOrderByID(orderedPartInfo.id, true);
         toast.success("Ordered part has been approved!");
+        
+        if (order_type === "PFM") //if purchase for machine, take current parts from machine and put in damaged part 
+        {
+            await reduceMachinePartQty(
+                machine_id,
+                orderedPartInfo.part_id,
+                orderedPartInfo.qty
+            );
 
-        if (order_type === "Machine") {
-        await reduceMachinePartQty(
-            machine_id,
-            orderedPartInfo.part_id,
-            orderedPartInfo.qty
-        );
-
-        await addDamagePartQuantity(
-            factory_id,
-            orderedPartInfo.part_id,
-            orderedPartInfo.qty
-        );
+            await addDamagePartQuantity(
+                factory_id,
+                orderedPartInfo.part_id,
+                orderedPartInfo.qty
+            );
         }
 
         setOpenThisActionDialog(false);
