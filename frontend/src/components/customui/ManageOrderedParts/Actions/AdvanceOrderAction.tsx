@@ -40,7 +40,7 @@ const AdvanceOrderDialog: React.FC<AdvanceOrderDialogProps> = ({
       await UpdateStatusByID(order.id, next_status_id);
       await InsertStatusTracker(new Date(), order.id, profile.id, next_status_id);
 
-      if (order.order_type === "Machine" && next_status_id === 8) {
+      if (order.order_type === "PFM" && next_status_id === 8) {
         const runningOrders = await fetchRunningOrdersByMachineId(order.machine_id);
         if (runningOrders.length === 0) {
           await setMachineIsRunningById(order.machine_id, true);

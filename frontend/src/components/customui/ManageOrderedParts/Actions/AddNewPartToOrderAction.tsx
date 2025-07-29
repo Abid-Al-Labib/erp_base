@@ -52,7 +52,7 @@ const AddNewPartToOrderAction: React.FC<AddNewPartToOrderActionProps> = ({
     setLoading(true);
     try {
       const storage_data = await fetchStoragePartQuantityByFactoryID(selectedPartId, order.factory_id);
-      const in_storage = order.order_type === "Machine" && storage_data.length > 0 && storage_data[0].qty > 0;
+      const in_storage = order.order_type === "PFM" && storage_data.length > 0 && storage_data[0].qty > 0;
 
       await insertOrderedParts(
         selectedPartQty,

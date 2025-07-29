@@ -64,7 +64,7 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
         await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived);
         toast.success("Part received by factory date set!");
 
-        if (order_type === "Storage") {
+        if (order_type === "PFS") {
           await increaseStoragePartQty(
             orderedPartInfo.part_id,
             factory_id,
@@ -72,7 +72,7 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
           );
         }
 
-        if (order_type === "Machine") {
+        if (order_type === "PFM") {
           await increaseMachinePartQty(
             machine_id,
             orderedPartInfo.part_id,

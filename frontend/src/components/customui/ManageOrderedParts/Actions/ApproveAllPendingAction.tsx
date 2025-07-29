@@ -37,7 +37,7 @@ const ApproveAllPendingAction: React.FC<ApproveAllPendingActionProps> = ({
         }
 
         // If order type is "Machine" and the part is not approved, update quantities
-        if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
+        if (order.order_type === "PFM" && !ordered_part.approved_pending_order) {
           await reduceMachinePartQty(
             order.machine_id,
             ordered_part.part_id,

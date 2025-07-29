@@ -29,11 +29,11 @@ const ReturnPartAction: React.FC<ReturnPartActionProps> = ({
     try {
       await returnOrderedPartByID(orderedPartInfo.id);
 
-      if (order_type === "Storage" && factory_id !== null) {
+      if (order_type === "PFS" && factory_id !== null) {
         await reduceStoragePartQty(orderedPartInfo.part_id, factory_id, orderedPartInfo.qty);
       }
 
-      if (order_type === "Machine" && machine_id !== null) {
+      if (order_type === "PFM" && machine_id !== null) {
         await reduceMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
       }
 
