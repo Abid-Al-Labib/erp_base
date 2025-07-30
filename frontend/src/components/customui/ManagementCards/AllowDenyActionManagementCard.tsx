@@ -40,7 +40,7 @@ const AllowDenyActionManagementCard = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Allow/Deny Actions</CardTitle>
+        <CardTitle>App Settings</CardTitle>
         <CardDescription>
           The following configuration will be applied for all users.
         </CardDescription>
