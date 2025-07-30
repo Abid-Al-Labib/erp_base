@@ -11,7 +11,7 @@ const ManagementCard: React.FC<ManagementCardProps> = ({ icon, title, subtext, o
   return (
     <Card
       onClick={onClick}
-      className="flex items-center p-4 space-x-4 w-full max-w-sm shadow-md border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition"
+      className="flex w-[360px] items-center p-4 space-x-4 max-w-sm shadow-md border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition"
     >
       <div className="text-4xl">{icon}</div>
       <CardContent className="flex flex-col">

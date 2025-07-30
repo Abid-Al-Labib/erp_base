@@ -3,7 +3,7 @@ import NavigationBar from "@/components/customui/NavigationBar";
 import ManagementCard from "@/components/customui/ManagementCards/ManagementCard";
 import ExpandedManagementCard from "@/components/customui/ManagementCards/ExpandedManagementCard";
 import { ManagementType } from "@/types";
-import { Building, Settings, Box } from "lucide-react";
+import { Building, Settings, Box, UserPlus, UserCog } from "lucide-react";
 
 const ManagementPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,7 +22,7 @@ const ManagementPage = () => {
       <NavigationBar />
       <div className="p-6 flex flex-col items-center space-y-6">
         <h1 className="text-2xl font-bold">Factory Management</h1>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <ManagementCard 
             icon={<Building />} 
             title="Edit Factory" 
@@ -54,6 +54,31 @@ const ManagementPage = () => {
             onClick={() => handleExpand("departments")} 
           />
         </div>
+        {/* <h1 className="text-2xl font-bold">User Management</h1>
+        <div className="grid  grid-cols-1 lg:grid-cols-3 gap-4">
+          <ManagementCard 
+            icon={<UserPlus />} 
+            title="Add User" 
+            subtext="Add a new user to the system" 
+            onClick={() => handleExpand("addUser")} 
+          />
+          <ManagementCard 
+            icon={<UserCog />} 
+            title="Manage User" 
+            subtext="Manage user info and permission" 
+            onClick={() => handleExpand("manageUser")} 
+          />
+        </div> */}
+        <h1 className="text-2xl font-bold">App Management</h1>
+        <div className="grid  grid-cols-1 lg:grid-cols-3 gap-4">
+          <ManagementCard 
+            icon={<UserPlus />} 
+            title="Allow/Deny Action" 
+            subtext="Add a new user to the system" 
+            onClick={() => handleExpand("allowDenyAction")} 
+          />
+        </div>
+
       </div>
 
       {managementType && <ExpandedManagementCard type={managementType} onClose={handleClose} />}
