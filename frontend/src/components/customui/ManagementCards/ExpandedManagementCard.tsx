@@ -9,7 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import MachinePartsManagementCard from "./MachinePartsManagementCard";
 import AddUserCard from "./AddUserCard";
 import ManageUserManagementCard from "./ManageUserManagementCard";
-import AllowDenyActionManagementCard from "./AllowDenyActionManagementCard";
+import AppSettingsManagementCard from "./AppSettingsManagementCard";
 
 interface ExpandedManagementCardProps {
   type: ManagementType;
@@ -25,7 +25,7 @@ const managementCards: Record<ManagementType, JSX.Element> = {
   departments: <DepartmentManagementCard />,
   addUser: <AddUserCard/>,
   manageUser: <ManageUserManagementCard/>,
-  allowDenyAction: <AllowDenyActionManagementCard/>
+  appSettings: <AppSettingsManagementCard/>
 };
 
 const ExpandedManagementCard: React.FC<ExpandedManagementCardProps> = ({ type, onClose }) => {

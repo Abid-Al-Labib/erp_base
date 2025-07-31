@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import toast from "react-hot-toast";
 import { fetchAppSettings, updateEnabledSettings } from "@/services/AppSettingsService";
 
-const AllowDenyActionManagementCard = () => {
+const AppSettingsManagementCard = () => {
   const [enableAddPart, setEnableAddPart] = useState<boolean>(true);
   const [enableCreateOrder, setEnableCreateOrder] = useState<boolean>(true);
 
@@ -78,4 +78,4 @@ const AllowDenyActionManagementCard = () => {
   );
 };
 
-export default AllowDenyActionManagementCard;
+export default AppSettingsManagementCard;

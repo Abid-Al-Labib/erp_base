@@ -75,7 +75,7 @@ const ManagementPage = () => {
             icon={<UserPlus />} 
             title="Allow/Deny Action" 
             subtext="Add a new user to the system" 
-            onClick={() => handleExpand("allowDenyAction")} 
+            onClick={() => handleExpand("appSettings")} 
           />
         </div>
 

@@ -122,7 +122,7 @@ export type Filter = {
     
 };
 
-export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments";
+export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments" | "appSettings" | "addUser" | "manageUser";
 
 export interface InputOrder {
     req_num: string,
