@@ -16,7 +16,7 @@ import { showAddPartButton , showAllBudgetApproveButton, showOfficeOrderApproveB
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
 import { reduceMachinePartQty } from "@/services/MachinePartsService";
-import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
+import { increaseDamagedPartQty } from "@/services/DamagedGoodsService";
 import { setMachineIsRunningById } from "@/services/MachineServices";
 import { Label } from "../ui/label";
 import ReactSelect from "react-select";
@@ -77,7 +77,7 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, parts, 
             ordered_part.part_id,
             ordered_part.qty,
           )
-          promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, ordered_part.qty));
+          promises.push(increaseDamagedPartQty(order.factory_id, ordered_part.part_id, ordered_part.qty));
           
         }
 

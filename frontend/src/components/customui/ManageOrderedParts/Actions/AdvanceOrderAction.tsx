@@ -4,8 +4,9 @@ import toast from "react-hot-toast";
 import { Order } from "@/types";
 import { useState } from "react";
 import { fetchRunningOrdersByMachineId, UpdateStatusByID } from "@/services/OrdersService";
+import { addDefectiveQuantity, reduceDefectiveQuantity } from "@/services/MachinePartsService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
-import { setMachineIsRunningById } from "@/services/MachineServices";
+import { setMachineIsRunningById, fetchMachineById } from "@/services/MachineServices";
 import { getNextStatusIdFromSequence } from "@/services/helper";
 import { useAuth } from "@/context/AuthContext";
 
@@ -40,7 +41,10 @@ const AdvanceOrderDialog: React.FC<AdvanceOrderDialogProps> = ({
       await UpdateStatusByID(order.id, next_status_id);
       await InsertStatusTracker(new Date(), order.id, profile.id, next_status_id);
 
-      if (order.order_type === "Machine" && next_status_id === 8) {
+      console.log(order.order_type, next_status_id);
+
+
+      if (order.order_type === "PFM" && next_status_id === 8) {
         const runningOrders = await fetchRunningOrdersByMachineId(order.machine_id);
         if (runningOrders.length === 0) {
           await setMachineIsRunningById(order.machine_id, true);

@@ -7,7 +7,8 @@ import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CirclePlus, CircleX, Loader2, CircleCheck, X, Clock, FileText, Package } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
-import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage } from "@/services/OrdersService";
+import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM } from "@/services/OrdersService";
+import { fetchStorageParts } from "@/services/StorageService";
 
 import toast from 'react-hot-toast'
 import AsyncSelect from 'react-select/async';
@@ -17,7 +18,8 @@ import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/servic
 import { fetchAllMachines, setMachineIsRunningById } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts, searchPartsByName, fetchPageParts } from "@/services/PartsService"
-import { Part } from "@/types"
+import { increaseDamagedPartQty } from '@/services/DamagedGoodsService';
+import { Part, StoragePart } from "@/types"
 import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
@@ -33,6 +35,7 @@ import {
 } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { isFeatureSettingEnabled } from "@/services/helper"
+import { addDefectiveQuantity, reduceMachinePartQty } from "@/services/MachinePartsService"
 
 
 const CreateOrderPage = () => {
@@ -55,6 +58,9 @@ const CreateOrderPage = () => {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [departmentId, setDepartmentId] = useState<number>(-1);
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
+    const [srcFactoryId, setSrcFactoryId] = useState<number>(-1);
+    const [srcMachineId, setSrcMachineId] = useState<number>(-1);
+    const selectedSrcFactoryName = factories.find(factory => factory.id === srcFactoryId)?.name || "Select Source Factory";
 
     const [orderType, setOrderType] = useState<string>();
     const [description, setDescription] = useState('');
@@ -67,15 +73,28 @@ const CreateOrderPage = () => {
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
-    const isOrderFormComplete =
-        selectedFactoryId !== -1 &&
-        departmentId !== -1 &&
-        orderType &&
-        (orderType !== "PFM" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1));  // This is where the order type and form completion is checked
+    const isOrderFormComplete = (() => {
+        if (!orderType || selectedFactoryId === -1 || departmentId === -1) return false;
+        
+        switch (orderType) {
+            case "PFM":
+                return selectedFactorySectionId !== -1 && selectedMachineId !== -1;
+            case "PFS":
+                return true;
+            case "STM":
+                return srcFactoryId !== -1 && selectedFactorySectionId !== -1 && selectedMachineId !== -1;
+            case "MTS":
+                return false; // Not implemented yet
+            default:
+                return false;
+        }
+    })();
     const [isOrderStarted, setIsOrderStarted] = useState(false);
 
 
     const [parts, setParts] = useState<Part[]>([]);
+    const [storageParts, setStorageParts] = useState<StoragePart[]>([]);
+    
     useEffect(() => {
         const loadParts = async () => {
             const fetchedParts = await fetchAllParts();
@@ -84,6 +103,27 @@ const CreateOrderPage = () => {
 
         loadParts();
     }, []);
+
+    // Load storage parts when STM is selected and source factory is chosen
+    useEffect(() => {
+        const loadStorageParts = async () => {
+            if (orderType === "STM" && srcFactoryId !== -1) {
+                try {
+                    const response = await fetchStorageParts({factoryId: srcFactoryId, page: 1, limit: 1000});
+                    // Filter out parts with 0 quantity
+                    const availableParts = response.data.filter(part => part.qty > 0);
+                    setStorageParts(availableParts);
+                } catch (error) {
+                    console.error("Error loading storage parts:", error);
+                    toast.error("Failed to load storage parts");
+                }
+            } else {
+                setStorageParts([]);
+            }
+        };
+
+        loadStorageParts();
+    }, [orderType, srcFactoryId]);
 
     const [orderedParts, setOrderedParts] = useState<InputOrderedPart[]>([]);
 
@@ -99,6 +139,7 @@ const CreateOrderPage = () => {
     const [partId, setPartId] = useState<number>(-1);
     const [partName, setPartName] = useState<string>('');
     const [isSampleSentToOffice, setIsSampleSentToOffice] = useState<boolean>();
+    const [markAsInactive, setMarkAsInactive] = useState<boolean>(false);
 
     const [forceRender, setForceRender] = useState<number>(0);
     const [forcePartRender, setForcePartRender] = useState<number>(0);
@@ -182,7 +223,8 @@ const CreateOrderPage = () => {
                 machine_id: selectedMachineId,
                 machine_name: selectedMachineName,
                 current_status_id: statusId,
-                order_type: orderType,
+                order_type: orderType!,
+                marked_inactive: (orderType === "PFM" || orderType === "STM" || orderType === "MTS") ? markAsInactive : undefined,
             };
             setTempOrderDetails(orderData);
             setShowPartForm(true); // This triggers the scroll due to useEffect
@@ -227,6 +269,35 @@ const CreateOrderPage = () => {
             toast.error('This part has already been added.');
             return;
         }
+
+        // Order type specific validations
+        switch (orderType) {
+            case "PFM":
+                // No specific validation needed for PFM
+                break;
+            
+            case "PFS":
+                // No specific validation needed for PFS
+                break;
+            
+            case "STM":
+                // Check if requested quantity exceeds available quantity in storage
+                const storagePart = storageParts.find(sp => sp.part_id === partId);
+                if (storagePart && qty > storagePart.qty) {
+                    toast.error(`Requested quantity (${qty}) exceeds available quantity (${storagePart.qty}) in storage.`);
+                    return;
+                }
+                break;
+            
+            case "MTS":
+                toast.error("MTS order type is not implemented yet.");
+                return;
+            
+            default:
+                toast.error(`Unknown order type: ${orderType}`);
+                return;
+        }
+
         try {
             const inStorage = await checkPartInStorage();
             const newOrderedPart = createOrderedPart(inStorage);
@@ -240,28 +311,53 @@ const CreateOrderPage = () => {
 
     // Helper function to create order based on type
     const createOrderByType = async (tempOrderDetails: InputOrder) => {
-        if (orderType == "PFM") {
-            return await insertOrder(
-                tempOrderDetails.req_num,
-                tempOrderDetails.order_note,
-                tempOrderDetails.created_by_user_id,
-                tempOrderDetails.department_id,
-                tempOrderDetails.factory_id,
-                tempOrderDetails.factory_section_id,
-                tempOrderDetails.machine_id,
-                1, // Current Status
-                tempOrderDetails.order_type,
-            );
-        } else {
-            return await insertOrderStorage(
-                tempOrderDetails.req_num,
-                tempOrderDetails.order_note,
-                tempOrderDetails.created_by_user_id,
-                tempOrderDetails.department_id,
-                tempOrderDetails.factory_id,
-                1, // Current Status
-                tempOrderDetails.order_type,
-            );
+        switch (orderType) {
+            case "PFM":
+                return await insertOrder(
+                    tempOrderDetails.req_num,
+                    tempOrderDetails.order_note,
+                    tempOrderDetails.created_by_user_id,
+                    tempOrderDetails.department_id,
+                    tempOrderDetails.factory_id,
+                    tempOrderDetails.factory_section_id,
+                    tempOrderDetails.machine_id,
+                    1, // Current Status
+                    tempOrderDetails.order_type,
+                    tempOrderDetails.marked_inactive,
+                );
+            
+            case "PFS":
+                return await insertOrderStorage(
+                    tempOrderDetails.req_num,
+                    tempOrderDetails.order_note,
+                    tempOrderDetails.created_by_user_id,
+                    tempOrderDetails.department_id,
+                    tempOrderDetails.factory_id,
+                    1, // Current Status
+                    tempOrderDetails.order_type,
+                );
+            
+            case "STM":
+                return await insertOrderStorageSTM(
+                    tempOrderDetails.req_num,
+                    tempOrderDetails.order_note,
+                    tempOrderDetails.created_by_user_id,
+                    tempOrderDetails.department_id,
+                    tempOrderDetails.factory_id,
+                    tempOrderDetails.factory_section_id,
+                    tempOrderDetails.machine_id,
+                    1, // Current Status
+                    tempOrderDetails.order_type,
+                    srcFactoryId,
+                    tempOrderDetails.marked_inactive,
+                );
+            
+            case "MTS":
+                // TODO: When implementing MTS, pass tempOrderDetails.marked_inactive parameter
+                throw new Error("MTS order type not implemented yet");
+            
+            default:
+                throw new Error(`Unknown order type: ${orderType}`);
         }
     };
 
@@ -281,7 +377,7 @@ const CreateOrderPage = () => {
             // Create the order
             const orderResponse = await createOrderByType(tempOrderDetails);
             
-            if (!orderResponse.data || orderResponse.data.length === 0) {
+            if (!orderResponse?.data || orderResponse.data.length === 0) {
                 toast.error("Failed to create order.");
                 return;
             }
@@ -290,6 +386,7 @@ const CreateOrderPage = () => {
             
             // Insert all ordered parts (keeping original logic)
             for (const part of orderedParts) {
+                
                 try {
                     await insertOrderedParts(
                         part.qty,
@@ -300,6 +397,33 @@ const CreateOrderPage = () => {
                         part.in_storage,
                         part.approved_storage_withdrawal
                     );
+
+                    if (orderType === "PFM" || orderType === "STM" || orderType === "MTS") {
+                        if (markAsInactive) {
+                            // Set machine as inactive and increase damaged parts and reduce machine part qty
+                            try {
+                                await setMachineIsRunningById(selectedMachineId, false);
+                                await increaseDamagedPartQty(selectedFactoryId, part.part_id, part.qty);
+                                await reduceMachinePartQty(selectedMachineId, part.part_id, part.qty);
+                                toast.success("Machine marked as inactive");
+                            } catch (error) {
+                                console.error("Failed to set machine as inactive:", error);
+                                toast.error("Failed to set machine as inactive");
+                            }
+                        } else {
+                            // Add ordered parts to defective parts
+                            try {
+                                for (const part of orderedParts) {
+                                    await addDefectiveQuantity(selectedMachineId, part.part_id, part.qty);
+                                }
+                                toast.success(`Added ${orderedParts.length} parts to defective parts`);
+                            } catch (error) {
+                                console.error("Failed to add parts to defective parts:", error);
+                                toast.error("Failed to add parts to defective parts");
+                            }
+                        }
+                    }
+
                 } catch (error) {
                     console.error(`Failed to add part: ${part.part_id}`, error);
                     toast.error(`Failed to add part: ${part.part_id}`);
@@ -307,14 +431,11 @@ const CreateOrderPage = () => {
                 }
             }
 
+
+
             // Post-order creation tasks (keeping original logic)
             setShowPartForm(false);
             setOrderedParts([]);
-
-            await InsertStatusTracker(new Date(), orderId, 1, 1);
-            if (orderType == "PFM") {
-                setMachineIsRunningById(selectedMachineId, false);
-            }
             
         } catch (error) {
             toast.error(`An error occurred: ${error}`);
@@ -329,6 +450,7 @@ const CreateOrderPage = () => {
         setDepartmentId(-1);
         setOrderType("");
         setDescription('')
+        setMarkAsInactive(false); // Reset order-level settings when canceling
         setTempOrderDetails(null);
     };
 
@@ -504,39 +626,6 @@ const CreateOrderPage = () => {
         loadInitialParts();
     }, []);
 
-    // Then use simpler AsyncSelect
-    <AsyncSelect
-        id="partId"
-        cacheOptions
-        defaultOptions={allPartOptions}
-        loadOptions={async (inputValue: string) => {
-            if (!inputValue) {
-                return allPartOptions.map(option => ({
-                    ...option,
-                    isDisabled: orderedParts.some((p) => p.part_id === option.value.id),
-                }));
-            }
-            
-            const response = await searchPartsByName(inputValue);
-            return response
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((part) => ({
-                    value: part,
-                    label: `${part.name} (${part.unit || 'units'})`,
-                    isDisabled: orderedParts.some((p) => p.part_id === part.id),
-                }));
-        }}
-        onChange={(selectedOption) => {
-            if (!tempOrderDetails) return;
-            handleSelectPart(selectedOption?.value);
-        }}
-        placeholder={!tempOrderDetails ? "Complete order details first" : "Search or Select a Part"}
-        className="mt-1"
-        isSearchable
-        isDisabled={!tempOrderDetails}
-        isLoading={isLoadingMoreParts}
-    />
-
     return (
         <>
             <NavigationBar />
@@ -575,63 +664,53 @@ const CreateOrderPage = () => {
                                     </Select>
                                 </div>
 
-                                {/* Requisition Number - Show only after Order Type is selected */}
-                                {orderType && (
-                                    <div>
-                                        <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
-                                        <Input
-                                            id="req_num"
-                                            value={reqNum}
-                                            className="mt-1"
-                                            placeholder="Enter requisition number (optional)"
-                                            onChange={e => setReqNum(e.target.value)}
-                                            onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
-                                            disabled={isOrderStarted}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Factory - Show only after Order Type is selected */}
-                                {orderType && (
-                                    <div>
-                                        <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
-                                        <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue>{selectedFactoryName}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {factories.map((factory) => (
-                                                    <SelectItem key={factory.id} value={factory.id.toString()}>
-                                                        {factory.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-
-                                {/* Department - Show only after Order Type is selected */}
-                                {orderType && (
-                                    <div>
-                                        <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                        <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {departments.map((dept) => (
-                                                    <SelectItem key={dept.id} value={dept.id.toString()}>
-                                                        {dept.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-
-                                {/* Factory Section and Machine (only for Machine orders) */}
-                                {orderType == "PFM" && (
+                                {/* Order Type Specific Forms */}
+                                {orderType === "PFM" && (
                                     <>
+                                        {/* PFM - Purchase For Machine */}
+                                        <div>
+                                            <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
+                                            <Input
+                                                id="req_num"
+                                                value={reqNum}
+                                                className="mt-1"
+                                                placeholder="Enter requisition number (optional)"
+                                                onChange={e => setReqNum(e.target.value)}
+                                                onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                                disabled={isOrderStarted}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="department" className="text-sm font-medium">Department</Label>
+                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((dept) => (
+                                                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                            {dept.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
+                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        
                                         <div>
                                             <Label htmlFor="factorySection" className="text-sm font-medium">Factory Section</Label>
                                             <Select
@@ -664,7 +743,7 @@ const CreateOrderPage = () => {
                                                     <SelectValue>
                                                         {selectedMachineId !== -1
                                                             ? machines.find(m => m.id === selectedMachineId)?.name
-                                                            : tempOrderDetails?.machine_name || "Select Machine"}
+                                                            : "Select Machine"}
                                                     </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -678,22 +757,210 @@ const CreateOrderPage = () => {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        <div>
+                                            <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                                            <Textarea
+                                                id="description"
+                                                value={description}
+                                                className="mt-1 min-h-20"
+                                                onChange={e => setDescription(e.target.value)}
+                                                disabled={isOrderStarted}
+                                                placeholder="Enter order description (optional)"
+                                            />
+                                        </div>
                                     </>
                                 )}
 
-                                {/* Description - Show only after Order Type is selected */}
-                                {orderType && (
-                                    <div>
-                                        <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
-                                        <Textarea
-                                            id="description"
-                                            value={description}
-                                            className={`mt-1 ${tempOrderDetails ? 'min-h-16' : 'min-h-20'}`}
-                                            onChange={e => setDescription(e.target.value)}
-                                            disabled={isOrderStarted}
-                                            placeholder="Enter order description (optional)"
-                                        />
-                                    </div>
+                                {orderType === "PFS" && (
+                                    <>
+                                        {/* PFS - Purchase For Storage */}
+                                        <div>
+                                            <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
+                                            <Input
+                                                id="req_num"
+                                                value={reqNum}
+                                                className="mt-1"
+                                                placeholder="Enter requisition number (optional)"
+                                                onChange={e => setReqNum(e.target.value)}
+                                                onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                                disabled={isOrderStarted}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="department" className="text-sm font-medium">Department</Label>
+                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((dept) => (
+                                                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                            {dept.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
+                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        
+                                        <div>
+                                            <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                                            <Textarea
+                                                id="description"
+                                                value={description}
+                                                className="mt-1 min-h-20"
+                                                onChange={e => setDescription(e.target.value)}
+                                                disabled={isOrderStarted}
+                                                placeholder="Enter order description (optional)"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {orderType === "STM" && (
+                                    <>
+                                        {/* STM - Storage To Machine */}
+                                        <div>
+                                            <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
+                                            <Input
+                                                id="req_num"
+                                                value={reqNum}
+                                                className="mt-1"
+                                                placeholder="Enter requisition number (optional)"
+                                                onChange={e => setReqNum(e.target.value)}
+                                                onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                                disabled={isOrderStarted}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="department" className="text-sm font-medium">Department</Label>
+                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((dept) => (
+                                                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                            {dept.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="srcFactory" className="text-sm font-medium">Source Factory (Storage)</Label>
+                                            <Select onValueChange={(value) => setSrcFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedSrcFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        
+                                        <div>
+                                            <Label htmlFor="factoryName" className="text-sm font-medium">Destination Factory</Label>
+                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        
+                                        <div>
+                                            <Label htmlFor="factorySection" className="text-sm font-medium">Destination Factory Section</Label>
+                                            <Select
+                                                onValueChange={(value) => handleSelectFactorySection(Number(value))}
+                                                disabled={isOrderStarted || selectedFactoryId === -1}
+                                            >
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>
+                                                        {selectedFactorySectionId !== -1
+                                                            ? factorySections.find(s => s.id === selectedFactorySectionId)?.name
+                                                            : "Select Destination Section"}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factorySections.map((section) => (
+                                                        <SelectItem key={section.id} value={section.id.toString()}>
+                                                            {section.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="machine" className="text-sm font-medium">Destination Machine</Label>
+                                            <Select
+                                                onValueChange={(value) => handleSelectMachine(Number(value))}
+                                                disabled={isOrderStarted || selectedFactorySectionId === -1}
+                                            >
+                                                <SelectTrigger className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                                                    <SelectValue>
+                                                        {selectedMachineId !== -1
+                                                            ? machines.find(m => m.id === selectedMachineId)?.name
+                                                            : "Select Destination Machine"}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {machines
+                                                        .sort((a, b) => a.id - b.id)
+                                                        .map((machine) => (
+                                                            <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                                {machine.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                                            <Textarea
+                                                id="description"
+                                                value={description}
+                                                className="mt-1 min-h-20"
+                                                onChange={e => setDescription(e.target.value)}
+                                                disabled={isOrderStarted}
+                                                placeholder="Enter order description (optional)"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {orderType === "MTS" && (
+                                    <>
+                                        {/* MTS - Machine To Storage */}
+                                        <div className="text-center py-8 text-gray-500">
+                                            <p className="text-sm">MTS (Machine to Storage) order type</p>
+                                            <p className="text-xs">Coming soon...</p>
+                                        </div>
+                                    </>
                                 )}
 
                             </div>
@@ -755,9 +1022,20 @@ const CreateOrderPage = () => {
                                         <div className="text-right">
                                             <CardTitle className="text-lg">{selectedFactoryName}</CardTitle>
                                             <CardDescription className="text-sm">
-                                                {tempOrderDetails?.order_type == "PFS"
-                                                    ? "Storage Order"
-                                                    : `${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} - ${tempOrderDetails?.machine_name || "N/A"}`}
+                                                {(() => {
+                                                    switch (tempOrderDetails?.order_type) {
+                                                        case "PFM":
+                                                            return `${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} - ${tempOrderDetails?.machine_name || "N/A"}`;
+                                                        case "PFS":
+                                                            return "Storage Order";
+                                                        case "STM":
+                                                            return `From: ${selectedSrcFactoryName} → ${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} - ${tempOrderDetails?.machine_name || "N/A"}`;
+                                                        case "MTS":
+                                                            return "Machine to Storage (Coming Soon)";
+                                                        default:
+                                                            return "Unknown Order Type";
+                                                    }
+                                                })()}
                                             </CardDescription>
                                         </div>
                                     )}
@@ -781,36 +1059,81 @@ const CreateOrderPage = () => {
                                             {/* Part Selection */}
                                             <div>
                                                 <Label htmlFor="partId" className="text-sm font-medium">Select Part</Label>
-                                                <AsyncSelect
-                                                    id="partId"
-                                                    cacheOptions
-                                                    defaultOptions={allPartOptions}
-                                                    loadOptions={async (inputValue: string) => {
-                                                        if (!inputValue) {
-                                                            return allPartOptions.map(option => ({
-                                                                ...option,
-                                                                isDisabled: orderedParts.some((p) => p.part_id === option.value.id),
-                                                            }));
-                                                        }
-                                                        
-                                                        const response = await searchPartsByName(inputValue);
-                                                        return response
-                                                            .sort((a, b) => a.name.localeCompare(b.name))
-                                                            .map((part) => ({
-                                                                value: part,
-                                                                label: `${part.name} (${part.unit || 'units'})`,
-                                                                isDisabled: orderedParts.some((p) => p.part_id === part.id),
-                                                            }));
-                                                    }}
-                                                    onChange={(selectedOption) => {
-                                                        if (!tempOrderDetails) return;
-                                                        handleSelectPart(selectedOption?.value);
-                                                    }}
-                                                    placeholder="Search or Select a Part"
-                                                    className="mt-1"
-                                                    isSearchable
-                                                    isLoading={isLoadingMoreParts}
-                                                />
+                                                {orderType === "STM" ? (
+                                                    // STM Order - Show storage parts with quantities
+                                                    <AsyncSelect
+                                                        id="partId"
+                                                        cacheOptions
+                                                        defaultOptions={storageParts.map(storagePart => ({
+                                                            value: storagePart.parts,
+                                                            label: `${storagePart.parts.name} (Available: ${storagePart.qty} ${storagePart.parts.unit || 'units'})`,
+                                                            isDisabled: orderedParts.some((p) => p.part_id === storagePart.part_id),
+                                                        }))}
+                                                        loadOptions={async (inputValue: string) => {
+                                                            if (!inputValue) {
+                                                                return storageParts.map(storagePart => ({
+                                                                    value: storagePart.parts,
+                                                                    label: `${storagePart.parts.name} (Available: ${storagePart.qty} ${storagePart.parts.unit || 'units'})`,
+                                                                    isDisabled: orderedParts.some((p) => p.part_id === storagePart.part_id),
+                                                                }));
+                                                            }
+                                                            
+                                                            // Filter storage parts by name
+                                                            const filteredStorageParts = storageParts.filter(storagePart =>
+                                                                storagePart.parts.name.toLowerCase().includes(inputValue.toLowerCase())
+                                                            );
+                                                            
+                                                            return filteredStorageParts
+                                                                .sort((a, b) => a.parts.name.localeCompare(b.parts.name))
+                                                                .map((storagePart) => ({
+                                                                    value: storagePart.parts,
+                                                                    label: `${storagePart.parts.name} (Available: ${storagePart.qty} ${storagePart.parts.unit || 'units'})`,
+                                                                    isDisabled: orderedParts.some((p) => p.part_id === storagePart.part_id),
+                                                                }));
+                                                        }}
+                                                        onChange={(selectedOption) => {
+                                                            if (!tempOrderDetails) return;
+                                                            handleSelectPart(selectedOption?.value);
+                                                        }}
+                                                        placeholder={srcFactoryId === -1 ? "Select source factory first" : "Search or Select a Storage Part"}
+                                                        className="mt-1"
+                                                        isSearchable
+                                                        isDisabled={srcFactoryId === -1}
+                                                        isLoading={isLoadingMoreParts}
+                                                    />
+                                                ) : (
+                                                    // Regular Orders - Show all parts
+                                                    <AsyncSelect
+                                                        id="partId"
+                                                        cacheOptions
+                                                        defaultOptions={allPartOptions}
+                                                        loadOptions={async (inputValue: string) => {
+                                                            if (!inputValue) {
+                                                                return allPartOptions.map(option => ({
+                                                                    ...option,
+                                                                    isDisabled: orderedParts.some((p) => p.part_id === option.value.id),
+                                                                }));
+                                                            }
+                                                            
+                                                            const response = await searchPartsByName(inputValue);
+                                                            return response
+                                                                .sort((a, b) => a.name.localeCompare(b.name))
+                                                                .map((part) => ({
+                                                                    value: part,
+                                                                    label: `${part.name} (${part.unit || 'units'})`,
+                                                                    isDisabled: orderedParts.some((p) => p.part_id === part.id),
+                                                                }));
+                                                        }}
+                                                        onChange={(selectedOption) => {
+                                                            if (!tempOrderDetails) return;
+                                                            handleSelectPart(selectedOption?.value);
+                                                        }}
+                                                        placeholder="Search or Select a Part"
+                                                        className="mt-1"
+                                                        isSearchable
+                                                        isLoading={isLoadingMoreParts}
+                                                    />
+                                                )}
                                                 
                                                 <Button
                                                     size="sm"
@@ -826,16 +1149,44 @@ const CreateOrderPage = () => {
                                             {/* Quantity */}
                                             <div>
                                                 <Label htmlFor="quantity" className="text-sm font-medium">
-                                                    {`Quantity${partId !== -1 ? ` (${parts.find((p) => p.id === partId)?.unit || 'units'})` : ''}`}
+                                                    {orderType === "STM" && partId !== -1 ? (
+                                                        () => {
+                                                            const storagePart = storageParts.find(sp => sp.part_id === partId);
+                                                            const unit = storagePart?.parts.unit || 'units';
+                                                            const availableQty = storagePart?.qty || 0;
+                                                            return `Quantity (${unit}) - Available: ${availableQty}`;
+                                                        }
+                                                    )() : `Quantity${partId !== -1 ? ` (${parts.find((p) => p.id === partId)?.unit || 'units'})` : ''}`}
                                                 </Label>
                                                 <Input
                                                     id="quantity"
                                                     type="number"
                                                     value={qty >= 0 ? qty : ''}
                                                     onChange={e => setQty(Number(e.target.value))}
-                                                    placeholder="Enter quantity"
+                                                    placeholder={orderType === "STM" && partId !== -1 ? 
+                                                        `Max: ${storageParts.find(sp => sp.part_id === partId)?.qty || 0}` : 
+                                                        "Enter quantity"
+                                                    }
                                                     className="mt-1"
+                                                    max={orderType === "STM" && partId !== -1 ? 
+                                                        storageParts.find(sp => sp.part_id === partId)?.qty : 
+                                                        undefined
+                                                    }
                                                 />
+                                                {orderType === "STM" && partId !== -1 && qty > 0 && (
+                                                    () => {
+                                                        const storagePart = storageParts.find(sp => sp.part_id === partId);
+                                                        const available = storagePart?.qty || 0;
+                                                        if (qty > available) {
+                                                            return (
+                                                                <p className="text-xs text-red-600 mt-1">
+                                                                    Quantity exceeds available stock ({available})
+                                                                </p>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }
+                                                )()}
                                             </div>
 
                                             {/* Sample checkbox */}
@@ -849,6 +1200,21 @@ const CreateOrderPage = () => {
                                                     Sample sent to office?
                                                 </Label>
                                             </div>
+
+                                            
+                                            {/* Mark as Inactive checkbox - only for machine orders (PFM, STM, MTS) */}
+                                            {(orderType === "PFM" || orderType === "STM" || orderType === "MTS") && (
+                                                <div className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id="markAsInactive"
+                                                        checked={markAsInactive}
+                                                        onCheckedChange={(checked) => setMarkAsInactive(checked === true)}
+                                                    />
+                                                    <Label htmlFor="markAsInactive" className="text-sm">
+                                                        Mark machine as inactive when order is created?
+                                                    </Label>
+                                                </div>
+                                            )}
 
                                             {/* Note */}
                                             <div>

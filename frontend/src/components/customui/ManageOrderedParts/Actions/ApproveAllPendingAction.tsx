@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { OrderedPart, Order } from "@/types";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
+import { increaseDamagedPartQty } from "../../../../services/DamagedGoodsService";
 import { updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import { reduceMachinePartQty } from "@/services/MachinePartsService";
 
@@ -37,13 +37,13 @@ const ApproveAllPendingAction: React.FC<ApproveAllPendingActionProps> = ({
         }
 
         // If order type is "Machine" and the part is not approved, update quantities
-        if (order.order_type === "Machine" && !ordered_part.approved_pending_order) {
+        if (order.order_type === "PFM" && !ordered_part.approved_pending_order) {
           await reduceMachinePartQty(
             order.machine_id,
             ordered_part.part_id,
             ordered_part.qty
           );
-          promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, ordered_part.qty));
+          promises.push(increaseDamagedPartQty(order.factory_id, ordered_part.part_id, ordered_part.qty));
         }
 
         return Promise.all(promises);

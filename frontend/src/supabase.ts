@@ -168,6 +168,7 @@ export type Database = {
       }
       machine_parts: {
         Row: {
+          defective_qty: number | null
           id: number
           machine_id: number
           part_id: number
@@ -175,6 +176,7 @@ export type Database = {
           req_qty: number | null
         }
         Insert: {
+          defective_qty?: number | null
           id?: number
           machine_id: number
           part_id: number
@@ -182,6 +184,7 @@ export type Database = {
           req_qty?: number | null
         }
         Update: {
+          defective_qty?: number | null
           id?: number
           machine_id?: number
           part_id?: number
@@ -396,6 +399,7 @@ export type Database = {
           id: number
           name: string
           status_sequence: number[]
+          type: string
         }
         Insert: {
           allowed_reverts_json?: Json | null
@@ -403,6 +407,7 @@ export type Database = {
           id?: number
           name: string
           status_sequence: number[]
+          type: string
         }
         Update: {
           allowed_reverts_json?: Json | null
@@ -410,6 +415,7 @@ export type Database = {
           id?: number
           name?: string
           status_sequence?: number[]
+          type?: string
         }
         Relationships: []
       }
@@ -423,10 +429,13 @@ export type Database = {
           factory_section_id: number | null
           id: number
           machine_id: number | null
+          marked_inactive: boolean | null
           order_note: string | null
           order_type: string | null
           order_workflow_id: number | null
           req_num: string | null
+          src_factory: number | null
+          src_machine: number | null
         }
         Insert: {
           created_at?: string
@@ -437,10 +446,13 @@ export type Database = {
           factory_section_id?: number | null
           id?: number
           machine_id?: number | null
+          marked_inactive?: boolean | null
           order_note?: string | null
           order_type?: string | null
           order_workflow_id?: number | null
           req_num?: string | null
+          src_factory?: number | null
+          src_machine?: number | null
         }
         Update: {
           created_at?: string
@@ -451,10 +463,13 @@ export type Database = {
           factory_section_id?: number | null
           id?: number
           machine_id?: number | null
+          marked_inactive?: boolean | null
           order_note?: string | null
           order_type?: string | null
           order_workflow_id?: number | null
           req_num?: string | null
+          src_factory?: number | null
+          src_machine?: number | null
         }
         Relationships: [
           {
@@ -521,11 +536,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_order_workflow_id_fkey"
-            columns: ["order_workflow_id"]
+            foreignKeyName: "orders_order_type_fkey"
+            columns: ["order_type"]
             isOneToOne: false
             referencedRelation: "order_workflows"
-            referencedColumns: ["id"]
+            referencedColumns: ["type"]
           },
         ]
       }

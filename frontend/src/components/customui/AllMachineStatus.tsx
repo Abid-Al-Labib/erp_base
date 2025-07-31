@@ -1,13 +1,12 @@
 // AllMachinesStatus.tsx
 import { useEffect, useState } from "react";
 import { fetchFactories, fetchAllFactorySections } from "@/services/FactoriesService";
-import { fetchAllMachines, fetchAllMachinesEnriched, fetchEnrichedMachines } from "@/services/MachineServices";
+import { fetchAllMachinesEnriched } from "@/services/MachineServices";
+import { fetchMachineParts } from "@/services/MachinePartsService";
 import { Loader2 } from "lucide-react";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
-import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 
 interface Factory {
     id: number;
@@ -24,8 +23,9 @@ interface Machine {
     id: number;
     name: string;
     is_running: boolean;
-    factory: string;
     factory_section_id: number;
+    factory: string;
+    factory_section_name: string;
 }
 
 interface AllMachinesStatusProps {
@@ -38,6 +38,7 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection }: 
     const [factories, setFactories] = useState<Factory[]>([]);
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
+    const [machinePartsStatus, setMachinePartsStatus] = useState<Record<number, { hasDefective: boolean }>>({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -51,6 +52,26 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection }: 
                 setFactories(fetchedFactories);
                 setFactorySections(fetchedSections);
                 setMachines(enrichedMachines);
+
+                // Fetch machine parts status for each machine
+                const partsStatusPromises = enrichedMachines.map(async (machine) => {
+                    try {
+                        const parts = await fetchMachineParts(machine.id);
+                        const hasDefective = parts.some(part => (part.defective_qty ?? 0) > 0);
+                        return { machineId: machine.id, hasDefective };
+                    } catch (error) {
+                        console.error(`Error fetching parts for machine ${machine.id}:`, error);
+                        return { machineId: machine.id, hasDefective: false };
+                    }
+                });
+
+                const partsStatusResults = await Promise.all(partsStatusPromises);
+                const partsStatusMap = partsStatusResults.reduce((acc, result) => {
+                    acc[result.machineId] = { hasDefective: result.hasDefective };
+                    return acc;
+                }, {} as Record<number, { hasDefective: boolean }>);
+
+                setMachinePartsStatus(partsStatusMap);
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -140,6 +161,7 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection }: 
                             <TableHead>Section</TableHead>
                             <TableHead>Machines</TableHead>
                             <TableHead>Running Status</TableHead>
+                            <TableHead>Parts Status</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -147,6 +169,7 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection }: 
                             const [factoryId, sectionId] = key.split('-').map(Number);
                             const runningCount = group.machines.filter(m => m.is_running).length;
                             const totalCount = group.machines.length;
+                            const defectiveCount = group.machines.filter(m => machinePartsStatus[m.id]?.hasDefective).length;
 
                             return (
                                 <TableRow 
@@ -157,34 +180,41 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection }: 
                                     <TableCell>{group.section}</TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-2">
-                                            {group.machines.map((machine, index) => (
-                                                <Badge
-                                                    key={machine.id}
-                                                    variant="secondary"
-                                                    className={`text-sm cursor-pointer ${
-                                                        machine.is_running
-                                                            ? "bg-green-100 text-green-600"
-                                                            : "bg-red-100 text-red-600"
-                                                    }`}
-                                                    onClick={() => handleRowSelection?.(factoryId, sectionId, machine.id)}
-                                                >
-                                                    {machine.name}
-                                                </Badge>
-                                            ))}
+                                            {group.machines.map((machine) => {
+                                                const hasDefective = machinePartsStatus[machine.id]?.hasDefective;
+                                                return (
+                                                    <Badge
+                                                        key={machine.id}
+                                                        variant="secondary"
+                                                        className={`text-sm cursor-pointer ${
+                                                            hasDefective
+                                                                ? "bg-yellow-100 text-yellow-700"
+                                                                : machine.is_running
+                                                                    ? "bg-green-100 text-green-600"
+                                                                    : "bg-red-100 text-red-600"
+                                                        }`}
+                                                        onClick={() => handleRowSelection?.(factoryId, sectionId, machine.id)}
+                                                    >
+                                                        {machine.name}
+                                                    </Badge>
+                                                );
+                                            })}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={`${
-                                                runningCount === totalCount
-                                                    ? "bg-green-100 text-green-600"
-                                                    : runningCount === 0
-                                                    ? "bg-red-100 text-red-600"
-                                                    : "bg-orange-100 text-orange-600"
-                                            }`}
+                                        <Badge 
+                                            variant="secondary" 
+                                            className={`text-sm ${runningCount === totalCount ? 'bg-green-100' : runningCount === 0 ? 'bg-red-100' : 'bg-orange-100'}`}
                                         >
                                             {runningCount}/{totalCount} Running
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge 
+                                            variant="secondary" 
+                                            className={`text-sm ${defectiveCount > 0 ? 'bg-yellow-100' : 'bg-green-100'}`}
+                                        >
+                                            {defectiveCount > 0 ? `${defectiveCount} Defective` : 'All Parts OK'}
                                         </Badge>
                                     </TableCell>
                                 </TableRow>

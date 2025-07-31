@@ -20,7 +20,7 @@ import { fetchStoragePartQuantityByFactoryID, reduceStoragePartQty, upsertStorag
 import { useAuth } from "@/context/AuthContext"
 import { reduceMachinePartQty, increaseMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
-import { addDamagePartQuantity } from "@/services/DamagedGoodsService"
+import { increaseDamagedPartQty } from "@/services/DamagedGoodsService"
 
 
 
@@ -134,8 +134,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             orderedPartInfo.qty,
           )
 
-          // Call addDamagePartQuantity only if parts were subtracted
-          addDamagePartQuantity(factory_id, orderedPartInfo.part_id, orderedPartInfo.qty);
+          await increaseDamagedPartQty(factory_id, orderedPartInfo.part_id, orderedPartInfo.qty);
           
         }
       } catch (error) {
@@ -433,12 +432,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived)
             //if order type storage
             toast.success("Part received by factory date set!")
-            if (order_type == "PFS"){
-              await increaseStoragePartQty(orderedPartInfo.part_id,factory_id,orderedPartInfo.qty);
-            }
-            if (order_type == "PFM") {
-              await increaseMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty);
-            }
+            //Here order received from factory and update the machine part qty
           } catch (error) {
             toast.error("Error occured could not complete action");
           } 

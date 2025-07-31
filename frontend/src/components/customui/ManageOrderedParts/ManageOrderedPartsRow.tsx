@@ -40,7 +40,7 @@ export const Managerowtemporary:React.FC<ManagerowtemporaryProp> = ({index, orde
         setDisableTakeStorageRow(disableRow);
 
         // If the order type is "Machine", get current storage quantity
-        if (order.order_type === "Machine") {
+        if (order.order_type === "PFM") {
         const storageData = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,order.factory_id);
         if (storageData && storageData.length > 0) {
             setCurrentStorageQty(storageData[0].qty);

@@ -67,69 +67,80 @@ export const updateDamagePartQuantity = async (factory_id:number, part_id:number
     }
 }
 
-export const addDamagePartQuantity = async (factory_id: number, part_id: number, added_quantity: number) => {
-    // Fetch the current quantity for the given factory_id and part_id
-    const { data: currentData, error: fetchError } = await supabase_client
-        .from("damaged_parts")
-        .select("qty")
-        .eq("part_id", part_id)
-        .eq("factory_id", factory_id);
+export const increaseDamagedPartQty = async (factory_id: number, part_id: number, qty_to_add: number) => {
+    try {
+        // First check if a damaged part record already exists
+        const { data: existingData, error: fetchError } = await supabase_client
+            .from('damaged_parts')
+            .select('qty')
+            .eq('part_id', part_id)
+            .eq('factory_id', factory_id)
+            .maybeSingle();
 
-    // Handle error if the fetch fails
-    if (fetchError) {
-        toast.error(fetchError.message);
-        return;
+        if (fetchError) {
+            toast.error('Error checking existing damaged parts: ' + fetchError.message);
+            throw fetchError;
+        }
+
+        if (existingData) {
+            // Record exists, add to existing quantity
+            const currentQty = existingData.qty || 0;
+            const newQty = currentQty + qty_to_add;
+
+            const { error: updateError } = await supabase_client
+                .from('damaged_parts')
+                .update({ qty: newQty })
+                .eq('part_id', part_id)
+                .eq('factory_id', factory_id);
+
+            if (updateError) {
+                toast.error('Error updating damaged part quantity: ' + updateError.message);
+                throw updateError;
+            }
+
+            toast.success(`Added ${qty_to_add} damaged parts. Total: ${newQty}`);
+        } else {
+            // No existing record, create new one
+            const { error: insertError } = await supabase_client
+                .from('damaged_parts')
+                .insert({
+                    part_id: part_id,
+                    factory_id: factory_id,
+                    qty: qty_to_add
+                });
+
+            if (insertError) {
+                toast.error('Error adding damaged parts: ' + insertError.message);
+                throw insertError;
+            }
+
+            toast.success(`Added ${qty_to_add} damaged parts (new record)`);
+        }
+    } catch (error) {
+        console.error('Error in addDamagedPartQty:', error);
+        throw error;
     }
+}
 
-    // Calculate the updated quantity by adding the new quantity to the current quantity
-    const currentQty = currentData && currentData.length > 0 ? currentData[0].qty : 0;
-    const updatedQuantity = currentQty + added_quantity;
-
-    // Update the damaged part quantity in the database
-    const { error: updateError } = await supabase_client
-        .from("damaged_parts")
-        .upsert(
-            {
-                part_id: part_id,
-                factory_id: factory_id,
-                qty: updatedQuantity,
-            },
-            { onConflict: "part_id, factory_id" } // Ensure conflict is managed correctly
-        );
-
-    // Handle update error if it occurs
-    if (updateError) {
-        toast.error(updateError.message);
-    } 
-};
 
 export const deleteDamagedPart = async (part_id: number, factory_id: number) => {
-    const { error } = await supabase_client
-    .from('damaged_parts')
-    .delete()
-    .eq('part_id', part_id)
-    .eq('factory_id', factory_id)
+    try {
+        const { error } = await supabase_client
+            .from('damaged_parts')
+            .delete()
+            .eq('part_id', part_id)
+            .eq('factory_id', factory_id);
 
-    if (error) {
-        toast.error(error.message)
-        throw error;
-    }
+        if (error) {
+            toast.error('Error deleting damaged part: ' + error.message);
+            throw error;
+        }
 
-    toast.success("Damaged part deleted successfully");
-}
-
-export const upsertDamagedPart = async (part_id: number, factory_id: number, quantity: number) => {
-    const { error } = await supabase_client
-    .from('damaged_parts')
-    .upsert({ 
-        part_id: part_id,
-        factory_id: factory_id,
-        qty: quantity 
-    }, {onConflict: 'part_id, factory_id'}
-    )
-
-    if (error) {
-        toast.error(error.message)
+        toast.success('Damaged part deleted successfully');
+    } catch (error) {
+        console.error('Error in deleteDamagedPart:', error);
         throw error;
     }
 }
+
+

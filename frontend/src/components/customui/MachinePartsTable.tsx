@@ -4,26 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import SearchAndFilter from "@/components/customui/SearchAndFilter";
 import MachinePartsRow from './MachinePartsRow'; // Import the MachinePartsRow component
 import { Badge } from '../ui/badge';
-
-type MachinePart = {
-    id: number;
-    machine_id: number;
-    machine_name: string;
-    part_id: number;
-    part_name: string;
-    qty: number;
-    req_qty: number;
-};
+import { MachinePart, Machine } from '@/types';
 
 interface MachinePartsTableProps {
     MachineParts: MachinePart[];
     onApplyFilters: (filters: any) => void;
     onResetFilters: () => void;
     onRefresh: () => Promise<void>; // Add this line to include the onRefresh prop
-    selectedMachine?: { is_running: boolean };
+    selectedMachine?: Machine;
 }
 
-const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onRefresh, selectedMachine }) => {
+const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onApplyFilters, onResetFilters, onRefresh, selectedMachine }) => {
     // console.log("Machine Parts of", MachineParts);
 
     return (
@@ -42,11 +33,19 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onR
                                 </Badge>
                                 <Badge 
                                     variant="secondary" 
-                                    className={`text-sm ${MachineParts.every(part => part.qty >= part.req_qty) ? 'bg-green-100' : 'bg-orange-100'}`}
+                                    className={`text-sm ${
+                                        MachineParts.some(part => (part.defective_qty ?? 0) > 0) 
+                                            ? 'bg-yellow-100' 
+                                            : MachineParts.every(part => part.qty >= (part.req_qty ?? 0)) 
+                                                ? 'bg-green-100' 
+                                                : 'bg-orange-100'
+                                    }`}
                                 >
-                                    {MachineParts.every(part => part.qty >= part.req_qty) 
-                                        ? "All parts sufficient" 
-                                        : "Insufficient parts"}
+                                    {MachineParts.some(part => (part.defective_qty ?? 0) > 0)
+                                        ? "Defective Parts"
+                                        : MachineParts.every(part => part.qty >= (part.req_qty ?? 0)) 
+                                            ? "All parts sufficient" 
+                                            : "Insufficient parts"}
                                 </Badge>
                             </>
                         )}
@@ -67,7 +66,9 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onR
                             <TableHead>Part ID</TableHead>
                             <TableHead>Part Name</TableHead>
                             <TableHead>Quantity</TableHead>
+                            <TableHead>Defective Parts</TableHead>
                             <TableHead>Required Quantity</TableHead>
+                            <TableHead className="text-right"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

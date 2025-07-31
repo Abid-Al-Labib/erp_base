@@ -14,6 +14,7 @@ export const fetchMachineParts = async (
       id,
       qty,
       req_qty,
+      defective_qty,
       machine_id,
       parts (*),
       machines(*)
@@ -196,6 +197,83 @@ export const updateRequiredQuantity = async (partId: number, newCurQty: number, 
 
     toast.success('Required quantity updated successfully.');
 };
+
+export const updateDefectiveQuantity = async (partId: number, newDefQty: number) => {
+    const { error } = await supabase_client
+        .from('machine_parts')
+        .update({ defective_qty: newDefQty })
+        .eq('id', partId);
+
+    if (error) {
+        toast.error('Error updating defective quantity: ' + error.message);
+        throw error; // Throw error to handle it in the component
+    }
+
+    toast.success('Defective quantity updated successfully.');  
+}
+
+export const addDefectiveQuantity = async (machineId: number, partId: number, newDefQty: number) => {
+    // First fetch the current defective quantity
+    const { data: currentData, error: fetchError } = await supabase_client
+        .from('machine_parts')
+        .select('defective_qty')
+        .eq('machine_id', machineId)
+        .eq('part_id', partId)
+        .maybeSingle();
+
+    if (fetchError) {
+        toast.error('Error fetching current defective quantity: ' + fetchError.message);
+        throw fetchError;
+    }
+
+    // Calculate new defective quantity
+    const currentDefQty = currentData?.defective_qty || 0;
+    const updatedDefQty = currentDefQty + newDefQty;
+
+    // Update the defective quantity
+    const { error: updateError } = await supabase_client
+        .from('machine_parts')
+        .update({ defective_qty: updatedDefQty })
+        .eq('machine_id', machineId)
+        .eq('part_id', partId);
+
+    if (updateError) {
+        toast.error('Error updating defective quantity: ' + updateError.message);
+        throw updateError;
+    }
+    toast.success('Defective quantity updated successfully.');  
+}
+
+export const reduceDefectiveQuantity = async (machineId: number, partId: number, newDefQty: number) => {
+    const { data: currentData, error: fetchError } = await supabase_client
+        .from('machine_parts')
+        .select('defective_qty')
+        .eq('machine_id', machineId)
+        .eq('part_id', partId)
+        .maybeSingle(); 
+
+    if (fetchError) {
+        toast.error('Error fetching current defective quantity: ' + fetchError.message);
+        throw fetchError;
+    }
+
+    const currentDefQty = currentData?.defective_qty || 0;
+    const updatedDefQty = currentDefQty - newDefQty;
+
+    // Update the defective quantity
+    const { error: updateError } = await supabase_client
+        .from('machine_parts')
+        .update({ defective_qty: updatedDefQty })
+        .eq('machine_id', machineId)
+        .eq('part_id', partId);
+
+    if (updateError) {
+        toast.error('Error updating defective quantity: ' + updateError.message);
+        throw updateError;
+    }
+
+    toast.success('Defective quantity updated successfully.');  
+}
 
 export const deleteMachinePart = async (machinePartId: number) => {
     const { error } = await supabase_client
