@@ -104,12 +104,19 @@ const ViewOrderPage = () => {
       <div className="flex min-h-screen w-full flex-col bg-muted/40 mx-2">
         <main className="grid m-4">
           <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-            <div className="sm:flex flex-1 gap-2">
-              <div className="w-full mt-4">
-                <OrderInfo order={order} mode="view"/>
+            <div className="sm:flex flex-1 gap-4 mt-4 min-h-[400px] items-stretch">
+
+              <div className="w-full sm:w-2/5 h-full">
+                <OrderInfo order={order} mode="view" />
               </div>
-              <div className="mt-4">
-                <StatusTracker order_id={order.id} />
+
+              {/* Placeholder for the second component (currently OrderInfo for now) */}
+              <div className="w-full sm:w-2/5 h-full">
+                <OrderInfo order={order} mode="view" />
+              </div>
+    
+              <div className="w-full sm:w-1/5 h-full">
+                <StatusTracker order={order} />
               </div>
             </div>
             <div className="w-full mt-4 overflow-x-auto">

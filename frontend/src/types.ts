@@ -153,3 +153,10 @@ export interface InputOrderedPart {
     in_storage: boolean;
     approved_storage_withdrawal: boolean;
 }
+
+export interface StatusTrackerItemProp {
+  status: string;
+  action_at: string | null;
+  action_by: string | null;
+  complete: boolean;
+}

@@ -1,37 +1,68 @@
-import { ApplicationSettings, OrderedPart, Status, StatusTracker } from "@/types";
+import { ApplicationSettings, OrderedPart, Status, StatusTracker, StatusTrackerItemProp } from "@/types";
 
 
-export function mergeStatusWithTracker(statuses: Status[],statusTracker: StatusTracker[])
-{
-  // Step 1: Sort the statusTracker items by status_id in ascending order
-  console.log(statusTracker)
-  const sortedStatusTracker = statusTracker.sort((a, b) => a.id - b.id);
+export function getStatusDataForWorkflow(
+  statuses: Status[],
+  statusTracker: StatusTracker[],
+  status_sequence: number[]
+) {
+  // Build lookup maps for quick access
+  const trackerMap = new Map<number, StatusTracker>();
+  for (const tracker of statusTracker) {
+    trackerMap.set(tracker.status_id, tracker);
+  }
 
-  // Step 2: Map statusTracker items as completed
-  const completedStatuses = sortedStatusTracker.map(trackerItem => ({
-    status: trackerItem.statuses.name,  // Assuming trackerItem has the 'statuses' field populated
-    action_at: trackerItem.action_at,
-    action_by: trackerItem.profiles.name, // Assuming 'profiles' contains the user's name
-    complete: true,
-  }));
+  const statusMap = new Map<number, string>();
+  for (const status of statuses) {
+    statusMap.set(status.id, status.name);
+  }
 
-  // Step 3: Get the last status_id from the last statusTracker item (latest one)
-  const lastStatusId = sortedStatusTracker.length > 0 
-    ? sortedStatusTracker[sortedStatusTracker.length - 1].status_id
-    : 0;
+  // Final merged list
+  const merged = status_sequence.map((status_id) => {
+    const tracker = trackerMap.get(status_id);
 
-  // Step 4: Get all remaining statuses that are incomplete (id > lastStatusId)
-  const incompleteStatuses = statuses
-    .filter(status => status.id > lastStatusId)
-    .map(status => ({
-      status: status.name,
-      action_at: null,
-      action_by: null,
-      complete: false,
-    }));
+    return {
+      status: statusMap.get(status_id) || "", // fallback to empty string if name not found
+      action_at: tracker?.action_at || null,
+      action_by: tracker?.profiles?.name || null,
+      complete: !!tracker,
+    };
+  });
 
-  // Step 5: Combine completed and incomplete statuses
-  return [...completedStatuses, ...incompleteStatuses];
+  return merged;
+}
+
+export function getStatusDurations(statuses: StatusTrackerItemProp[]) {
+  const completed = statuses.filter((s) => s.complete && s.action_at);
+
+  if (completed.length === 0) return { elapsedDays: null, totalDaysToCompletion: null };
+
+  const first = new Date(completed[0].action_at!);
+  const last = new Date(completed[completed.length - 1].action_at!);
+  const now = new Date();
+
+  const elapsedMs = now.getTime() - first.getTime();
+  const totalMs = last.getTime() - first.getTime();
+
+  const elapsedDays = Math.floor(elapsedMs / (1000 * 60 * 60 * 24));
+  const totalDaysToCompletion = completed.length === statuses.length
+    ? Math.floor(totalMs / (1000 * 60 * 60 * 24))
+    : null;
+
+  return { elapsedDays, totalDaysToCompletion };
+}
+
+export function getWorkflowProgress(
+  status_sequence: number[],
+  current_status_id: number
+): { completedCount: number; totalCount: number } {
+  const totalCount = status_sequence.length;
+
+  const currentIndex = status_sequence.indexOf(current_status_id);
+  const completedCount =
+    currentIndex === -1 ? 0 : currentIndex + 1; // +1 because index is 0-based
+
+  return { completedCount, totalCount };
 }
 
 
