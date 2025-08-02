@@ -9,6 +9,7 @@ import { deleteOrderByID, fetchRunningOrdersByMachineId } from '@/services/Order
 import toast from 'react-hot-toast';
 import { Order, OrderedPart } from '@/types';
 import { convertUtcToBDTime, isManagebleOrder, managePermission } from '@/services/helper';
+import { fetchFactoriesByIds } from '@/services/FactoriesService';
 import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '@/context/AuthContext';
 import { OctagonAlert } from 'lucide-react';
@@ -28,6 +29,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
   const [orderedParts,setOrderedParts] = useState<OrderedPart[]|null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const [orderDisplayText, setOrderDisplayText] = useState<string>("Loading...");
   
   const handleDeleteOrder = async () => {
     try {
@@ -86,6 +88,49 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
     loadOrderedParts();
   },[]);
 
+  // Process order display for all order types in one function
+  useEffect(() => {
+    const processOrderDisplay = async () => {
+      try {
+        // STM Order - Storage to Machine (requires fetching source factory)
+        if (order.order_type === "STM" && order.src_factory) {
+          setOrderDisplayText("Loading...");
+          const factories = await fetchFactoriesByIds([order.src_factory]);
+          const sourceFactory = factories.length > 0 ? factories[0] : null;
+          
+          if (sourceFactory) {
+            setOrderDisplayText(`${sourceFactory.abbreviation} → ${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name || 'N/A'}`);
+          } else {
+            setOrderDisplayText(`Unknown → ${order.factories.abbreviation} - ${order.machines?.name || 'N/A'}`);
+          }
+        }
+        // MTS Order - Machine to Storage (using src_machine)
+        else if (order.order_type === "MTS" && order.src_machine) {
+          // For now, show simple format. Can be enhanced later to fetch machine details
+          setOrderDisplayText(`Machine (ID: ${order.src_machine}) → ${order.factories.abbreviation} - Storage`);
+        }
+        // Regular Machine Order (PFM)
+        else if (order.factory_sections?.name && order.machines?.name) {
+          setOrderDisplayText(`${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`);
+        }
+        // Storage Order (PFS) or fallback
+        else {
+          setOrderDisplayText(`${order.factories.abbreviation} - Storage`);
+        }
+      } catch (error) {
+        console.error("Error processing order display:", error);
+        // Fallback display on error
+        if (order.factory_sections?.name && order.machines?.name) {
+          setOrderDisplayText(`${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`);
+        } else {
+          setOrderDisplayText(`${order.factories.abbreviation} - Storage`);
+        }
+      }
+    };
+
+    processOrderDisplay();
+  }, [order.order_type, order.src_machine, order.factories.abbreviation, order.factory_sections?.name, order.machines?.name]);
+
   const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
   const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")
   return  (
@@ -100,9 +145,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
         {order.req_num}
       </TableCell>
       <TableCell className="hidden md:table-cell">
-        {order.factory_sections?.name && order.machines?.name
-          ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`
-          : `${order.factories.abbreviation} - Storage`}
+        {orderDisplayText}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         {convertUtcToBDTime(order.created_at)}
@@ -126,10 +169,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
               </li>    
               <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Order for Machine/Storage</span>
-                <span> {order.factory_sections?.name && order.machines?.name
-                    ? `${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`
-                    : `${order.factories.abbreviation} - Storage`}
-                </span>
+                <span>{orderDisplayText}</span>
               </li>              
               <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Created At</span>
