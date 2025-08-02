@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { addDamagePartQuantity } from '@/services/DamagedGoodsService';
+import { increaseDamagedPartQty } from '@/services/DamagedGoodsService';
 import { reduceMachinePartQty } from '@/services/MachinePartsService';
 import { updateApprovedPendingOrderByID } from '@/services/OrderedPartsService';
 import { OrderedPart } from '@/types';
@@ -42,12 +42,20 @@ const ApproveFromFactoryAction: React.FC<ApproveFromFactoryActionProps> = ({
                 orderedPartInfo.qty
             );
 
-            await addDamagePartQuantity(
-                factory_id,
-                orderedPartInfo.part_id,
-                orderedPartInfo.qty
-            );
+        if (order_type === "PFM") {
+        await reduceMachinePartQty(
+            machine_id,
+            orderedPartInfo.part_id,
+            orderedPartInfo.qty
+        );
+
+        await increaseDamagedPartQty(
+            factory_id,
+            orderedPartInfo.part_id,
+            orderedPartInfo.qty
+        );
         }
+    }
 
         setOpenThisActionDialog(false);
         setActionMenuOpen(false);

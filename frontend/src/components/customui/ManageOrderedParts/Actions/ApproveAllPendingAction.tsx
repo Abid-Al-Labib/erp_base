@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { OrderedPart, Order } from "@/types";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
+import { increaseDamagedPartQty } from "../../../../services/DamagedGoodsService";
 import { updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import { reduceMachinePartQty } from "@/services/MachinePartsService";
 
@@ -43,7 +43,7 @@ const ApproveAllPendingAction: React.FC<ApproveAllPendingActionProps> = ({
             ordered_part.part_id,
             ordered_part.qty
           );
-          promises.push(addDamagePartQuantity(order.factory_id, ordered_part.part_id, ordered_part.qty));
+          promises.push(increaseDamagedPartQty(order.factory_id, ordered_part.part_id, ordered_part.qty));
         }
 
         return Promise.all(promises);

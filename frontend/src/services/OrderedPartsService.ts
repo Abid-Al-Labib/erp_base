@@ -33,7 +33,7 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         `
     ).eq('part_id',part_id).order('id', { ascending: true });
 
-    console.log(data)
+    // console.log(data)
     if(error) {
         toast.error(error.message)
     }
@@ -69,7 +69,7 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         qty_taken_from_storage
         `
     ).eq('order_id',order_id).order('id', { ascending: true });
-    console.log(data)
+    // console.log(data)
     if(error) {
         toast.error(error.message)
     }
@@ -99,7 +99,7 @@ export const fetchLastChangeDate = async (machine_id:number, part_id:number) => 
         return mostRecentChange.part_received_by_factory_date
 
     } else {
-        console.log(data)
+        // console.log(data)
         return null;
     }
 }
@@ -129,7 +129,7 @@ export const fetchLastCostAndPurchaseDate = async (part_id: number) => {
             vendor: mostRecent.vendor
         };
     } else {
-        console.log(data)
+        // console.log(data)
         return null;
     }
 };
@@ -225,7 +225,7 @@ export const updateMrrNumberByID = async (orderedpart_id:number, mrr_number:stri
     ).eq('id', orderedpart_id)
 
     if (error) {
-        console.log("error for unique:",error.code)
+        // console.log("error for unique:",error.code)
         toast.error(error.message)
     }
     
@@ -394,14 +394,14 @@ export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
       .filter('created_at', 'lt', startOfNextMonth);
   
     if (ordersError) {
-      console.error("Couldn't find orders for this month:", ordersError);
+    //   console.error("Couldn't find orders for this month:", ordersError);
       return null;
     }
   
     // Extract order IDs
     const orderIdsForThisMonth = ordersData?.map((order) => order.id);
     if (!orderIdsForThisMonth || orderIdsForThisMonth.length === 0) {
-      console.log("No orders found for this month.");
+    //   console.log("No orders found for this month.");
       return [];
     }
   
@@ -414,7 +414,7 @@ export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
       .limit(10);
     
     if (partsError) {
-      console.error('Error fetching top ordered parts for current month:', partsError);
+    //   console.error('Error fetching top ordered parts for current month:', partsError);
       return null;
     }
   
@@ -424,7 +424,7 @@ export const fetchMetricMostFrequentOrderedPartsCurrentMonth = async () => {
     // Step 3: Fetch part details based on part IDs
     const partsDetails = await fetchPartsByIDs(partIds);
     if (!partsDetails) {
-      console.error('Error fetching part details.');
+    //   console.error('Error fetching part details.');
       return null;
     }
   

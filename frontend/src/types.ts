@@ -38,7 +38,8 @@ export type MachinePart = {
     machine_id: number;
     part_id: number;
     qty: number;
-    req_qty: number | null
+    req_qty: number | null;
+    defective_qty: number | null;
     parts: Part
     machines: Machine
 }
@@ -94,7 +95,10 @@ export type Order = {
     machines: Machine | null,
     factories: Factory, 
     factory_sections: FactorySection | null,
-    order_workflows: OrderWorkflow
+    order_workflows: OrderWorkflow,
+    src_factory: number | null,
+    src_machine: number | null,
+    marked_inactive: boolean | null
 };
 
 export type StatusTracker = {
@@ -135,6 +139,7 @@ export interface InputOrder {
     machine_name: string,
     current_status_id: number,
     order_type: string,
+    marked_inactive?: boolean, // For machine orders (PFM, STM, MTS)
 }
 
 export interface InputOrderedPart {

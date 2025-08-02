@@ -71,6 +71,12 @@ export const fetchStoragePartQuantityByFactoryID = async (part_id: number, facto
 } 
 
 export const upsertStoragePart = async (part_id: number, factory_id: number, quantity: number) =>{
+    // Validate input parameters
+    if (factory_id <= 0 || part_id <= 0) {
+        toast.error(`Invalid parameters: factory_id (${factory_id}) and part_id (${part_id}) must be positive numbers`);
+        return;
+    }
+
     // console.log("Adding storage of part_id ",part_id);
     const { error } = await supabase_client
     .from('storage_parts')
@@ -101,6 +107,16 @@ export const upsertStoragePart = async (part_id: number, factory_id: number, qua
 // }
 
 export const increaseStoragePartQty = async (part_id: number, factory_id: number, quantity: number) => {
+    // Debug logging
+    console.log(`[DEBUG] increaseStoragePartQty called with: part_id=${part_id}, factory_id=${factory_id}, quantity=${quantity}`);
+    
+    // Validate input parameters
+    if (factory_id <= 0 || part_id <= 0) {
+        console.error(`[ERROR] Invalid parameters: factory_id (${factory_id}) and part_id (${part_id}) must be positive numbers`);
+        toast.error(`Invalid parameters: factory_id (${factory_id}) and part_id (${part_id}) must be positive numbers`);
+        return;
+    }
+
     const { data: currentData, error: fetchError } = await supabase_client
         .from('storage_parts')
         .select('qty')
@@ -146,7 +162,8 @@ export const reduceStoragePartQty = async (part_id: number, factory_id: number, 
         toast.error(fetchError.message)
         return
     }
-
+    console.log("factory_id", factory_id)
+    console.log("currentData", currentData)
     if (!currentData || currentData.length === 0) {
         toast.error('Part not found in storage')
         return

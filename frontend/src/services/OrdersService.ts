@@ -50,6 +50,9 @@ export const fetchOrders = async ({
             factory_section_id,
             order_type,
             order_workflow_id,
+            src_factory,
+            src_machine,
+            marked_inactive,
             order_workflows(*),
             departments(*),
             profiles(*),
@@ -273,7 +276,8 @@ export const insertOrder = async (
     factory_section_id: number,
     machine_id: number,
     current_status_id: number,
-    order_type: string, ) => {
+    order_type: string,
+    marked_inactive?: boolean ) => {
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -286,6 +290,7 @@ export const insertOrder = async (
             "machine_id": machine_id,
             "current_status_id": current_status_id,
             "order_type": order_type,
+            "marked_inactive": marked_inactive,
             
         },
         ])
@@ -324,6 +329,72 @@ export const insertOrderStorage = async (
     }
     return { data: data as Order[], error };
 };
+
+export const insertOrderStorageSTM = async (
+    req_num: string,
+    order_note: string,
+    created_by_user_id: number,
+    department_id: number,
+    factory_id: number,
+    factory_section_id: number,
+    machine_id: number,
+    current_status_id: number,
+    order_type: string,
+    src_factory: number,
+    marked_inactive?: boolean,
+) => {
+    const { data, error } = await supabase_client.from('orders').insert([
+        {
+            "req_num": req_num,
+            "order_note": order_note,
+            "created_by_user_id": created_by_user_id,
+            "department_id": department_id,
+            "factory_id": factory_id,
+            "factory_section_id": factory_section_id,
+            "machine_id": machine_id,
+            "current_status_id": current_status_id,
+            "order_type": order_type,
+            "src_factory": src_factory,
+            "marked_inactive": marked_inactive,   
+        },
+    ])
+        .select()
+    if (error) {
+        toast.error("Failed to create order: " + error.message);    
+    }
+    return { data: data as Order[], error };
+}
+
+export const insertOrderMTS = async (
+    req_num: string,
+    order_note: string,
+    created_by_user_id: number,
+    department_id: number,
+    factory_id: number,
+    current_status_id: number,
+    order_type: string,
+    src_machine: number,
+    marked_inactive?: boolean,
+) => {
+    const { data, error } = await supabase_client.from('orders').insert([
+        {
+            "req_num": req_num,
+            "order_note": order_note,
+            "created_by_user_id": created_by_user_id,
+            "department_id": department_id,
+            "factory_id": factory_id,
+            "current_status_id": current_status_id,
+            "order_type": order_type,
+            "src_machine": src_machine,
+            "marked_inactive": marked_inactive,
+        },
+    ])  
+        .select()
+    if (error) {
+        toast.error("Failed to create order: " + error.message);
+    }
+    return { data: data as Order[], error };
+}
 
 export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
     const { data, error } = await supabase_client.from('orders').

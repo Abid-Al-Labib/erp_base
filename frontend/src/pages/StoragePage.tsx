@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { fetchStorageParts, upsertStoragePart } from "@/services/StorageService";
-import { fetchDamagedPartsByFactoryID, upsertDamagedPart } from "@/services/DamagedGoodsService";
+import { fetchStorageParts, upsertStoragePart, increaseStoragePartQty } from "@/services/StorageService";
+import { fetchDamagedPartsByFactoryID, increaseDamagedPartQty } from "@/services/DamagedGoodsService";
 import { fetchFactories } from "@/services/FactoriesService";
 import { fetchAllParts, searchPartsByName } from "@/services/PartsService";
 import { Factory, StoragePart, Part } from "@/types";
@@ -167,10 +167,10 @@ const StoragePage = () => {
     setIsSubmitting(true);
     try {
       if (activeTab === "storage") {
-        await upsertStoragePart(selectedPart.id, selectedFactoryId, quantityNum);
+        await increaseStoragePartQty(selectedPart.id, selectedFactoryId, quantityNum);
         toast.success("Part added to storage successfully");
       } else {
-        await upsertDamagedPart(selectedPart.id, selectedFactoryId, quantityNum);
+        await increaseDamagedPartQty(selectedFactoryId, selectedPart.id, quantityNum);
         toast.success("Part added to damaged parts successfully");
       }
       

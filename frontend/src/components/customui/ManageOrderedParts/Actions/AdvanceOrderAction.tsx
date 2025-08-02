@@ -4,8 +4,9 @@ import toast from "react-hot-toast";
 import { Order } from "@/types";
 import { useState } from "react";
 import { fetchRunningOrdersByMachineId, UpdateStatusByID } from "@/services/OrdersService";
+import { addDefectiveQuantity, reduceDefectiveQuantity } from "@/services/MachinePartsService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
-import { setMachineIsRunningById } from "@/services/MachineServices";
+import { setMachineIsRunningById, fetchMachineById } from "@/services/MachineServices";
 import { getNextStatusIdFromSequence } from "@/services/helper";
 import { useAuth } from "@/context/AuthContext";
 

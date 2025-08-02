@@ -1,6 +1,6 @@
 // MachinePage.tsx
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
 import { fetchMachineParts } from "@/services/MachinePartsService";
@@ -11,7 +11,7 @@ import MachinePartsTable from "@/components/customui/MachinePartsTable";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Machine, Order } from "@/types";
+import { Machine, Order, MachinePart } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
 import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,28 +19,58 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import AllMachinesStatus from "@/components/customui/AllMachineStatus";
 
-type MachinePart = {
-  id: number;
-  machine_id: number;
-  machine_name: string;
-  part_id: number;
-  part_name: string;
-  qty: number;
-  req_qty: number;
-};
-
 const MachinePartsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [MachineParts, setMachineParts] = useState<MachinePart[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<any>({});
   const [factories, setFactories] = useState<{ id: number; name: string }[]>([]);
   const [factorySections, setFactorySections] = useState<{ id: number; name: string }[]>([]);
   const [machines, setMachines] = useState<{ id: number; name: string }[]>([]);
-  const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
-  const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(undefined);
-  const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(undefined);
+  
+  // Initialize state from URL parameters
+  const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(() => {
+    const factoryParam = searchParams.get('factory');
+    return factoryParam ? Number(factoryParam) : undefined;
+  });
+  const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(() => {
+    const sectionParam = searchParams.get('section');
+    return sectionParam ? Number(sectionParam) : undefined;
+  });
+  const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(() => {
+    const machineParam = searchParams.get('machine');
+    return machineParam ? Number(machineParam) : undefined;
+  });
+  
   const [selectedMachine, setSelectedMachine] = useState<Machine>();
   const [runningOrders, setRunningOrders] = useState<Order[]>([]); // State for running orders
+
+  // Update URL parameters when selections change
+  const updateUrlParams = useCallback((factory?: number, section?: number, machine?: number) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      
+      if (factory !== undefined) {
+        newParams.set('factory', factory.toString());
+      } else {
+        newParams.delete('factory');
+      }
+      
+      if (section !== undefined) {
+        newParams.set('section', section.toString());
+      } else {
+        newParams.delete('section');
+      }
+      
+      if (machine !== undefined) {
+        newParams.set('machine', machine.toString());
+      } else {
+        newParams.delete('machine');
+      }
+      
+      return newParams;
+    });
+  }, [setSearchParams]);
 
   
   const refreshComponents = useCallback(async () => {
@@ -67,11 +97,12 @@ const MachinePartsPage = () => {
         const processedParts = fetchedParts.map((record: any) => ({
           id: record.id,
           machine_id: record.machine_id,
-          machine_name: record.machines.name ?? "Unknown",
           part_id: record.parts.id,
-          part_name: record.parts.name,
           qty: record.qty,
           req_qty: record.req_qty ?? -1,
+          defective_qty: record.defective_qty ?? 0,
+          parts: record.parts,
+          machines: record.machines,
         }));
 
         setMachineParts(processedParts);
@@ -84,6 +115,92 @@ const MachinePartsPage = () => {
       setLoading(false);
     }
   }, [selectedMachineId, filters]);
+
+  // Handle initial URL parameter loading
+  useEffect(() => {
+    const factoryParam = searchParams.get('factory');
+    if (factoryParam && factories.length > 0) {
+      const factoryId = Number(factoryParam);
+      if (factories.some(f => f.id === factoryId)) {
+        setSelectedFactoryId(factoryId);
+      }
+    }
+  }, [searchParams, factories]);
+
+  // Load sections when factory is selected from URL
+  useEffect(() => {
+    const loadSectionsFromUrl = async () => {
+      const sectionParam = searchParams.get('section');
+      if (selectedFactoryId && sectionParam) {
+        try {
+          const sections = await fetchFactorySections(selectedFactoryId);
+          setFactorySections(sections);
+          
+          const sectionId = Number(sectionParam);
+          if (sections.some(s => s.id === sectionId)) {
+            setSelectedFactorySectionId(sectionId);
+          }
+        } catch (error) {
+          console.error("Failed to load factory sections from URL");
+        }
+      }
+    };
+    loadSectionsFromUrl();
+  }, [selectedFactoryId, searchParams]);
+
+  // Load machines when section is selected from URL
+  useEffect(() => {
+    const loadMachinesFromUrl = async () => {
+      const machineParam = searchParams.get('machine');
+      if (selectedFactorySectionId && machineParam) {
+        try {
+          const machinesList = await fetchAllMachines(selectedFactorySectionId);
+          setMachines(machinesList);
+          
+          const machineId = Number(machineParam);
+          if (machinesList.some(m => m.id === machineId)) {
+            setSelectedMachineId(machineId);
+          }
+        } catch (error) {
+          console.error("Failed to load machines from URL");
+        }
+      }
+    };
+    loadMachinesFromUrl();
+  }, [selectedFactorySectionId, searchParams]);
+
+  // Load running orders and machine details when selectedMachineId changes
+  useEffect(() => {
+    const loadMachineData = async () => {
+      if (!selectedMachineId) {
+        setRunningOrders([]);
+        setSelectedMachine(undefined);
+        return;
+      }
+
+      try {
+        const runningOrdersData = await fetchRunningOrdersByMachineId(selectedMachineId);
+        setRunningOrders(runningOrdersData);
+
+        if (runningOrdersData.length === 0 && selectedMachine?.is_running === false) {
+          toast.success("Machine is now running")
+          await setMachineIsRunningById(selectedMachineId, true);
+        }
+        
+
+        const machine = await fetchMachineById(selectedMachineId);
+        if (machine) {
+          setSelectedMachine(machine);
+        }
+      } catch (error) {
+        console.error("Error fetching machine or running orders:", error);
+        setSelectedMachine(undefined);
+        setRunningOrders([]);
+      }
+    };
+
+    loadMachineData();
+  }, [selectedMachineId]);
 
   useEffect(() => {
     // Fetch factories when the component mounts
@@ -103,8 +220,13 @@ const MachinePartsPage = () => {
     const loadFactorySections = async () => {
       if (selectedFactoryId === undefined) {
         setFactorySections([]);
+        // Only reset section if not loading from URL
+        if (!searchParams.get('section')) {
+          setSelectedFactorySectionId(undefined);
+        }
         return;
       }
+      
       try {
         const fetchedSections = await fetchFactorySections(selectedFactoryId);
         setFactorySections(fetchedSections);
@@ -113,7 +235,7 @@ const MachinePartsPage = () => {
       }
     };
     loadFactorySections();
-  }, [selectedFactoryId]);
+  }, [selectedFactoryId, searchParams]);
 
   useEffect(() => {
     const loadMachines = async () => {
@@ -121,17 +243,23 @@ const MachinePartsPage = () => {
         try {
           const fetchedMachines = (await fetchAllMachines(selectedFactorySectionId));
           setMachines(fetchedMachines);
-          setSelectedMachineId(undefined);
+          
+          // Only reset machine selection if not loading from URL
+          if (!searchParams.get('machine')) {
+            setSelectedMachineId(undefined);
+          }
         } catch (error) {
           toast.error("Failed to load machines");
         }
       } else {
         setMachines([]);
-        setSelectedMachineId(undefined);
+        if (!searchParams.get('machine')) {
+          setSelectedMachineId(undefined);
+        }
       }
     };
     loadMachines();
-  }, [selectedFactorySectionId]);
+  }, [selectedFactorySectionId, searchParams]);
 
   useEffect(() => {
     const loadParts = async () => {
@@ -152,11 +280,12 @@ const MachinePartsPage = () => {
         const processedParts = fetchedParts.map((record: any) => ({
           id: record.id,
           machine_id: record.machine_id,
-          machine_name: record.machines.name ?? "Unknown",
           part_id: record.parts.id,
-          part_name: record.parts.name,
           qty: record.qty,
           req_qty: record.req_qty ?? -1,
+          defective_qty: record.defective_qty ?? 0,
+          parts: record.parts,
+          machines: record.machines,
         }));
 
         setMachineParts(processedParts);
@@ -174,49 +303,16 @@ const MachinePartsPage = () => {
   const handleRowSelection = (factoryId: number, factorySectionId: number, machineId: number) => {
     setSelectedFactoryId(factoryId);
     setSelectedFactorySectionId(factorySectionId);
-    handleSelectMachine(machineId.toString());
+    setSelectedMachineId(machineId);
+    updateUrlParams(factoryId, factorySectionId, machineId);
     setMachineParts([]);
-    setRunningOrders([]);
-
   };
 
   const handleSelectMachine = async (value: string) => {
     const machineId = value == "" ? undefined : Number(value);
-
-    
-    setSelectedMachineId(undefined);
+    setSelectedMachineId(machineId);
+    updateUrlParams(selectedFactoryId, selectedFactorySectionId, machineId);
     setMachineParts([]);
-    setRunningOrders([]); // Reset running orders when selecting a new machine
-
-
-
-    if (machineId) {
-      refreshComponents(); // Call refreshComponents after setting the machine ID
-      try {
-        const runningOrdersData = await fetchRunningOrdersByMachineId(machineId);
-
-        setRunningOrders(runningOrdersData); // Set running orders
-
-
-        if (runningOrdersData.length === 0) {
-          await setMachineIsRunningById(machineId, true);
-        }
-
-        const machine = await fetchMachineById(machineId);
-        if (machine) {
-          setSelectedMachine(machine);
-          setSelectedMachineId(machineId);
-        }
-      } catch (error) {
-        console.error("Error fetching machine or running orders:", error);
-        setSelectedMachine(undefined);
-        setSelectedMachineId(undefined);
-
-      }
-    } else {
-      setSelectedMachine(undefined);
-      setSelectedMachineId(undefined);
-    }
   };
 
   if (loading) {
@@ -250,12 +346,14 @@ const MachinePartsPage = () => {
                     <Select
                       value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
                       onValueChange={async (value) => {
-                        setSelectedFactoryId(value === "" ? undefined : Number(value));
+                        const factoryId = value === "" ? undefined : Number(value);
+                        setSelectedFactoryId(factoryId);
                         setSelectedFactorySectionId(undefined);
                         setSelectedMachineId(undefined);
                         setMachineParts([]);
                         setRunningOrders([]);
                         setSelectedMachine(undefined);
+                        updateUrlParams(factoryId, undefined, undefined);
                       }}
                     >
                       <SelectTrigger className="mt-2">
@@ -282,11 +380,13 @@ const MachinePartsPage = () => {
                       <Select
                         value={selectedFactorySectionId === undefined ? "" : selectedFactorySectionId.toString()}
                         onValueChange={(value) => {
-                          setSelectedFactorySectionId(value === "" ? undefined : Number(value));
+                          const sectionId = value === "" ? undefined : Number(value);
+                          setSelectedFactorySectionId(sectionId);
                           setSelectedMachineId(undefined);
                           setMachineParts([]);
                           setRunningOrders([]);
                           setSelectedMachine(undefined);
+                          updateUrlParams(selectedFactoryId, sectionId, undefined);
                         }}
                       >
                         <SelectTrigger className="mt-2">
@@ -346,6 +446,7 @@ const MachinePartsPage = () => {
                       setMachineParts([]);
                       setRunningOrders([]);
                       setSelectedMachine(undefined);
+                      setSearchParams({}); // Clear all URL parameters
                     }}
                   >
                     Reset And Show All Statuses

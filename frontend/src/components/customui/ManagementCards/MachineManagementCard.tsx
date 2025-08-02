@@ -291,6 +291,7 @@ const MachineManagementCard = () => {
                     <button
                       onClick={() => handleDeleteMachine(machine.id)}
                       className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                      title="Delete machine"
                     >
                       <XCircle size={18} />
                     </button>
