@@ -4,18 +4,7 @@ import { addDefectiveQuantity, increaseMachinePartQty, reduceMachinePartQty } fr
 import { increaseStoragePartQty, reduceStoragePartQty } from "@/services/StorageService";
 import { InputOrderedPart } from "@/types";
 
-// ============================================================================
-// POST ORDER PROCESSING SERVICES
-// ============================================================================
 
-/**
- * Process post-order tasks for PFM (Purchase For Machine) orders
- * @param orderedParts - Array of ordered parts
- * @param selectedMachineId - ID of the selected machine
- * @param selectedFactoryId - ID of the selected factory
- * @param markAsInactive - Whether to mark the machine as inactive
- * @returns Processing result with success status and any errors
- */
 export const processPFMPostOrderTasks = async (
     orderedParts: InputOrderedPart[], 
     selectedMachineId: number, 
@@ -43,10 +32,6 @@ export const processPFMPostOrderTasks = async (
     }
 };
 
-/**
- * Process post-order tasks for PFS (Purchase For Storage) orders
- * @returns Processing result with success status and any errors
- */
 export const processPFSPostOrderTasks = async (
     orderedParts: InputOrderedPart[], 
     selectedFactoryId: number, 
@@ -64,14 +49,7 @@ export const processPFSPostOrderTasks = async (
     }
 };
 
-/**
- * Process post-order tasks for STM (Storage To Machine) orders
- * @param orderedParts - Array of ordered parts
- * @param selectedMachineId - ID of the selected machine
- * @param srcFactoryId - ID of the source factory (where parts come from)
- * @param markAsInactive - Whether to mark the machine as inactive
- * @returns Processing result with success status and any errors
- */
+
 export const processSTMPostOrderTasks = async (
     orderedParts: InputOrderedPart[], 
     selectedMachineId: number, 
@@ -95,14 +73,7 @@ export const processSTMPostOrderTasks = async (
     }
 };
 
-/**
- * Process post-order tasks for MTS (Machine To Storage) orders
- * @param orderedParts - Array of ordered parts
- * @param srcMachineId - ID of the source machine (where parts come from)
- * @param destFactoryId - ID of the destination factory (where parts go to storage)
- * @param markAsInactive - Whether to mark the machine as inactive
- * @returns Processing result with success status and any errors
- */
+
 export const processMTSPostOrderTasks = async (
     orderedParts: InputOrderedPart[], 
     srcMachineId: number, 
