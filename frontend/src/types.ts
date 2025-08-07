@@ -8,6 +8,7 @@ export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
 export type ApplicationSettings = Tables<"app_settings">
 export type OrderWorkflow = Tables<"order_workflows">
+export type LoanTransfer = Tables<"loan_transfers">
 // export type MachinePart = Tables<"machine_parts">
 export type StoragePart = {
     id: number;
@@ -165,3 +166,4 @@ export interface StatusTrackerItemProp {
   action_by: string | null;
   complete: boolean;
 }
+

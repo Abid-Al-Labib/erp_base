@@ -13,7 +13,7 @@ import { DialogContent, Dialog, DialogDescription, DialogTitle } from "@/compone
 
 import NavigationBar from "../components/customui/NavigationBar"
 import { fetchAllParts } from "@/services/PartsService";
-import ManageOrderedPartsSection from "@/components/customui/ManageOrderedParts/ManageOrderedPartsSection";
+import ManageOrderedPartsSection from "@/components/customui/ManageOrderderedParts/ManageOrderedPartsSection";
 
 const ManageOrderPage = () => {
   const { id } = useParams<{ id: string }>();
