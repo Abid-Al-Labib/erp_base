@@ -298,7 +298,7 @@ const handleOrderManagement = async () => {
           )}
           {
             showAdvanceButton && (
-              order.current_status_id === 1 && order.order_type !== "PFS" ? (
+              order.current_status_id === 1 && order.order_type === "PFM" ? (
                 <Button disabled={loadingTableButtons} className="bg-green-700" onClick={handleConfirmMachineChanges}><Flag/>Confirm Machine Changes</Button>
               ) : (
                 <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
@@ -451,7 +451,6 @@ const handleOrderManagement = async () => {
           setUnstableType('')
           // You can add logic here to mark machine as inactive if needed
         }}
-        showMarkInactiveOption={false} // Don't show mark inactive option for order advancement
         title="How will the machine continue running?"
         description="Since this order affects machine operation, please specify how the machine will continue running."
         currentMachineId={order.machine_id}

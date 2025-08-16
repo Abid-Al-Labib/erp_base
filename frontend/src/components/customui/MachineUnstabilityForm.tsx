@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { useEffect, useState } from "react";
 import { fetchFactories, fetchFactorySections } from '@/services/FactoriesService';
 import { fetchAllMachines } from "@/services/MachineServices";
@@ -23,7 +24,6 @@ interface MachineUnstabilityFormProps {
     unstableType: UnstableType;
     onUnstableTypeChange: (type: UnstableType, borrowingConfig?: BorrowingConfiguration) => void;
     onMarkInactiveInstead?: () => void;
-    showMarkInactiveOption?: boolean;
     title?: string;
     description?: string;
     currentMachineId?: number; // To exclude from borrowing options
@@ -35,7 +35,6 @@ const MachineUnstabilityForm: React.FC<MachineUnstabilityFormProps> = ({
     unstableType,
     onUnstableTypeChange,
     onMarkInactiveInstead,
-    showMarkInactiveOption = true,
     title = "How will you keep the machine running?",
     description = "Since you're not marking the machine as inactive, please specify how it will continue operating.",
     currentMachineId
@@ -165,6 +164,28 @@ const MachineUnstabilityForm: React.FC<MachineUnstabilityFormProps> = ({
                     </div>
                     
                     <div className="space-y-3">
+                        {/* Mark Machine as Inactive Option */}
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start text-left h-auto p-4"
+                            onClick={handleMarkInactiveInstead}
+                        >
+                            <div>
+                                <div className="font-medium">Mark Machine as Inactive</div>
+                                <div className="text-xs text-muted-foreground">
+                                    Mark the machine as inactive and stop operations
+                                </div>
+                            </div>
+                        </Button>
+
+                        {/* Separator */}
+                        <div className="flex items-center gap-2">
+                            <Separator className="flex-1" />
+                            <span className="text-xs text-muted-foreground px-2">OR KEEP RUNNING WITH</span>
+                            <Separator className="flex-1" />
+                        </div>
+
+                        {/* Keep Running Options */}
                         <Button
                             variant={unstableType === 'defective' ? 'default' : 'outline'}
                             className="w-full justify-start text-left h-auto p-4"
@@ -205,17 +226,7 @@ const MachineUnstabilityForm: React.FC<MachineUnstabilityFormProps> = ({
                         </Button>
                     </div>
 
-                    {showMarkInactiveOption && (
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                className="flex-1"
-                                onClick={handleMarkInactiveInstead}
-                            >
-                                Cancel (Mark Inactive Instead)
-                            </Button>
-                        </div>
-                    )}
+
                 </div>
             </DialogContent>
         </Dialog>
