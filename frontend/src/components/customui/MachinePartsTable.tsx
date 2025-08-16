@@ -3,7 +3,6 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import SearchAndFilter from "@/components/customui/SearchAndFilter";
 import MachinePartsRow from './MachinePartsRow'; // Import the MachinePartsRow component
-import { Badge } from '../ui/badge';
 import { MachinePart, Machine } from '@/types';
 
 interface MachinePartsTableProps {
@@ -18,37 +17,11 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onA
     // console.log("Machine Parts of", MachineParts);
 
     return (
-        <Card className="mt-5">
+        <Card>
             <CardHeader className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <CardTitle>Machine Parts</CardTitle>
-                        {MachineParts.length > 0 && (
-                            <>
-                                <Badge 
-                                    variant="secondary" 
-                                    className={`text-sm ${selectedMachine?.is_running ? 'bg-green-100' : 'bg-red-100'}`}
-                                >
-                                    {selectedMachine?.is_running ? "Running" : "Not Running"}
-                                </Badge>
-                                <Badge 
-                                    variant="secondary" 
-                                    className={`text-sm ${
-                                        MachineParts.some(part => (part.defective_qty ?? 0) > 0) 
-                                            ? 'bg-yellow-100' 
-                                            : MachineParts.every(part => part.qty >= (part.req_qty ?? 0)) 
-                                                ? 'bg-green-100' 
-                                                : 'bg-orange-100'
-                                    }`}
-                                >
-                                    {MachineParts.some(part => (part.defective_qty ?? 0) > 0)
-                                        ? "Defective Parts"
-                                        : MachineParts.every(part => part.qty >= (part.req_qty ?? 0)) 
-                                            ? "All parts sufficient" 
-                                            : "Insufficient parts"}
-                                </Badge>
-                            </>
-                        )}
                     </div>
                     <SearchAndFilter
                         filterConfig={[

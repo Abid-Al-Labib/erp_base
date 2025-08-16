@@ -539,6 +539,7 @@ export type Database = {
           req_num: string | null
           src_factory: number | null
           src_machine: number | null
+          unstable_type: string | null
         }
         Insert: {
           created_at?: string
@@ -556,6 +557,7 @@ export type Database = {
           req_num?: string | null
           src_factory?: number | null
           src_machine?: number | null
+          unstable_type?: string | null
         }
         Update: {
           created_at?: string
@@ -573,6 +575,7 @@ export type Database = {
           req_num?: string | null
           src_factory?: number | null
           src_machine?: number | null
+          unstable_type?: string | null
         }
         Relationships: [
           {

@@ -40,7 +40,12 @@ const PartsTableRow: React.FC<PartsTableRowProps> = ({ id, name, unit, created_a
     <>
       <TableRow>
         <TableCell className="font-medium">
-          {id}
+          <Link 
+            to={`/viewpart/${id}`}
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {id}
+          </Link>
         </TableCell>
         <TableCell>
           {name}

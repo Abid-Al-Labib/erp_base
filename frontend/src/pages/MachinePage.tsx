@@ -329,8 +329,8 @@ const MachinePartsPage = () => {
       <NavigationBar />
       <div className="flex w-full flex-col bg-muted/40">
         <main className="mt-2 p-4 sm:px-6 sm:py-0">
-          {/* Container for selections, running orders, and machine status */}
-          <div className="flex flex-col sm:flex-row justify-between items-stretch gap-4 h-full">
+          {/* Container for selections, machine status, and running orders */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-4 h-full">
 
             {/* Selections Section */}
             <div className="flex-none min-w-72 max-w-96 w-1/6"> {/* Roughly 1/6th of the width */}
@@ -455,8 +455,13 @@ const MachinePartsPage = () => {
               </Card>
             </div>
             
+            {/* Machine Status Section - Always visible */}
+            <div className="w-80 flex-shrink-0">
+              <MachineStatus machineId={selectedMachineId} />
+            </div>
+            
             {/* Running Orders Section */}
-            <div className="flex-1"> {/* Roughly 4/6th of the width */}
+            <div className="flex-1"> {/* Takes remaining width */}
                 <Card className="mb-4 h-full">
                     <CardHeader>
                         <CardTitle>Running Orders</CardTitle>
@@ -558,13 +563,15 @@ const MachinePartsPage = () => {
                   handleRowSelection={handleRowSelection}
                 />         
             ) : (
-            <MachinePartsTable
-              MachineParts={MachineParts}
-              onApplyFilters={setFilters}
-              onResetFilters={() => setFilters({})}
-              onRefresh={refreshComponents}
-              selectedMachine={selectedMachine}
-            />
+              <div className="w-full mt-4">
+                <MachinePartsTable
+                  MachineParts={MachineParts}
+                  onApplyFilters={setFilters}
+                  onResetFilters={() => setFilters({})}
+                  onRefresh={refreshComponents}
+                  selectedMachine={selectedMachine}
+                />
+              </div>
           )}
         </main>
       </div>

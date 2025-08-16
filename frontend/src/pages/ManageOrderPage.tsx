@@ -119,12 +119,14 @@ const ManageOrderPage = () => {
           order={order}
           mode="manage"
         />
-        <OrderedPartsTable
+        
+        {/* <OrderedPartsTable
           mode="manage"
           order={order}
           parts = {parts}
           current_status={order.statuses}
-        />
+        /> */}
+
         <ManageOrderedPartsSection
           order={order} 
           parts={parts}
