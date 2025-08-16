@@ -162,7 +162,7 @@ export const fetchAllMachinesEnriched = async (factorySectionId?: number | undef
 export const fetchMachineById = async (machineId: number) => {
     const { data, error } = await supabase_client
         .from('machines')
-        .select('id, name, is_running, factory_section_id')
+        .select('id, name, is_running, factory_section_id, factory_sections(*, factories(*))')
         .eq('id', machineId)
         .maybeSingle(); // .single() ensures that it only returns one record
 

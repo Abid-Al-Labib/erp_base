@@ -36,16 +36,6 @@ const ApproveAllPendingAction: React.FC<ApproveAllPendingActionProps> = ({
           promises.push(updateApprovedPendingOrderByID(ordered_part.id, true));
         }
 
-        // If order type is "Machine" and the part is not approved, update quantities
-        if (order.order_type === "PFM" && !ordered_part.approved_pending_order) {
-          await reduceMachinePartQty(
-            order.machine_id,
-            ordered_part.part_id,
-            ordered_part.qty
-          );
-          promises.push(increaseDamagedPartQty(order.factory_id, ordered_part.part_id, ordered_part.qty));
-        }
-
         return Promise.all(promises);
       });
       await Promise.all(updatePromises);

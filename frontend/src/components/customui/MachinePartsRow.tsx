@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { updateRequiredQuantity, updateDefectiveQuantity } from "@/services/MachinePartsService";
 import toast from 'react-hot-toast'; // Optional: For showing success/error messages
 import { MachinePart } from '@/types';
+import { Link } from 'react-router-dom';
 
 interface MachinePartsRowProps {
     MachinePart: MachinePart;
@@ -35,7 +36,14 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefres
 
     return (
         <TableRow key={MachinePart.id}>
-            <TableCell>{MachinePart.parts.id}</TableCell>
+            <TableCell>
+                <Link 
+                    to={`/viewpart/${MachinePart.parts.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                >
+                    {MachinePart.parts.id}
+                </Link>
+            </TableCell>
             <TableCell>{MachinePart.parts.name}</TableCell>
             <TableCell>
                 {isEditing ? (

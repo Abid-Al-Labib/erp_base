@@ -160,6 +160,8 @@ export const fetchOrderByID = async (order_id:number) => {
             factory_section_id,
             order_type,
             order_workflow_id,
+            marked_inactive,
+            unstable_type,
             order_workflows(*),
             departments(*),
             profiles(*),
@@ -277,7 +279,12 @@ export const insertOrder = async (
     machine_id: number,
     current_status_id: number,
     order_type: string,
-    marked_inactive?: boolean ) => {
+    marked_inactive?: boolean,
+    unstable_type?: string | null,
+    src_factory?: number | null,
+    src_machine?: number | null ) => {
+
+
 
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -291,6 +298,9 @@ export const insertOrder = async (
             "current_status_id": current_status_id,
             "order_type": order_type,
             "marked_inactive": marked_inactive,
+            "unstable_type": unstable_type,
+            "src_factory": src_factory,
+            "src_machine": src_machine,
             
         },
         ])
@@ -342,6 +352,7 @@ export const insertOrderStorageSTM = async (
     order_type: string,
     src_factory: number,
     marked_inactive?: boolean,
+    unstable_type?: string | null,
 ) => {
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -355,7 +366,8 @@ export const insertOrderStorageSTM = async (
             "current_status_id": current_status_id,
             "order_type": order_type,
             "src_factory": src_factory,
-            "marked_inactive": marked_inactive,   
+            "marked_inactive": marked_inactive,
+            "unstable_type": unstable_type,
         },
     ])
         .select()
@@ -375,6 +387,7 @@ export const insertOrderMTS = async (
     order_type: string,
     src_machine: number,
     marked_inactive?: boolean,
+    unstable_type?: string | null,
 ) => {
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -387,6 +400,7 @@ export const insertOrderMTS = async (
             "order_type": order_type,
             "src_machine": src_machine,
             "marked_inactive": marked_inactive,
+            "unstable_type": unstable_type,
         },
     ])  
         .select()

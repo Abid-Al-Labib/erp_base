@@ -5,9 +5,10 @@ import { Textarea } from "../components/ui/textarea"
 import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+
 import { CirclePlus, CircleX, Loader2, CircleCheck, X } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
-import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM, insertOrderMTS } from "@/services/OrdersService";
+import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM/*, insertOrderMTS*/ } from "@/services/OrdersService";
 import { fetchStorageParts } from "@/services/StorageService";
 
 import toast from 'react-hot-toast'
@@ -16,12 +17,14 @@ import AsyncSelect from 'react-select/async';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import AddPartPopup from "@/components/customui/Parts/AddPartPopup"
+
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
 import { fetchAllMachines } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts, searchPartsByName, fetchPageParts } from "@/services/PartsService";
 import { Part, StoragePart } from "@/types"
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
+import { fetchMachineParts } from "@/services/MachinePartsService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
 import { 
@@ -35,19 +38,14 @@ import {
 } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { isFeatureSettingEnabled } from "@/services/helper"
-import { fetchMachineParts } from "@/services/MachinePartsService"
-import { 
-    processPFMPostOrderTasks, 
-    processPFSPostOrderTasks, 
-    processSTMPostOrderTasks, 
-    processMTSPostOrderTasks 
-} from "@/services/PostOrderProcesses"
+
+
 
 // ============================================================================
 // ORDER TYPE CONFIGURATIONS AND HELPERS
 // ============================================================================
 
-type OrderType = "PFM" | "PFS" | "STM" | "MTS";
+type OrderType = "PFM" | "PFS" | "STM"; // | "MTS";
 
 interface OrderTypeConfig {
     name: string;
@@ -91,16 +89,16 @@ const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
         supportsInactiveMarking: true,
         isImplemented: true,
     },
-    MTS: {
-        name: "MTS",
-        displayName: "4 - Machine to Storage",
-        requiresFactorySection: false,
-        requiresMachine: false,
-        requiresSourceFactory: false,
-        requiresSourceMachine: true,
-        supportsInactiveMarking: true,
-        isImplemented: true,
-    },
+    // MTS: {
+    //     name: "MTS",
+    //     displayName: "4 - Machine to Storage",
+    //     requiresFactorySection: false,
+    //     requiresMachine: false,
+    //     requiresSourceFactory: false,
+    //     requiresSourceMachine: true,
+    //     supportsInactiveMarking: true,
+    //     isImplemented: true,
+    // },
 };
 
 // ============================================================================
@@ -135,6 +133,9 @@ const PFM_HELPERS = {
             1, // Current Status
             tempOrderDetails.order_type,
             tempOrderDetails.marked_inactive,
+            tempOrderDetails.unstable_type,
+            tempOrderDetails.src_factory,
+            tempOrderDetails.src_machine,
         );
     },
 
@@ -216,6 +217,7 @@ const STM_HELPERS = {
             tempOrderDetails.order_type,
             srcFactoryId,
             tempOrderDetails.marked_inactive,
+            tempOrderDetails.unstable_type,
         );
     },
 
@@ -226,7 +228,8 @@ const STM_HELPERS = {
 // MTS (Machine To Storage) LOGIC
 // ============================================================================
 
-const MTS_HELPERS = {
+// Temporarily commented out MTS functionality
+/* const MTS_HELPERS = {
     validateForm: (selectedFactoryId: number, selectedFactorySectionId: number, srcMachineId: number, destFactoryId: number, departmentId: number) => {
         return selectedFactoryId !== -1 && selectedFactorySectionId !== -1 && srcMachineId !== -1 && destFactoryId !== -1 && departmentId !== -1;
     },
@@ -264,12 +267,13 @@ const MTS_HELPERS = {
             tempOrderDetails.current_status_id,
             tempOrderDetails.order_type,
             srcMachineId,                // source machine (where parts come from)
-            tempOrderDetails.marked_inactive
+            tempOrderDetails.marked_inactive,
+            tempOrderDetails.unstable_type
         );
     },
 
 
-};
+}; */
 
 const CreateOrderPage = () => {
 
@@ -305,8 +309,9 @@ const CreateOrderPage = () => {
     }, [srcMachineId]);
     
     const [machineParts, setMachineParts] = useState<MachinePart[]>([]);
-    const [destFactoryId, setDestFactoryId] = useState<number>(-1);
-    const selectedDestFactoryName = factories.find(factory => factory.id === destFactoryId)?.name || "Select Destination Factory";
+    // Temporarily commented out MTS-related variables
+    // const [destFactoryId, setDestFactoryId] = useState<number>(-1);
+    // const selectedDestFactoryName = factories.find(factory => factory.id === destFactoryId)?.name || "Select Destination Factory";
 
     const [orderType, setOrderType] = useState<string>();
     const [description, setDescription] = useState('');
@@ -331,8 +336,8 @@ const CreateOrderPage = () => {
                 return PFS_HELPERS.validateForm(selectedFactoryId, departmentId);
             case "STM":
                 return STM_HELPERS.validateForm(selectedFactoryId, departmentId, selectedFactorySectionId, selectedMachineId, srcFactoryId);
-            case "MTS":
-                return MTS_HELPERS.validateForm(selectedFactoryId, selectedFactorySectionId, srcMachineId, destFactoryId, departmentId);
+            // case "MTS":
+            //     return MTS_HELPERS.validateForm(selectedFactoryId, selectedFactorySectionId, srcMachineId, destFactoryId, departmentId);
             default:
                 return false;
         }
@@ -361,7 +366,7 @@ const CreateOrderPage = () => {
             setSrcFactoryId(-1);
             console.log(`[DEBUG] About to reset srcMachineId from ${srcMachineId} to -1 due to orderType change: ${orderType}`);
             setSrcMachineId(-1);
-            setDestFactoryId(-1);
+            // setDestFactoryId(-1); // Commented out for MTS
             setDepartmentId(-1);
             console.log(`[DEBUG] Reset form fields due to orderType change: ${orderType}`);
         }
@@ -402,10 +407,18 @@ const CreateOrderPage = () => {
     const [partId, setPartId] = useState<number>(-1);
     const [partName, setPartName] = useState<string>('');
     const [isSampleSentToOffice, setIsSampleSentToOffice] = useState<boolean>();
-    const [markAsInactive, setMarkAsInactive] = useState<boolean>(false);
+
+
+
+    
+
 
 
     const [addPartEnabled, setaddPartEnabled] = useState<boolean>(false);
+
+
+
+
 
     useEffect(() => {
         const checkCreatingOrderIsEnabled = async () => {
@@ -445,9 +458,10 @@ const CreateOrderPage = () => {
             if (!isOrderFormComplete) {
                 // Debug logging for form validation
                 console.log(`[DEBUG] Form validation failed for orderType: ${orderType}`);
-                if (orderType === "MTS") {
-                    console.log(`[DEBUG] MTS validation - selectedFactoryId: ${selectedFactoryId}, selectedFactorySectionId: ${selectedFactorySectionId}, srcMachineId: ${srcMachineId}, destFactoryId: ${destFactoryId}, departmentId: ${departmentId}`);
-                }
+                // Commented out MTS validation logging
+                // if (orderType === "MTS") {
+                //     console.log(`[DEBUG] MTS validation - selectedFactoryId: ${selectedFactoryId}, selectedFactorySectionId: ${selectedFactorySectionId}, srcMachineId: ${srcMachineId}, destFactoryId: ${destFactoryId}, departmentId: ${departmentId}`);
+                // }
                 toast.error("Please fill out all required fields");
                 return;
             }
@@ -475,19 +489,24 @@ const CreateOrderPage = () => {
                 order_note: description,
                 created_by_user_id: createdById,
                 department_id: departmentId,
-                factory_id: orderType === "MTS" ? destFactoryId : selectedFactoryId,
+                factory_id: selectedFactoryId, // orderType === "MTS" ? destFactoryId : selectedFactoryId,
                 factory_section_id: selectedFactorySectionId,
                 machine_id: orderType === "MTS" ? srcMachineId : selectedMachineId,
                 machine_name: orderType === "MTS" ? selectedSrcMachineName : selectedMachineName,
                 current_status_id: statusId,
                 order_type: orderType!,
-                marked_inactive: (orderType === "PFM" || orderType === "STM" || orderType === "MTS") ? markAsInactive : undefined,
+                marked_inactive: false, // Machine status management removed from create order
+                unstable_type: null,
+                src_factory: undefined,
+                src_machine: undefined,
             };
             
-            // Debug logging for order data
-            if (orderType === "MTS") {
-                console.log(`[DEBUG] Creating MTS order with factory_id: ${orderData.factory_id} (destFactoryId: ${destFactoryId})`);
-            }
+
+            
+            // Debug logging for order data (MTS commented out)
+            // if (orderType === "MTS") {
+            //     console.log(`[DEBUG] Creating MTS order with factory_id: ${orderData.factory_id} (destFactoryId: ${destFactoryId})`);
+            // }
             setTempOrderDetails(orderData);
             setShowPartForm(true); // This triggers the scroll due to useEffect
             setIsOrderStarted(true);
@@ -545,9 +564,9 @@ const CreateOrderPage = () => {
             case "STM":
                 validationResult = STM_HELPERS.validatePart(partId, qty, orderedParts, storageParts);
                 break;
-            case "MTS":
-                validationResult = MTS_HELPERS.validatePart(partId, qty, orderedParts, machineParts);
-                break;
+            // case "MTS":
+            //     validationResult = MTS_HELPERS.validatePart(partId, qty, orderedParts, machineParts);
+            //     break;
             default:
                 validationResult = { isValid: false, error: `Unknown order type: ${orderType}` };
         }
@@ -583,8 +602,8 @@ const CreateOrderPage = () => {
                 return await PFS_HELPERS.createOrder(tempOrderDetails);
             case "STM":
                 return await STM_HELPERS.createOrder(tempOrderDetails, srcFactoryId);
-            case "MTS":
-                return await MTS_HELPERS.createOrder(tempOrderDetails, selectedFactoryId, selectedFactorySectionId, srcMachineId);
+            // case "MTS":
+            //     return await MTS_HELPERS.createOrder(tempOrderDetails, selectedFactoryId, selectedFactorySectionId, srcMachineId);
             default:
                 throw new Error(`Unknown order type: ${orderType}`);
         }
@@ -602,9 +621,18 @@ const CreateOrderPage = () => {
         }
         setIsSubmitting(true);
         
+        // Update tempOrderDetails with current state values before creating order
+        const updatedOrderDetails = {
+            ...tempOrderDetails,
+            marked_inactive: false, // Machine status management removed from create order
+            unstable_type: null,
+            src_factory: undefined,
+            src_machine: undefined,
+        };
+        
         try {
             // Create the order
-            const orderResponse = await createOrderByType(tempOrderDetails);
+            const orderResponse = await createOrderByType(updatedOrderDetails);
             
             if (!orderResponse?.data || orderResponse.data.length === 0) {
                 toast.error("Failed to create order.");
@@ -633,26 +661,28 @@ const CreateOrderPage = () => {
             }
 
             // Post-processing AFTER all parts are inserted (once per order, not per part)
-            if (orderType === "PFM" || orderType === "STM" || orderType === "MTS") {
-                // Debug logging for factory IDs
+
+            // if (orderType === "PFM" || orderType === "STM" || orderType === "MTS") {
+            //     // Debug logging for factory IDs
                 
-                const result = await (orderType === "PFM" 
-                    ? processPFMPostOrderTasks(orderedParts, selectedMachineId, selectedFactoryId, markAsInactive)
-                    : orderType === "STM" 
-                    ? processSTMPostOrderTasks(orderedParts, selectedMachineId, srcFactoryId, markAsInactive)
-                    : processMTSPostOrderTasks(orderedParts, srcMachineId, destFactoryId, markAsInactive)
-                );
+            //     const result = await (orderType === "PFM" 
+            //         ? processPFMPostOrderTasks(orderedParts, selectedMachineId, selectedFactoryId, markAsInactive)
+            //         : orderType === "STM" 
+            //         ? processSTMPostOrderTasks(orderedParts, selectedMachineId, srcFactoryId, markAsInactive)
+            //         : processMTSPostOrderTasks(orderedParts, srcMachineId, destFactoryId, markAsInactive)
+            //     );
                 
-                if (result?.success) {
-                    if (markAsInactive) {
-                        toast.success("Machine marked as inactive");
-                    } else {
-                        toast.success(`Added ${orderedParts.length} parts to defective parts`);
-                    }
-                } else {
-                    result?.errors.forEach(error => toast.error(error));
-                }
-            }
+            //     if (result?.success) {
+            //         if (markAsInactive) {
+            //             toast.success("Machine marked as inactive");
+            //         } else {
+            //             toast.success(`Added ${orderedParts.length} parts to defective parts`);
+            //         }
+            //     } else {
+            //         result?.errors.forEach(error => toast.error(error));
+            //     }
+            // }
+            
             //  else if (orderType === "PFS") {
             //     const result = await processPFSPostOrderTasks();
             //     if (!result.success) {
@@ -678,10 +708,10 @@ const CreateOrderPage = () => {
         setDepartmentId(-1);
         setOrderType("");
         setDescription('')
-        setMarkAsInactive(false); // Reset order-level settings when canceling
+        // Reset order-level settings when canceling
         setTempOrderDetails(null);
-        // Reset MTS-specific fields
-        setDestFactoryId(-1);
+        // Reset MTS-specific fields (commented out)
+        // setDestFactoryId(-1);
         // setSrcMachineId(-1);
         setSrcFactoryId(-1);
         console.log(`[DEBUG] handleCancelOrder completed`);
@@ -757,6 +787,10 @@ const CreateOrderPage = () => {
 
         loadMachines();
     }, [selectedFactorySectionId]);
+
+
+
+
 
     // MTS-specific useEffect hook for loading machine parts when source machine is selected
     useEffect(() => {
@@ -1163,7 +1197,8 @@ const CreateOrderPage = () => {
                                     </>
     );
 
-    const renderMTSForm = () => (
+    // Temporarily commented out MTS form
+    /* const renderMTSForm = () => (
         <>
             <div>
                 <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
@@ -1279,7 +1314,7 @@ const CreateOrderPage = () => {
                 />
                                         </div>
                                     </>
-    );
+    ); */
 
     return (
         <>
@@ -1337,7 +1372,7 @@ const CreateOrderPage = () => {
                                 {/* ============================================================================ */}
                                 {/* MTS ORDER FORM */}
                                 {/* ============================================================================ */}
-                                {orderType === "MTS" && renderMTSForm()}
+                                {/* {orderType === "MTS" && renderMTSForm()} */}
 
                             </div>
                         </CardContent>
@@ -1410,8 +1445,8 @@ const CreateOrderPage = () => {
                                                             return "Storage Order";
                                                         case "STM":
                                                             return `From: ${selectedSrcFactoryName} → ${selectedFactorySectionName} - ${selectedMachineName}`;
-                                                        case "MTS":
-                                                            return `From: ${selectedFactoryName} - ${selectedSrcMachineName} → ${selectedDestFactoryName}`;
+                                                        // case "MTS":
+                                                        //     return `From: ${selectedFactoryName} - ${selectedSrcMachineName} → ${selectedDestFactoryName}`;
                                                         default:
                                                             return "Unknown Order Type";
                                                     }
@@ -1633,20 +1668,7 @@ const CreateOrderPage = () => {
                                                 </Label>
                                             </div>
 
-                                            
-                                            {/* Mark as Inactive checkbox - only for supported order types */}
-                                            {orderType && ORDER_TYPE_CONFIGS[orderType as OrderType]?.supportsInactiveMarking && (
-                                                <div className="flex items-center gap-2">
-                                                    <Checkbox
-                                                        id="markAsInactive"
-                                                        checked={markAsInactive}
-                                                        onCheckedChange={(checked) => setMarkAsInactive(checked === true)}
-                                                    />
-                                                    <Label htmlFor="markAsInactive" className="text-sm">
-                                                        Mark machine as inactive when order is created?
-                                                    </Label>
-                                                </div>
-                                            )}
+
 
                                             {/* Note */}
                                             <div>
@@ -1721,9 +1743,15 @@ const CreateOrderPage = () => {
                                         <TableBody>
                                             {orderedParts.map((part, index) => (
                                                 <TableRow key={index}>
-                                                    <TableCell className="font-medium text-xs">{part.part_id}</TableCell>
-                                                    <TableCell className="text-xs">{part.part_name}</TableCell>
-                                                    <TableCell className="text-xs">{part.qty}</TableCell>
+                                                    <TableCell className="font-medium text-xs">
+                                                        {part.part_id}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {part.part_name}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {part.qty}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <span className={`inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ${
                                                             part.is_sample_sent_to_office 
@@ -1769,7 +1797,10 @@ const CreateOrderPage = () => {
                                 <Button
                                     size="sm"
                                     onClick={handleFinalCreateOrder}
-                                    disabled={!tempOrderDetails || orderedParts.length === 0}
+                                    disabled={
+                                        !tempOrderDetails || 
+                                        orderedParts.length === 0
+                                    }
                                     className="gap-2"
                                 >
                                     <CircleCheck className="h-4 w-4" />
@@ -1780,6 +1811,11 @@ const CreateOrderPage = () => {
                     </Card>
                 </div>
             </div>
+
+
+
+
+
         </>
     );
 }

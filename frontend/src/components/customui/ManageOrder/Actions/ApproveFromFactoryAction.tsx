@@ -1,7 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { increaseDamagedPartQty } from '@/services/DamagedGoodsService';
-import { reduceMachinePartQty } from '@/services/MachinePartsService';
 import { updateApprovedPendingOrderByID } from '@/services/OrderedPartsService';
 import { OrderedPart } from '@/types';
 import React from 'react'
@@ -21,47 +19,23 @@ const ApproveFromFactoryAction: React.FC<ApproveFromFactoryActionProps> = ({
   openThisActionDialog,
   setOpenThisActionDialog,
   orderedPartInfo,
-  machine_id,
-  factory_id,
-  order_type,
+
   setActionMenuOpen,
 }) => {
 
     
     
     const handleApproveFactory = async () => {
-    try {
-        await updateApprovedPendingOrderByID(orderedPartInfo.id, true);
-        toast.success("Ordered part has been approved!");
-        
-        if (order_type === "PFM") //if purchase for machine, take current parts from machine and put in damaged part 
-        {
-            await reduceMachinePartQty(
-                machine_id,
-                orderedPartInfo.part_id,
-                orderedPartInfo.qty
-            );
-
-        if (order_type === "PFM") {
-        await reduceMachinePartQty(
-            machine_id,
-            orderedPartInfo.part_id,
-            orderedPartInfo.qty
-        );
-
-        await increaseDamagedPartQty(
-            factory_id,
-            orderedPartInfo.part_id,
-            orderedPartInfo.qty
-        );
+        try {
+            await updateApprovedPendingOrderByID(orderedPartInfo.id, true);
+            toast.success("Ordered part has been approved!");
+            
+    
+            setOpenThisActionDialog(false);
+            setActionMenuOpen(false);
+        } catch (error) {
+            toast.error("Error occurred. Could not complete action");
         }
-    }
-
-        setOpenThisActionDialog(false);
-        setActionMenuOpen(false);
-    } catch (error) {
-        toast.error("Error occurred. Could not complete action");
-    }
     };
 
     
