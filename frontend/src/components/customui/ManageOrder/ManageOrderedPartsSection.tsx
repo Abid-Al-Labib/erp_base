@@ -297,14 +297,21 @@ const handleOrderManagement = async () => {
             <Button className="bg-blue-700" disabled={loadingAddPart} onClick={()=>setIsAddPartDialogOpen(true)}>{loadingAddPart? "Adding...": "Add Part"}</Button>
           )}
           {
-            showAdvanceButton && (
-              order.current_status_id === 1 && order.order_type === "PFM" ? (
-                <Button disabled={loadingTableButtons} className="bg-green-700" onClick={handleConfirmMachineChanges}><Flag/>Confirm Machine Changes</Button>
-              ) : (
-                <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
-              )
+            //UPDATE WITH CORRECT SHOW BUTTON FLAG VARIABLE
+              showAdvanceButton && (
+              order.current_status_id === 1 && order.order_type === "PFM" && (
+                <Button disabled={loadingTableButtons} className="bg-purple-700" onClick={handleConfirmMachineChanges}>Confirm Machine Changes</Button>
+              ) 
             )
           }
+          {
+            showAdvanceButton && 
+              (
+                <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
+              )
+            
+          }
+
           {
             showRevertButton && 
             <Button disabled={loadingTableButtons} className="bg-orange-600" onClick={()=>setIsRevertDialogOpen(true)}><FlagOff/>Revert to Quotation</Button>

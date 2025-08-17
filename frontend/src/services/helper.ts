@@ -320,6 +320,9 @@ export const managePermission = (status: string, role: string): boolean => {
         }
         break;
       
+      case "Transferred To Machine":
+        return true;
+      
       default:
         return false;
     }
@@ -380,8 +383,9 @@ export const managePermission = (status: string, role: string): boolean => {
   
       case "Parts Received":
         return false
-        break;
       
+      case "Transferred To Machine":
+        return false;
 
 
       default:
