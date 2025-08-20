@@ -104,11 +104,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
             setOrderDisplayText(`Unknown → ${order.factories.abbreviation} - ${order.machines?.name || 'N/A'}`);
           }
         }
-        // MTS Order - Machine to Storage (using src_machine)
-        else if (order.order_type === "MTS" && order.src_machine) {
-          // For now, show simple format. Can be enhanced later to fetch machine details
-          setOrderDisplayText(`Machine (ID: ${order.src_machine}) → ${order.factories.abbreviation} - Storage`);
-        }
+        
         // Regular Machine Order (PFM)
         else if (order.factory_sections?.name && order.machines?.name) {
           setOrderDisplayText(`${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`);
@@ -129,7 +125,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
     };
 
     processOrderDisplay();
-  }, [order.order_type, order.src_machine, order.factories.abbreviation, order.factory_sections?.name, order.machines?.name]);
+  }, [order.order_type, order.factories.abbreviation, order.factory_sections?.name, order.machines?.name]);
 
   const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
   const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")

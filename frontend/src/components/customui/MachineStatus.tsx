@@ -91,7 +91,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
     // Sample condition calculations (replace with actual logic later)
     const hasDefectiveParts = machineParts.some(part => (part.defective_qty ?? 0) > 0);
     const hasInsufficientParts = machineParts.some(part => part.qty < (part.req_qty ?? 0));
-    const isBorrowingParts = Math.random() > 0.5; // Sample condition
+
 
     return (
         <Card className="mb-4 h-full">
@@ -169,15 +169,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                         </Badge>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium min-w-[100px]">Borrowing:</span>
-                        <Badge 
-                            variant="secondary" 
-                            className={isBorrowingParts ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}
-                        >
-                            {isBorrowingParts ? "Borrowing Parts" : "No Borrowed Parts"}
-                        </Badge>
-                    </div>
+
                 </div>
             </CardContent>
         </Card>

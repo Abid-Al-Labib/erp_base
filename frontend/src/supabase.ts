@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -22,10 +22,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          extensions?: Json
           operationName?: string
           query?: string
           variables?: Json
-          extensions?: Json
         }
         Returns: Json
       }
@@ -166,109 +166,7 @@ export type Database = {
           },
         ]
       }
-      loan_transfers: {
-        Row: {
-          borrowed_factory_id: number | null
-          borrowed_machine_id: number | null
-          completed_at: string | null
-          created_at: string
-          factory_id: number | null
-          id: number
-          is_completed: boolean
-          machine_id: number | null
-          part_id: number | null
-          qty: number | null
-        }
-        Insert: {
-          borrowed_factory_id?: number | null
-          borrowed_machine_id?: number | null
-          completed_at?: string | null
-          created_at?: string
-          factory_id?: number | null
-          id?: number
-          is_completed?: boolean
-          machine_id?: number | null
-          part_id?: number | null
-          qty?: number | null
-        }
-        Update: {
-          borrowed_factory_id?: number | null
-          borrowed_machine_id?: number | null
-          completed_at?: string | null
-          created_at?: string
-          factory_id?: number | null
-          id?: number
-          is_completed?: boolean
-          machine_id?: number | null
-          part_id?: number | null
-          qty?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loan_transfers_factory_id_fkey"
-            columns: ["factory_id"]
-            isOneToOne: false
-            referencedRelation: "factories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loan_transfers_factory_id_fkey"
-            columns: ["factory_id"]
-            isOneToOne: false
-            referencedRelation: "fullname_machines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loan_transfers_machine_id_fkey"
-            columns: ["machine_id"]
-            isOneToOne: false
-            referencedRelation: "fullname_machines"
-            referencedColumns: ["machineid"]
-          },
-          {
-            foreignKeyName: "loan_transfers_machine_id_fkey"
-            columns: ["machine_id"]
-            isOneToOne: false
-            referencedRelation: "machines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loan_transfers_part_id_fkey"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loan_transfers_src_factory_id_fkey"
-            columns: ["borrowed_factory_id"]
-            isOneToOne: false
-            referencedRelation: "factories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loan_transfers_src_factory_id_fkey"
-            columns: ["borrowed_factory_id"]
-            isOneToOne: false
-            referencedRelation: "fullname_machines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loan_transfers_src_machine_id_fkey"
-            columns: ["borrowed_machine_id"]
-            isOneToOne: false
-            referencedRelation: "fullname_machines"
-            referencedColumns: ["machineid"]
-          },
-          {
-            foreignKeyName: "loan_transfers_src_machine_id_fkey"
-            columns: ["borrowed_machine_id"]
-            isOneToOne: false
-            referencedRelation: "machines"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       machine_parts: {
         Row: {
           defective_qty: number | null
@@ -538,7 +436,6 @@ export type Database = {
           order_workflow_id: number | null
           req_num: string | null
           src_factory: number | null
-          src_machine: number | null
           unstable_type: string | null
         }
         Insert: {
@@ -556,7 +453,6 @@ export type Database = {
           order_workflow_id?: number | null
           req_num?: string | null
           src_factory?: number | null
-          src_machine?: number | null
           unstable_type?: string | null
         }
         Update: {
@@ -574,7 +470,6 @@ export type Database = {
           order_workflow_id?: number | null
           req_num?: string | null
           src_factory?: number | null
-          src_machine?: number | null
           unstable_type?: string | null
         }
         Relationships: [

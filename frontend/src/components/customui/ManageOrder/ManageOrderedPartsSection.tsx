@@ -21,7 +21,7 @@ import ApproveAllPendingAction from "./Actions/ApproveAllPendingAction";
 import AdvanceOrderDialog from "./Actions/AdvanceOrderAction";
 import ApproveAllFromOfficeAction from "./Actions/ApproveAllFromOfficeAction";
 import ApproveAllBudgetAction from "./Actions/ApproveAllBudgetAction";
-import MachineUnstabilityForm, { UnstableType, BorrowingConfiguration } from "@/components/customui/MachineUnstabilityForm";
+import MachineUnstabilityForm, { UnstableType } from "@/components/customui/MachineUnstabilityForm";
 
 interface ManageOrderedPartsSectionProp {
   order: Order
@@ -74,7 +74,7 @@ const handleConfirmMachineChanges = () => {
   setShowMachineUnstabilityDialog(true)
 }
 
-const handleMachineUnstabilitySelection = async (borrowingConfig?: BorrowingConfiguration) => {
+const handleMachineUnstabilitySelection = async () => {
   setLoadingTableButtons(true)
   try {
     if(!profile){
@@ -82,11 +82,7 @@ const handleMachineUnstabilitySelection = async (borrowingConfig?: BorrowingConf
       return
     }
     
-    // Log borrowing configuration for debugging/future implementation
-    if (borrowingConfig) {
-      console.log("Borrowing configuration:", borrowingConfig);
-      // TODO: Implement actual borrowing logic based on configuration
-    }
+
     
     const next_status_id = getNextStatusIdFromSequence(order.order_workflows.status_sequence, order.current_status_id)
     if (next_status_id && next_status_id !== -1){
@@ -438,11 +434,11 @@ const handleOrderManagement = async () => {
         isOpen={showMachineUnstabilityDialog}
         onOpenChange={setShowMachineUnstabilityDialog}
         unstableType={unstableType}
-        onUnstableTypeChange={(type, borrowingConfig) => {
+        onUnstableTypeChange={(type) => {
           setUnstableType(type)
-          // For all types (including borrowed), proceed with advancing the order
+          // For all types, proceed with advancing the order
           if (type) {
-            handleMachineUnstabilitySelection(borrowingConfig)
+            handleMachineUnstabilitySelection()
           }
         }}
         onMarkInactiveInstead={() => {
@@ -454,7 +450,6 @@ const handleOrderManagement = async () => {
         showMarkInactiveOption={false} // Don't show mark inactive option for order advancement
         title="How will the machine continue running?"
         description="Since this order affects machine operation, please specify how the machine will continue running."
-        currentMachineId={order.machine_id}
       />
       
       </Card>
