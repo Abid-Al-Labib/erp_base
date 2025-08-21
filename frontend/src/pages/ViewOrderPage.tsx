@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatusTracker from "@/components/customui/StatusTracker";
-import OrderInfo from "@/components/customui/OrderInfo";
+import OrderInfo from "@/components/customui/OrderInfoComponents/OrderInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Order, OrderedPart } from "@/types";
@@ -12,9 +12,9 @@ import { useAuth } from "@/context/AuthContext";
 import NavigationBar from "@/components/customui/NavigationBar";
 import ViewOrderedPartsSection from "@/components/customui/ViewOrderedPartsSection";
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService";
-import OrderMachineInfo from "@/components/customui/OrderMachineInfo";
-import OrderStorageInfo from "@/components/customui/OrderStorageInfo";
-import OrderMachineAndStorageInfo from "@/components/customui/OrderMachineAndStorageInfo";
+import OrderMachineInfo from "@/components/customui/OrderInfoComponents/OrderMachineInfo";
+import OrderStorageInfo from "@/components/customui/OrderInfoComponents/OrderStorageInfo";
+import OrderMachineAndStorageInfo from "@/components/customui/OrderInfoComponents/OrderMachineAndStorageInfo";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -106,13 +106,13 @@ const ViewOrderPage = () => {
           <NavigationBar />
       <div className="mx-4 my-4">
         <div className="flex flex-col lg:flex-row gap-4 mb-6 w-full">
-          <div className="w-full lg:w-3/6 h-[50vh]">
+          <div className="w-full lg:w-3/6 h-[45vh]">
             <OrderInfo order={order} mode="view" />
           </div>
           
           <div className="w-full lg:w-2/6">
             {order.order_type === 'PFM' && (
-              <div className="h-[50vh]">
+              <div className="h-[45vh]">
                 <OrderMachineInfo
                   order={order}
                   mode="manage"
@@ -121,7 +121,7 @@ const ViewOrderPage = () => {
             )}
             
             {order.order_type === 'PFS' && (
-              <div className="h-[50vh]">
+              <div className="h-[45vh]">
                 <OrderStorageInfo
                   order={order}
                   mode="manage"
@@ -130,7 +130,7 @@ const ViewOrderPage = () => {
             )}
             
             {order.order_type === 'STM' && (
-              <div className="h-[50vh]">
+              <div className="h-[45vh]">
                 <OrderMachineAndStorageInfo
                   order={order}
                   mode="manage"
@@ -139,7 +139,7 @@ const ViewOrderPage = () => {
             )}
           </div>
 
-          <div className="w-full sm:w-1/6 h-[50vh]">
+          <div className="w-full sm:w-1/6 h-[45vh]">
             <StatusTracker order={order} />
           </div>
         </div>

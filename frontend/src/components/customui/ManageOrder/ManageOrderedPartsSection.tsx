@@ -260,144 +260,251 @@ const handleOrderManagement = async () => {
     navigate('/orders'); 
   };
 
-  return(
-      <Card x-chunk="dashboard-06-chunk-0" className={isOrderCompleted ? "border-green-600 mt-5" : "mt-5"} >
+  return (
+    <Card
+      x-chunk="dashboard-06-chunk-0"
+      className={isOrderCompleted ? "border-green-600 mt-5" : "mt-5"}
+    >
       <CardHeader className="flex flex-row justify-between items-start">
+        {/* Left side: header */}
         <div>
           <CardTitle className="flex items-center gap-2">
             Manage Parts Ordered
-            {isOrderCompleted && <span className="text-green-600 text-xl">✅</span>}
+            {isOrderCompleted && (
+              <span className="text-green-600 text-xl">✅</span>
+            )}
           </CardTitle>
           <CardDescription>
-            This is a list of parts that were ordered, you can complete actions on each ordered part.
+            This is a list of parts that were ordered, you can complete actions on
+            each ordered part.
           </CardDescription>
         </div>
-      </CardHeader>
-      {(loadingTable===true)? (
-                  <div className='animate-spin flex flex-row justify-center p-5'>
-                      <Loader2 />
-                  </div>
-        ):
-        <CardContent>
-        <div className="flex justify-end gap-2 mb-2">
-          {showPendingOrderApproveButton(order.statuses.name,false) && !orderedParts.every(part => part.approved_pending_order) && (
-            <Button disabled={loadingTableButtons} onClick={()=>setIsApprovePendingDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all pending parts"}</Button>
-          )}
-          {showOfficeOrderApproveButton(order.statuses.name,false) && (
-            <Button disabled={loadingTableButtons} onClick={()=>setisApproveAllOfficeDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all parts"}</Button>
+  
+        {/* Right side: buttons */}
+        <div className="flex flex-wrap justify-end gap-2">
+          {showPendingOrderApproveButton(order.statuses.name, false) &&
+            !orderedParts.every((part) => part.approved_pending_order) && (
+              <Button
+                disabled={loadingTableButtons}
+                onClick={() => setIsApprovePendingDialogOpen(true)}
+              >
+                {loadingTableButtons ? "Approving..." : "Approve all pending parts"}
+              </Button>
+            )}
+          {showOfficeOrderApproveButton(order.statuses.name, false) && (
+            <Button
+              disabled={loadingTableButtons}
+              onClick={() => setisApproveAllOfficeDialogOpen(true)}
+            >
+              {loadingTableButtons ? "Approving..." : "Approve all parts"}
+            </Button>
           )}
           {showAllBudgetApproveButton(order.statuses.name, orderedParts) && (
-            <Button disabled={loadingTableButtons} onClick={()=>setApproveAllBudgetDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all budgets"}</Button>
+            <Button
+              disabled={loadingTableButtons}
+              onClick={() => setApproveAllBudgetDialogOpen(true)}
+            >
+              {loadingTableButtons ? "Approving..." : "Approve all budgets"}
+            </Button>
           )}
           {showAddPartButton(order.statuses.name) && (
-            <Button className="bg-blue-700" disabled={loadingAddPart} onClick={()=>setIsAddPartDialogOpen(true)}>{loadingAddPart? "Adding...": "Add Part"}</Button>
+            <Button
+              className="bg-blue-700"
+              disabled={loadingAddPart}
+              onClick={() => setIsAddPartDialogOpen(true)}
+            >
+              {loadingAddPart ? "Adding..." : "Add Part"}
+            </Button>
           )}
-          {
-            showAdvanceButton && (
-              order.current_status_id === 1 && order.order_type !== "PFS" ? (
-                <Button disabled={loadingTableButtons} className="bg-green-700" onClick={handleConfirmMachineChanges}><Flag/>Confirm Machine Changes</Button>
-              ) : (
-                <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
-              )
-            )
-          }
-          {
-            showRevertButton && 
-            <Button disabled={loadingTableButtons} className="bg-orange-600" onClick={()=>setIsRevertDialogOpen(true)}><FlagOff/>Revert to Quotation</Button>
-          }
-        </div>
-        <Table>
-        <TableHeader>
-        <TableRow>
-            <TableHead></TableHead>
-            <TableHead className="whitespace-nowrap">Actions</TableHead>
-            <TableHead className="whitespace-nowrap">Part</TableHead>
-            <TableHead className="whitespace-nowrap">In Storage</TableHead>
-            <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
-            <TableHead className="whitespace-nowrap">Current Storage Qty</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
-            <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
-            <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
-            <TableHead className="whitespace-nowrap">Last Change Date</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
-            <TableHead className="whitespace-nowrap">MRR number</TableHead>
-            <TableHead className="whitespace-nowrap hidden md:table-cell">Office Sample Sent/Received</TableHead>
-            <TableHead className="md:hidden">Info</TableHead>
-        </TableRow>
-        </TableHeader>
-        {loadingTable? (
-            <div className='flex flex-row justify-center'>
-                <Loader2 className='h-8 w-8 animate-spin'/>
-            </div>
-        ):
-            <TableBody>
-            {orderedParts.map((orderedPart,index) => (                                        
-                <Managerowtemporary key={orderedPart.id}
-              index={index+1}
-              order={order}
-              orderedPartInfo={orderedPart}/>
+          {showAdvanceButton &&
+            (order.current_status_id === 1 && order.order_type !== "PFS" ? (
+              <Button
+                disabled={loadingTableButtons}
+                className="bg-green-700"
+                onClick={handleConfirmMachineChanges}
+              >
+                <Flag />
+                Confirm Machine Changes
+              </Button>
+            ) : (
+              <Button
+                disabled={loadingTableButtons}
+                className="bg-green-700"
+                onClick={() => setIsAdvanceDialogOpen(true)}
+              >
+                <Flag />
+                Advance
+              </Button>
             ))}
-              {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
-                <TableCell className="font-bold">Total:</TableCell>
-                <TableCell className="font-bold">{totalCost}</TableCell>
+          {showRevertButton && (
+            <Button
+              disabled={loadingTableButtons}
+              className="bg-orange-600"
+              onClick={() => setIsRevertDialogOpen(true)}
+            >
+              <FlagOff />
+              Revert to Quotation
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+  
+      {loadingTable === true ? (
+        <div className="animate-spin flex flex-row justify-center p-5">
+          <Loader2 />
+        </div>
+      ) : (
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead></TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Part</TableHead>
+                <TableHead className="whitespace-nowrap">In Storage</TableHead>
+                <TableHead className="whitespace-nowrap">
+                  Taken from storage
+                </TableHead>
+                <TableHead className="whitespace-nowrap">
+                  Current Storage Qty
+                </TableHead>
+                {(profile?.permission === "admin" ||
+                  profile?.permission === "finance") && (
+                  <TableHead className="whitespace-nowrap">
+                    Last Cost/Unit
+                  </TableHead>
+                )}
+                <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
+                <TableHead className="whitespace-nowrap">
+                  Last Purchase Date
+                </TableHead>
+                <TableHead className="whitespace-nowrap">
+                  Last Change Date
+                </TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Qty
+                </TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Unit
+                </TableHead>
+                {(profile?.permission === "admin" ||
+                  profile?.permission === "finance") && (
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">
+                    Brand
+                  </TableHead>
+                )}
+                {(profile?.permission === "admin" ||
+                  profile?.permission === "finance") && (
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">
+                    Vendor
+                  </TableHead>
+                )}
+                {(profile?.permission === "admin" ||
+                  profile?.permission === "finance") && (
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">
+                    Cost/Unit
+                  </TableHead>
+                )}
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Note
+                </TableHead>
+                {(profile?.permission === "admin" ||
+                  profile?.permission === "finance") && (
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">
+                    Office Note
+                  </TableHead>
+                )}
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Date Purchased
+                </TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Date Sent To Factory
+                </TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Date Received By Factory
+                </TableHead>
+                <TableHead className="whitespace-nowrap">MRR number</TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">
+                  Office Sample Sent/Received
+                </TableHead>
+                <TableHead className="md:hidden">Info</TableHead>
               </TableRow>
-              )}
-            </TableBody>
-        }  
-      </Table>
-      </CardContent>
-      }
+            </TableHeader>
+            {loadingTable ? (
+              <div className="flex flex-row justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <TableBody>
+                {orderedParts.map((orderedPart, index) => (
+                  <Managerowtemporary
+                    key={orderedPart.id}
+                    index={index + 1}
+                    order={order}
+                    orderedPartInfo={orderedPart}
+                  />
+                ))}
+                {(profile?.permission === "admin" ||
+                  profile?.permission === "finance") && (
+                  <TableRow>
+                    <TableCell className="font-bold">Total:</TableCell>
+                    <TableCell className="font-bold">{totalCost}</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            )}
+          </Table>
+        </CardContent>
+      )}
+  
+      {/* Dialogs and extra actions remain unchanged */}
       <Dialog open={showActionsCompletedPopup} onOpenChange={handleNavigation}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-green-600">All action completed for current status</DialogTitle>
-              <DialogDescription>
-                <p>Order will be moved to next status.</p>
-                <p>You will be moved back to orders page.</p>
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button onClick={handleNavigation}>OK</Button>
-            </DialogFooter>
-          </DialogContent>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-green-600">
+              All action completed for current status
+            </DialogTitle>
+            <DialogDescription>
+              <p>Order will be moved to next status.</p>
+              <p>You will be moved back to orders page.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleNavigation}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
+  
       <Dialog open={showEmptyOrderPopup} onOpenChange={handleNavigation}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-red-600">This order has no parts ordered.</DialogTitle>
-              <DialogDescription>
-                <p>Order will be deleted.</p>
-                <p>You will be moved back to orders page.</p>
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button onClick={handleNavigation}>OK</Button>
-            </DialogFooter>
-          </DialogContent>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">
+              This order has no parts ordered.
+            </DialogTitle>
+            <DialogDescription>
+              <p>Order will be deleted.</p>
+              <p>You will be moved back to orders page.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleNavigation}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
-
+  
       <Dialog open={isRevertDialogOpen} onOpenChange={setIsRevertDialogOpen}>
         <DialogContent>
-          <DialogTitle>
-           Reverting Order Status 
-          </DialogTitle>
+          <DialogTitle>Reverting Order Status</DialogTitle>
           <DialogDescription>
             <p className="text-sm text-muted-foreground">
-              You can now revert this order to previous status. Please confirm if you would like to revert.
+              You can now revert this order to previous status. Please confirm if
+              you would like to revert.
             </p>
           </DialogDescription>
           <Button onClick={handleRevertOrderStatus}>Confirm</Button>
         </DialogContent>
       </Dialog>
+  
       <AddNewPartToOrderAction
         isAddPartDialogOpen={isAddPartDialogOpen}
         setAddPartDialogOpen={setIsAddPartDialogOpen}
@@ -428,7 +535,7 @@ const handleOrderManagement = async () => {
         onOpenChange={setIsAdvanceDialogOpen}
         order={order}
       />
-      
+  
       {/* Machine Instability Form */}
       <MachineUnstabilityForm
         isOpen={showMachineUnstabilityDialog}
@@ -436,25 +543,20 @@ const handleOrderManagement = async () => {
         unstableType={unstableType}
         onUnstableTypeChange={(type) => {
           setUnstableType(type)
-          // For all types, proceed with advancing the order
           if (type) {
             handleMachineUnstabilitySelection()
           }
         }}
         onMarkInactiveInstead={() => {
-          // Handle marking machine as inactive instead
           setShowMachineUnstabilityDialog(false)
-          setUnstableType('')
-          // You can add logic here to mark machine as inactive if needed
+          setUnstableType("")
         }}
-        showMarkInactiveOption={false} // Don't show mark inactive option for order advancement
+        showMarkInactiveOption={false}
         title="How will the machine continue running?"
         description="Since this order affects machine operation, please specify how the machine will continue running."
       />
-      
-      </Card>
-      
-    )
+    </Card>
+  )
   }
 
 export default ManageOrderedPartsSection

@@ -1,6 +1,6 @@
 import { Order } from "@/types"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Separator } from "../ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
+import { Separator } from "../../ui/separator"
 import { convertUtcToBDTime } from "@/services/helper"
 
 interface OrderInfoProp {
@@ -16,14 +16,14 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
         className="sm:col-span-2 h-full flex flex-col w-full" x-chunk="dashboard-05-chunk-0"
     >
         <CardHeader className="pb-3">
-        <CardTitle>{mode==="view"? "View ": mode==="manage"? "Manage ": ""}Order </CardTitle>
+            <CardTitle> {mode==="view"? "View ": mode==="manage"? "Manage ": "" } Order: ID {order.id} </CardTitle>
         </CardHeader>
         <Separator className="my-4" />
         <CardContent className="flex-1">
             <ul className="grid gap-3">
             <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">ID</span>
-                <span>{order.id}</span>
+                <span className="font-semibold text-muted-foreground">Factory</span>
+                <span>{order.factories?.name}</span>
             </li>
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Order Type</span>
@@ -45,16 +45,7 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
                 <span className="font-semibold text-muted-foreground">Department</span>
                 <span>{order.departments.name}</span>
             </li>
-            <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">
-                    {order.factory_sections?.name && order.machines?.name ? 'Machine' : 'Order for Storage'}
-                </span>
-                <span>
-                    {order.factory_sections?.name && order.machines?.name
-                        ? `${order.factories.abbreviation} - ${order.factory_sections.name} - ${order.machines.name}`
-                        : `${order.factories.abbreviation}`}
-                </span>
-            </li>
+            
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">Current Status</span>
                 <span>{order.statuses.name}</span>

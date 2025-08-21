@@ -382,6 +382,7 @@ const CreateOrderPage = () => {
         setPartId(-1);
         setIsSampleSentToOffice(false);
         setNote('');
+        setSelectedPartOption(null);
     };
 
 
@@ -687,13 +688,19 @@ const CreateOrderPage = () => {
     // Parts are now loaded once on component mount via useEffect
 
     const handlePartCreated = (newPart: Part) => {
+        const newOption = {
+            value: newPart,
+            label: `${newPart.name} (${newPart.unit || 'units'})`,
+            isDisabled: orderedParts.some((p) => p.part_id === newPart.id),
+        };
 
+        setAllPartOptions((prev) => [newOption, ...prev]);
+        setSelectedPartOption(newOption);
         handleSelectPart(newPart);
         
-        // Close the dialog after a short delay to show the success state
         setTimeout(() => {
             setIsAddPartDialogOpen(false);
-        }, 2000); // Wait 2 seconds to show the success animation
+        }, 2000);
         
         console.log('New part created and selected:', newPart);
     };
@@ -738,6 +745,7 @@ const CreateOrderPage = () => {
 
     // Simpler approach - just load more parts initially
     const [allPartOptions, setAllPartOptions] = useState<any[]>([]);
+    const [selectedPartOption, setSelectedPartOption] = useState<any | null>(null);
     const [isLoadingMoreParts, setIsLoadingMoreParts] = useState(false);
 
     // Load initial parts when component mounts
@@ -1265,6 +1273,7 @@ const CreateOrderPage = () => {
                                                         id="partId"
                                                         cacheOptions
                                                         defaultOptions={allPartOptions}
+                                                        value={selectedPartOption}
                                                         loadOptions={async (inputValue: string) => {
                                                             if (!inputValue) {
                                                                 return allPartOptions.map(option => ({
@@ -1285,6 +1294,7 @@ const CreateOrderPage = () => {
                                                         onChange={(selectedOption) => {
                                                             if (!tempOrderDetails) return;
                                                             handleSelectPart(selectedOption?.value);
+                                                            setSelectedPartOption(selectedOption);
                                                         }}
                                                         placeholder="Search or Select a Part"
                                                         className="mt-1"
@@ -1293,24 +1303,7 @@ const CreateOrderPage = () => {
                                                     />
                                                 )}
                                                 
-                                                <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
-                                                    <DialogTrigger asChild>
-                                                        <Button
-                                                            size="sm"
-                                                            className="mt-2 w-full bg-blue-950"
-                                                            disabled={!addPartEnabled}
-                                                        >
-                                                            Create New Part
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="max-w-2xl">
-                                                        <AddPartPopup 
-                                                            addPartEnabled={addPartEnabled}
-                                                            onSuccess={handlePartCreated}
-                                                            showPostAddOptions={true}
-                                                        />
-                                                    </DialogContent>
-                                                </Dialog>
+                                                
                                                                                             
                                             </div>
 
@@ -1424,6 +1417,33 @@ const CreateOrderPage = () => {
                                                 <CirclePlus className="h-4 w-4" />
                                                 Add Part
                                             </Button>
+
+                                            {/* Divider OR */}
+                                            <div className="flex items-center my-3">
+                                                <div className="flex-grow border-t border-gray-200"></div>
+                                                <span className="mx-2 text-xs text-muted-foreground">OR</span>
+                                                <div className="flex-grow border-t border-gray-200"></div>
+                                            </div>
+
+                                            {/* Create New Part Button */}
+                                            <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        className="w-full bg-blue-950"
+                                                        disabled={!addPartEnabled}
+                                                    >
+                                                        Create New Part
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-2xl">
+                                                    <AddPartPopup 
+                                                        addPartEnabled={addPartEnabled}
+                                                        onSuccess={handlePartCreated}
+                                                        showPostAddOptions={true}
+                                                    />
+                                                </DialogContent>
+                                            </Dialog>
                                         </div>
                                     )}
                                 </div>

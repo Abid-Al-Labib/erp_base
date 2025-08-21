@@ -1,10 +1,11 @@
-import { Order, OrderedPart } from "@/types"
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Separator } from "../ui/separator"
-import { Badge } from "../ui/badge"
+import { MachinePart, Order, OrderedPart } from "@/types"
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
+import { Separator } from "../../ui/separator"
+import { Badge } from "../../ui/badge"
 import { useEffect, useState } from "react"
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService"
 import { Loader2, Cog, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { fetchMachineParts } from "@/services/MachinePartsService"
 
 interface OrderMachineInfoProps {
     order: Order
@@ -14,13 +15,9 @@ interface OrderMachineInfoProps {
 const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
     const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([])
     const [loading, setLoading] = useState(true)
+    const [machineParts, setMachineParts] = useState<MachinePart[]>([])
 
-    // Only show for machine orders (PFM, STM)
-    const isMachineOrder = order.order_type === "PFM" || order.order_type === "STM"
-    
-    if (!isMachineOrder) {
-        return null
-    }
+    // Only show 
 
     useEffect(() => {
         const loadOrderedParts = async () => {
@@ -34,55 +31,20 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                 setLoading(false)
             }
         }
+        const loadMachineParts = async () => {
+            try {
+                const parts = await fetchMachineParts(order.machines!.id)
+                setMachineParts(parts || [])
+            } catch (error) {
+                console.error("Failed to fetch machine parts:", error)
+            }
+        }
 
         loadOrderedParts()
+        loadMachineParts()
     }, [order.id])
 
-    const calculateTotalQuantity = () => {
-        return orderedParts.reduce((total, part) => total + part.qty, 0)
-    }
 
-    const getUnstableTypeDisplay = (unstableType: string | null) => {
-        if (!unstableType) return null
-        
-        switch (unstableType) {
-            case 'defective':
-                return 'Defective Parts'
-            case 'less':
-                return 'Fewer Parts'
-            default:
-                return unstableType
-        }
-    }
-
-    const getPartsTransformation = () => {
-        if (order.marked_inactive || !order.unstable_type) return null
-
-        const totalQty = calculateTotalQuantity()
-        let afterQty = totalQty
-        let description = ""
-
-        switch (order.unstable_type) {
-            case 'defective':
-                // Some parts will be defective, so fewer working parts
-                afterQty = Math.floor(totalQty * 0.7) // Assume 70% will be working
-                description = "working parts"
-                break
-            case 'less':
-                // Using fewer parts to keep running
-                afterQty = Math.floor(totalQty * 0.8) // Assume using 80% of parts
-                description = "parts used"
-                break
-            default:
-                return null
-        }
-
-        return {
-            before: totalQty,
-            after: afterQty,
-            description
-        }
-    }
 
     const getMachineStatusIcon = () => {
         if (order.marked_inactive) {
@@ -156,38 +118,31 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                             <li className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between">
                                     <span className="font-semibold text-muted-foreground">Ordered Parts:</span>
-                                    <span className="text-xs text-muted-foreground">Before → After</span>
+                                    <span className="text-xs text-muted-foreground">Before → Currently</span>
                                 </div>
                                 <div className="space-y-2 max-h-32 overflow-y-auto">
                                     {orderedParts.map((part, index) => {
-                                        const currentQty = part.qty
-                                        let reducedQty = currentQty
+                                        const machinePart = machineParts.find((mp) => mp.parts.id === part.parts.id);
 
-                                        // Calculate reduced quantity if machine has issues
-                                        if (!order.marked_inactive && order.unstable_type) {
-                                            switch (order.unstable_type) {
-                                                case 'defective':
-                                                    reducedQty = Math.floor(currentQty * 0.7)
-                                                    break
-                                                case 'less':
-                                                    reducedQty = Math.floor(currentQty * 0.8)
-                                                    break
-                                            }
-                                        }
-
-                                        // If part is not in storage initially, show 0 → new
-                                        const initialQty = part.in_storage ? currentQty : 0
-                                        const finalQty = part.in_storage ? reducedQty : currentQty
-
+                                        // If machinePart exists, calculate reducedQty
+                                        const currentQty = machinePart ? machinePart.qty : 0;
+                                        const reducedQty = machinePart ? currentQty - part.qty : 0;
+                                      
                                         return (
-                                            <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                                                <span className="font-medium">{part.parts.name}</span>
-                                                <span className="text-muted-foreground">
-                                                    {initialQty} → {finalQty}
-                                                </span>
-                                            </div>
-                                        )
-                                    })}
+                                          <div
+                                            key={index}
+                                            className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded"
+                                          >
+                                            <span className="font-medium">{part.parts.name}</span>
+                                            
+                                            <span className="text-muted-foreground">
+                                            {currentQty} → {reducedQty} {part.parts.unit}
+                                            </span>
+                                            
+                                            
+                                          </div>
+                                        );
+                                      })}
                                 </div>
                             </li>
                         )}
@@ -201,22 +156,19 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                                 </summary>
                                 <div className="mt-2 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
                                     <div className="text-xs text-muted-foreground mb-2">
-                                        Additional machine parts and components...
+                                        Other Machine Parts currently in the machine
                                     </div>
-                                    {/* Placeholder for additional machine parts */}
                                     <div className="space-y-1">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span>Spare Bearings</span>
-                                            <span className="text-muted-foreground">5 units</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span>Lubrication System</span>
-                                            <span className="text-muted-foreground">2 sets</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span>Control Panel</span>
-                                            <span className="text-muted-foreground">1 unit</span>
-                                        </div>
+                                        {machineParts
+                                            .filter((part) => 
+                                                !orderedParts.some((ordered) => ordered.parts.id === part.parts.id)
+                                            )
+                                            .map((part) => (
+                                                <div key={part.id} className="flex items-center justify-between text-xs">
+                                                <span className="text-xs">{part.parts.name}</span>
+                                                <span className="text-muted-foreground">{part.qty} {part.parts.unit}</span>
+                                                </div>
+                                            ))}
                                     </div>
                                 </div>
                             </details>
