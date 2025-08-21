@@ -1,10 +1,13 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import OrderInfo from "@/components/customui/OrderInfo";
+import OrderMachineInfo from "@/components/customui/OrderMachineInfo";
+import OrderStorageInfo from "@/components/customui/OrderStorageInfo";
+import OrderMachineAndStorageInfo from "@/components/customui/OrderMachineAndStorageInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Order, Part } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
-import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
+
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { managePermission } from "@/services/helper";
@@ -14,6 +17,7 @@ import { DialogContent, Dialog, DialogDescription, DialogTitle } from "@/compone
 import NavigationBar from "../components/customui/NavigationBar"
 import { fetchAllParts } from "@/services/PartsService";
 import ManageOrderedPartsSection from "@/components/customui/ManageOrder/ManageOrderedPartsSection";
+import StatusTracker from "@/components/customui/StatusTracker";
 
 const ManageOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -94,6 +98,9 @@ const ManageOrderPage = () => {
         )
         .subscribe()  
 
+    return () => {
+      channel.unsubscribe()
+    }
   }, [id, navigate]);
   
   useEffect(() => { 
@@ -115,10 +122,48 @@ const ManageOrderPage = () => {
     <>
       <NavigationBar />
       <div className="mx-4 my-4">
-        <OrderInfo
-          order={order}
-          mode="manage"
-        />
+        {/* Flex layout - 3/5 and 2/5 proportions with equal heights */}
+        <div className="flex flex-col lg:flex-row gap-4 mb-6 w-full">
+          <div className="w-full lg:w-3/6 h-[50vh]">
+            <OrderInfo
+              order={order}
+              mode="manage"
+            />
+          </div>
+          
+          <div className="w-full lg:w-2/6">
+            {order.order_type === 'PFM' && (
+              <div className="h-[50vh]">
+                <OrderMachineInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+            
+            {order.order_type === 'PFS' && (
+              <div className="h-[50vh]">
+                <OrderStorageInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+            
+            {order.order_type === 'STM' && (
+              <div className="h-[50vh]">
+                <OrderMachineAndStorageInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="w-full sm:w-1/6 h-[50vh]">
+              <StatusTracker order={order} />
+          </div>
+        </div>
         
         {/* <OrderedPartsTable
           mode="manage"
@@ -132,7 +177,7 @@ const ManageOrderPage = () => {
           parts={parts}
         />
       <div className="flex justify-end">
-        <div className="my-3 mx-3">
+        <div className="my-3 mx-3 flex gap-2">
           <Link to={'/orders'}><Button>Back To Orders</Button></Link>
         </div>
       </div>

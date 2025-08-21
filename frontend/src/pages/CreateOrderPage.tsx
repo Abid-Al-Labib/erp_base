@@ -547,8 +547,8 @@ const CreateOrderPage = () => {
         // Update tempOrderDetails with current state values before creating order
         const updatedOrderDetails = {
             ...tempOrderDetails,
-            marked_inactive: false, // Machine status management removed from create order
-            unstable_type: null,
+            marked_inactive: markAsInactive,
+            unstable_type: unstableType || null,
             src_factory: undefined,
         };
         

@@ -13,13 +13,13 @@ interface OrderInfoProp {
 const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
   return (
         <Card
-        className="sm:col-span-2" x-chunk="dashboard-05-chunk-0"
+        className="sm:col-span-2 h-full flex flex-col w-full" x-chunk="dashboard-05-chunk-0"
     >
         <CardHeader className="pb-3">
         <CardTitle>{mode==="view"? "View ": mode==="manage"? "Manage ": ""}Order </CardTitle>
         </CardHeader>
         <Separator className="my-4" />
-        <CardContent>
+        <CardContent className="flex-1">
             <ul className="grid gap-3">
             <li className="flex items-center justify-between">
                 <span className="font-semibold text-muted-foreground">ID</span>
@@ -62,7 +62,7 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
             </ul>
         <Separator className="my-2" />
         <span className="font-semibold text-muted-foreground">Note</span>
-        <div className="max-w-xl text-balance leading-relaxed mt-2">{order.order_note}</div>
+        <div className="text-balance leading-relaxed mt-2">{order.order_note}</div>
         </CardContent>
     </Card>
   )
