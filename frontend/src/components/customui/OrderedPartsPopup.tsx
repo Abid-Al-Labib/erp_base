@@ -18,8 +18,10 @@ const OrderedPartsPopup: React.FC<PopupProps> = ({ orderedParts, onClose, positi
           <button
             onClick={onClose}
             className="absolute top-1 right-1 text-gray-500 hover:text-red-500"
+            aria-label="Close ordered parts popup"
+            title="Close"
           >
-            <X></X>
+            <X aria-hidden="true"></X>
           </button>
           <h4 className="text-sm font-semibold mb-2">Order {orderedParts[0].order_id} - Ordered parts:</h4>
          

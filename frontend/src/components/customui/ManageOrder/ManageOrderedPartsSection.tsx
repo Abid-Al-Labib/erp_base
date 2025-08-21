@@ -21,7 +21,6 @@ import ApproveAllPendingAction from "./Actions/ApproveAllPendingAction";
 import AdvanceOrderDialog from "./Actions/AdvanceOrderAction";
 import ApproveAllFromOfficeAction from "./Actions/ApproveAllFromOfficeAction";
 import ApproveAllBudgetAction from "./Actions/ApproveAllBudgetAction";
-import MachineUnstabilityForm, { UnstableType, BorrowingConfiguration } from "@/components/customui/MachineUnstabilityForm";
 
 interface ManageOrderedPartsSectionProp {
   order: Order
@@ -51,8 +50,6 @@ const ManageOrderedPartsSection:React.FC<ManageOrderedPartsSectionProp> = ({orde
   const [showRevertButton, setShowRevertButton] = useState<boolean>(false)
   const [isAdvanceDialogOpen,setIsAdvanceDialogOpen] = useState<boolean>(false)
   const [isRevertDialogOpen, setIsRevertDialogOpen] = useState<boolean>(false)
-  const [showMachineUnstabilityDialog, setShowMachineUnstabilityDialog] = useState<boolean>(false)
-  const [unstableType, setUnstableType] = useState<UnstableType>('')
 
 
   
@@ -69,44 +66,6 @@ const ManageOrderedPartsSection:React.FC<ManageOrderedPartsSectionProp> = ({orde
     handleNavigation()
   }
 
-const handleConfirmMachineChanges = () => {
-  // Show the machine instability dialog for status 1 non-PFS orders
-  setShowMachineUnstabilityDialog(true)
-}
-
-const handleMachineUnstabilitySelection = async (borrowingConfig?: BorrowingConfiguration) => {
-  setLoadingTableButtons(true)
-  try {
-    if(!profile){
-      toast.error("Profile not found")
-      return
-    }
-    
-    // Log borrowing configuration for debugging/future implementation
-    if (borrowingConfig) {
-      console.log("Borrowing configuration:", borrowingConfig);
-      // TODO: Implement actual borrowing logic based on configuration
-    }
-    
-    const next_status_id = getNextStatusIdFromSequence(order.order_workflows.status_sequence, order.current_status_id)
-    if (next_status_id && next_status_id !== -1){
-      await UpdateStatusByID(order.id, next_status_id)
-      await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
-      
-      toast.success("Order advanced successfully with machine changes")
-      window.location.reload() // Refresh to show updated status
-    }
-    else{
-      toast.error("Could not figure out next status")
-    }
-  } catch (error) {
-    toast.error("Error when trying to advance order")
-  } finally {
-    setLoadingTableButtons(false)
-    setShowMachineUnstabilityDialog(false)
-    setUnstableType('')
-  }
-}
 
 const loadOrderedParts = async () => {
     try {
@@ -297,14 +256,6 @@ const handleOrderManagement = async () => {
             <Button className="bg-blue-700" disabled={loadingAddPart} onClick={()=>setIsAddPartDialogOpen(true)}>{loadingAddPart? "Adding...": "Add Part"}</Button>
           )}
           {
-            //UPDATE WITH CORRECT SHOW BUTTON FLAG VARIABLE
-              showAdvanceButton && (
-              order.current_status_id === 1 && order.order_type === "PFM" && (
-                <Button disabled={loadingTableButtons} className="bg-purple-700" onClick={handleConfirmMachineChanges}>Confirm Machine Changes</Button>
-              ) 
-            )
-          }
-          {
             showAdvanceButton && 
               (
                 <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
@@ -440,28 +391,6 @@ const handleOrderManagement = async () => {
         order={order}
       />
       
-      {/* Machine Instability Form */}
-      <MachineUnstabilityForm
-        isOpen={showMachineUnstabilityDialog}
-        onOpenChange={setShowMachineUnstabilityDialog}
-        unstableType={unstableType}
-        onUnstableTypeChange={(type, borrowingConfig) => {
-          setUnstableType(type)
-          // For all types (including borrowed), proceed with advancing the order
-          if (type) {
-            handleMachineUnstabilitySelection(borrowingConfig)
-          }
-        }}
-        onMarkInactiveInstead={() => {
-          // Handle marking machine as inactive instead
-          setShowMachineUnstabilityDialog(false)
-          setUnstableType('')
-          // You can add logic here to mark machine as inactive if needed
-        }}
-        title="How will the machine continue running?"
-        description="Since this order affects machine operation, please specify how the machine will continue running."
-        currentMachineId={order.machine_id}
-      />
       
       </Card>
       
