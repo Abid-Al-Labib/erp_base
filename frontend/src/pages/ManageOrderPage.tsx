@@ -1,8 +1,8 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
-import OrderInfo from "@/components/customui/OrderInfoComponents/OrderInfo";
-import OrderMachineInfo from "@/components/customui/OrderInfoComponents/OrderMachineInfo";
-import OrderStorageInfo from "@/components/customui/OrderInfoComponents/OrderStorageInfo";
-import OrderMachineAndStorageInfo from "@/components/customui/OrderInfoComponents/OrderMachineAndStorageInfo";
+import OrderInfo from "@/components/customui/OrderInfo";
+import OrderMachineInfo from "@/components/customui/OrderMachineInfo";
+import OrderStorageInfo from "@/components/customui/OrderStorageInfo";
+import OrderMachineAndStorageInfo from "@/components/customui/OrderMachineAndStorageInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Order, Part } from "@/types";

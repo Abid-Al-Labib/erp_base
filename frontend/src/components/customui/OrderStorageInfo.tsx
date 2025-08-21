@@ -1,11 +1,10 @@
-import { Order, OrderedPart, StoragePart } from "@/types"
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
-import { Separator } from "../../ui/separator"
-import { Badge } from "../../ui/badge"
+import { Order, OrderedPart } from "@/types"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Separator } from "../ui/separator"
+import { Badge } from "../ui/badge"
 import { useEffect, useState } from "react"
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService"
 import { Loader2, Package, Warehouse } from "lucide-react"
-import { fetchStorageParts } from "@/services/StorageService"
 
 interface OrderStorageInfoProps {
     order: Order
@@ -15,7 +14,7 @@ interface OrderStorageInfoProps {
 const OrderStorageInfo: React.FC<OrderStorageInfoProps> = ({ order, mode }) => {
     const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([])
     const [loading, setLoading] = useState(true)
-    const [storageParts, setStorageParts] = useState<StoragePart[]>([])
+
     // Only show for storage orders (PFS)
     const isStorageOrder = order.order_type === "PFS"
     
@@ -36,17 +35,7 @@ const OrderStorageInfo: React.FC<OrderStorageInfoProps> = ({ order, mode }) => {
             }
         }
 
-        const loadStorageItems = async () => {
-            try {
-                const items = await fetchStorageParts({factoryId: order.factories!.id})
-                setStorageParts(items.data || [])
-            } catch (error) {
-                console.error("Failed to fetch storage items:", error)
-            }
-        }
-
         loadOrderedParts()
-        loadStorageItems()
     }, [order.id])
 
 
@@ -85,15 +74,16 @@ const OrderStorageInfo: React.FC<OrderStorageInfoProps> = ({ order, mode }) => {
                                 </div>
                                 <div className="space-y-2 max-h-32 overflow-y-auto">
                                     {orderedParts.map((part, index) => {
-                                        const storagePart = storageParts.find((sp) => sp.parts.id === part.parts.id);
-                                        const currentQty = storagePart ? storagePart.qty : 0;
-                                        const increasedQty = currentQty + part.qty;
+                                        const currentQty = part.qty
+                                        // If part is not in storage initially, show 0 → new
+                                        const initialQty = part.in_storage ? currentQty : 0
+                                        const finalQty = part.in_storage ? Math.floor(currentQty * 1.2) : currentQty
 
                                         return (
                                             <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
                                                 <span className="font-medium">{part.parts.name}</span>
                                                 <span className="text-muted-foreground">
-                                                    {currentQty} → {increasedQty} {part.parts.unit}
+                                                    {initialQty} → {finalQty}
                                                 </span>
                                             </div>
                                         )
@@ -111,17 +101,22 @@ const OrderStorageInfo: React.FC<OrderStorageInfoProps> = ({ order, mode }) => {
                                 </summary>
                                 <div className="mt-2 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
                                     <div className="text-xs text-muted-foreground mb-2">
-                                        Additional storage items currently in the storage
+                                        Additional storage items and supplies...
                                     </div>
+                                    {/* Placeholder for additional storage items */}
                                     <div className="space-y-1">
-                                        {storageParts.filter((part) => 
-                                            !orderedParts.some((ordered) => ordered.parts.id === part.parts.id)
-                                        ).map((part) => (
-                                            <div key={part.id} className="flex items-center justify-between text-xs">
-                                                <span className="text-xs">{part.parts.name}</span>
-                                                <span className="text-muted-foreground">{part.qty} {part.parts.unit}</span>
-                                            </div>
-                                        ))}
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span>Safety Equipment</span>
+                                            <span className="text-muted-foreground">10 sets</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span>Cleaning Supplies</span>
+                                            <span className="text-muted-foreground">25 units</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span>Maintenance Tools</span>
+                                            <span className="text-muted-foreground">15 pieces</span>
+                                        </div>
                                     </div>
                                 </div>
                             </details>
