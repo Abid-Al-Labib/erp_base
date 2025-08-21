@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatusTracker from "@/components/customui/StatusTracker";
-import OrderInfo from "@/components/customui/OrderInfo";
+import OrderInfo from "@/components/customui/OrderInfoComponents/OrderInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Order, OrderedPart } from "@/types";
@@ -12,6 +12,9 @@ import { useAuth } from "@/context/AuthContext";
 import NavigationBar from "@/components/customui/NavigationBar";
 import ViewOrderedPartsSection from "@/components/customui/ViewOrderedPartsSection";
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService";
+import OrderMachineInfo from "@/components/customui/OrderInfoComponents/OrderMachineInfo";
+import OrderStorageInfo from "@/components/customui/OrderInfoComponents/OrderStorageInfo";
+import OrderMachineAndStorageInfo from "@/components/customui/OrderInfoComponents/OrderMachineAndStorageInfo";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,44 +103,65 @@ const ViewOrderPage = () => {
 
   return (
     <>
-    <NavigationBar />
-      <div className="flex min-h-screen w-full flex-col bg-muted/40 mx-2">
-        <main className="grid m-4">
-          <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-            <div className="sm:flex flex-1 gap-4 mt-4 min-h-[400px] items-stretch">
-
-              <div className="w-full sm:w-2/5 h-full">
-                <OrderInfo order={order} mode="view" />
-              </div>
-
-              {/* Placeholder for the second component (currently OrderInfo for now) */}
-              <div className="w-full sm:w-2/5 h-full">
-                <OrderInfo order={order} mode="view" />
-              </div>
-    
-              <div className="w-full sm:w-1/5 h-full">
-                <StatusTracker order={order} />
-              </div>
-            </div>
-            <div className="w-full mt-4 overflow-x-auto">
-              <ViewOrderedPartsSection order={order} orderPartList={orderedParts} orderedPartsLoading={loadingOrderedParts} />
-            </div>
+          <NavigationBar />
+      <div className="mx-4 my-4">
+        <div className="flex flex-col lg:flex-row gap-4 mb-6 w-full">
+          <div className="w-full lg:w-3/6 h-[45vh]">
+            <OrderInfo order={order} mode="view" />
           </div>
-        </main>
-        <div className="flex justify-end">
-          <div className="my-3 mx-3 flex gap-2">
-              <Button  
-                onClick={CreateInvoice}
-              >
-                Create Invoice
-              </Button>
-            <Link to={'/orders'}>
-              <Button>Back To Orders</Button>
-            </Link>
+          
+          <div className="w-full lg:w-2/6">
+            {order.order_type === 'PFM' && (
+              <div className="h-[45vh]">
+                <OrderMachineInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+            
+            {order.order_type === 'PFS' && (
+              <div className="h-[45vh]">
+                <OrderStorageInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+            
+            {order.order_type === 'STM' && (
+              <div className="h-[45vh]">
+                <OrderMachineAndStorageInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="w-full sm:w-1/6 h-[45vh]">
+            <StatusTracker order={order} />
           </div>
         </div>
-      </div>
-    </>
+        
+        <div className="w-full mt-4 overflow-x-auto">
+          <ViewOrderedPartsSection order={order} orderPartList={orderedParts} orderedPartsLoading={loadingOrderedParts} />
+        </div>
+        
+                 <div className="flex justify-end">
+           <div className="my-3 mx-3 flex gap-2">
+             <Button  
+               onClick={CreateInvoice}
+             >
+               Create Invoice
+             </Button>
+             <Link to={'/orders'}>
+               <Button>Back To Orders</Button>
+             </Link>
+           </div>
+         </div>
+       </div>
+      </>
   );
 };
 

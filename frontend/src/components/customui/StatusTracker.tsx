@@ -67,20 +67,20 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
   );
 
   return (
-    <Card className="h-[60vh] flex flex-col border shadow-sm overflow-hidden">
-      <CardHeader className="sticky top-0 z-10 bg-muted border-b px-6 py-5 space-y-2">
-        <div className="grid grid-cols-2 gap-4 items-start">
+    <Card className="h-full flex flex-col border shadow-sm overflow-hidden">
+      <CardHeader className="bg-muted border-b px-4 py-3 space-y-1">
+        <div className="grid grid-cols-2 gap-2 items-start">
           <div>
-            <CardTitle className="text-xl font-bold whitespace-nowrap">
+            <CardTitle className="text-lg font-semibold whitespace-nowrap">
               Status Tracker
             </CardTitle>
             <CardDescription className="whitespace-nowrap">
               {(totalDaysToCompletion !== null || elapsedDays !== null) && (
-                <div className="text-sm text-muted-foreground pt-2">
+                <div className="text-xs text-muted-foreground pt-1">
                   {totalDaysToCompletion !== null ? (
-                    <>✅ Completed in <strong>{totalDaysToCompletion}</strong> day{totalDaysToCompletion !== 1 ? "s" : ""}</>
+                    <>✅ <strong>{totalDaysToCompletion}</strong> day{totalDaysToCompletion !== 1 ? "s" : ""}</>
                   ) : (
-                    <>⏳ <strong>{elapsedDays}</strong> day{elapsedDays !== 1 ? "s" : ""} since started</>
+                    <>⏳ <strong>{elapsedDays}</strong> day{elapsedDays !== 1 ? "s" : ""}</>
                   )}
                 </div>
               )}
@@ -88,10 +88,10 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
           </div>
           {totalCount > 0 && (
             <div className="text-right">
-              <div className="text-3xl font-medium text-primary leading-none">
+              <div className="text-2xl font-medium text-primary leading-none">
                 {completedCount} / {totalCount}
               </div>
-              <div className="text-sm text-muted-foreground mt-1">completed</div>
+              <div className="text-xs text-muted-foreground mt-1">completed</div>
             </div>
           )}
         </div>
@@ -102,7 +102,7 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
 
 
       {/* Status List */}
-      <CardContent className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <CardContent className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {mergedStatuses.map((status, index) => (
           <div key={index} className="relative">
             <StatusTrackerItem
@@ -112,8 +112,8 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
               complete={status.complete}
             />
             {index < mergedStatuses.length - 1 && (
-              <div className="flex justify-center my-2">
-                <MoveDown className="w-5 h-5 text-muted-foreground" />
+              <div className="flex justify-center my-1">
+                <MoveDown className="w-4 h-4 text-muted-foreground" />
               </div>
             )}
           </div>

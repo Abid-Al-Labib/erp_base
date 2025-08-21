@@ -5,10 +5,11 @@ import { Textarea } from "../components/ui/textarea"
 import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 
 import { CirclePlus, CircleX, Loader2, CircleCheck, X } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
-import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM/*, insertOrderMTS*/ } from "@/services/OrdersService";
+import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM } from "@/services/OrdersService";
 import { fetchStorageParts } from "@/services/StorageService";
 
 import toast from 'react-hot-toast'
@@ -27,6 +28,7 @@ import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
 import { fetchMachineParts } from "@/services/MachinePartsService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
+import MachineUnstabilityForm, { UnstableType } from "@/components/customui/MachineUnstabilityForm"
 import { 
     Department, 
     Factory, 
@@ -45,7 +47,7 @@ import { isFeatureSettingEnabled } from "@/services/helper"
 // ORDER TYPE CONFIGURATIONS AND HELPERS
 // ============================================================================
 
-type OrderType = "PFM" | "PFS" | "STM"; // | "MTS";
+type OrderType = "PFM" | "PFS" | "STM";
 
 interface OrderTypeConfig {
     name: string;
@@ -89,16 +91,7 @@ const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
         supportsInactiveMarking: true,
         isImplemented: true,
     },
-    // MTS: {
-    //     name: "MTS",
-    //     displayName: "4 - Machine to Storage",
-    //     requiresFactorySection: false,
-    //     requiresMachine: false,
-    //     requiresSourceFactory: false,
-    //     requiresSourceMachine: true,
-    //     supportsInactiveMarking: true,
-    //     isImplemented: true,
-    // },
+   
 };
 
 // ============================================================================
@@ -135,7 +128,6 @@ const PFM_HELPERS = {
             tempOrderDetails.marked_inactive,
             tempOrderDetails.unstable_type,
             tempOrderDetails.src_factory,
-            tempOrderDetails.src_machine,
         );
     },
 
@@ -224,57 +216,6 @@ const STM_HELPERS = {
 
 };
 
-// ============================================================================
-// MTS (Machine To Storage) LOGIC
-// ============================================================================
-
-// Temporarily commented out MTS functionality
-/* const MTS_HELPERS = {
-    validateForm: (selectedFactoryId: number, selectedFactorySectionId: number, srcMachineId: number, destFactoryId: number, departmentId: number) => {
-        return selectedFactoryId !== -1 && selectedFactorySectionId !== -1 && srcMachineId !== -1 && destFactoryId !== -1 && departmentId !== -1;
-    },
-
-    validatePart: (partId: number, qty: number, orderedParts: InputOrderedPart[], machineParts: MachinePart[]) => {
-        const isPartAlreadyAdded = orderedParts.some(part => part.part_id === partId);
-        if (isPartAlreadyAdded) {
-            return { isValid: false, error: 'This part has already been added.' };
-        }
-
-        if (qty <= 0) {
-            return { isValid: false, error: 'Quantity must be greater than 0.' };
-        }
-
-        // Check if requested quantity exceeds available quantity in machine
-        const machinePart = machineParts.find(mp => mp.part_id === partId);
-        if (machinePart && qty > machinePart.qty) {
-            return { 
-                isValid: false, 
-                error: `Requested quantity (${qty}) exceeds available quantity (${machinePart.qty}) in machine.` 
-            };
-        }
-
-        return { isValid: true };
-    },
-
-    createOrder: async (tempOrderDetails: InputOrder, _selectedFactoryId: number, _selectedFactorySectionId: number, srcMachineId: number) => {
-        // MTS: Move parts from machine to destination factory storage (no factory section needed for destination)
-        return await insertOrderMTS(
-            tempOrderDetails.req_num,
-            tempOrderDetails.order_note,
-            tempOrderDetails.created_by_user_id,
-            tempOrderDetails.department_id,
-            tempOrderDetails.factory_id, // destination factory (where parts go to storage)
-            tempOrderDetails.current_status_id,
-            tempOrderDetails.order_type,
-            srcMachineId,                // source machine (where parts come from)
-            tempOrderDetails.marked_inactive,
-            tempOrderDetails.unstable_type
-        );
-    },
-
-
-}; */
-
 const CreateOrderPage = () => {
 
     const profile = useAuth().profile
@@ -298,28 +239,39 @@ const CreateOrderPage = () => {
     const [srcFactoryId, setSrcFactoryId] = useState<number>(-1);
     const selectedSrcFactoryName = factories.find(factory => factory.id === srcFactoryId)?.name || "Select Source Factory";
 
-    // MTS-specific state variables (reusing selectedFactoryId and selectedFactorySectionId for source)
-    const [srcMachineId, setSrcMachineId] = useState<number>(-1);
-    const selectedSrcMachineName = machines.find(machine => machine.id === srcMachineId)?.name || "Select Source Machine";
-    
-    // Debug logging for srcMachineId changes
-    useEffect(() => {
-        console.log(`[DEBUG] srcMachineId changed to: ${srcMachineId}`);
-        console.trace('[DEBUG] srcMachineId change stack trace:');
-    }, [srcMachineId]);
     
     const [machineParts, setMachineParts] = useState<MachinePart[]>([]);
-    // Temporarily commented out MTS-related variables
-    // const [destFactoryId, setDestFactoryId] = useState<number>(-1);
-    // const selectedDestFactoryName = factories.find(factory => factory.id === destFactoryId)?.name || "Select Destination Factory";
+  
 
     const [orderType, setOrderType] = useState<string>();
     const [description, setDescription] = useState('');
     const [note, setNote] = useState('');
 
     const [reqNum, setReqNum] = useState('')
+    
+    // Machine instability state
+    const [markAsInactive, setMarkAsInactive] = useState<boolean>(true); // Default checked
+    const [showMachineUnstabilityDialog, setShowMachineUnstabilityDialog] = useState<boolean>(false);
+    const [unstableType, setUnstableType] = useState<UnstableType>('');
 
     const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
+
+    // Handle opening machine unstability dialog
+    const handleOpenMachineUnstabilityDialog = () => {
+        setShowMachineUnstabilityDialog(true);
+    };
+
+    // Handle machine unstability selection
+    const handleMachineUnstabilitySelection = (type: UnstableType) => {
+        setUnstableType(type);
+        // Only set machine as not inactive if a valid unstable type is selected
+        if (type) {
+            setMarkAsInactive(false);
+        }
+        setShowMachineUnstabilityDialog(false);
+    };
+
+
 
     const [tempOrderDetails, setTempOrderDetails] = useState<InputOrder | null>(null);
     const [showPartForm, setShowPartForm] = useState(false); // To toggle part addition form visibility
@@ -336,8 +288,7 @@ const CreateOrderPage = () => {
                 return PFS_HELPERS.validateForm(selectedFactoryId, departmentId);
             case "STM":
                 return STM_HELPERS.validateForm(selectedFactoryId, departmentId, selectedFactorySectionId, selectedMachineId, srcFactoryId);
-            // case "MTS":
-            //     return MTS_HELPERS.validateForm(selectedFactoryId, selectedFactorySectionId, srcMachineId, destFactoryId, departmentId);
+           
             default:
                 return false;
         }
@@ -354,23 +305,6 @@ const CreateOrderPage = () => {
 
         loadParts();
     }, []);
-
-    // Reset order-type specific fields when orderType changes
-    useEffect(() => {
-        if (!isOrderStarted) {
-            console.log(`[DEBUG] BEFORE reset - srcMachineId: ${srcMachineId}, orderType: ${orderType}`);
-            // Reset fields that are specific to certain order types
-            setSelectedFactoryId(-1);
-            setSelectedFactorySectionId(-1);
-            setSelectedMachineId(-1);
-            setSrcFactoryId(-1);
-            console.log(`[DEBUG] About to reset srcMachineId from ${srcMachineId} to -1 due to orderType change: ${orderType}`);
-            setSrcMachineId(-1);
-            // setDestFactoryId(-1); // Commented out for MTS
-            setDepartmentId(-1);
-            console.log(`[DEBUG] Reset form fields due to orderType change: ${orderType}`);
-        }
-    }, [orderType]); // Only run when orderType changes
 
     // Load storage parts when STM is selected and source factory is chosen
     useEffect(() => {
@@ -448,6 +382,7 @@ const CreateOrderPage = () => {
         setPartId(-1);
         setIsSampleSentToOffice(false);
         setNote('');
+        setSelectedPartOption(null);
     };
 
 
@@ -458,10 +393,7 @@ const CreateOrderPage = () => {
             if (!isOrderFormComplete) {
                 // Debug logging for form validation
                 console.log(`[DEBUG] Form validation failed for orderType: ${orderType}`);
-                // Commented out MTS validation logging
-                // if (orderType === "MTS") {
-                //     console.log(`[DEBUG] MTS validation - selectedFactoryId: ${selectedFactoryId}, selectedFactorySectionId: ${selectedFactorySectionId}, srcMachineId: ${srcMachineId}, destFactoryId: ${destFactoryId}, departmentId: ${departmentId}`);
-                // }
+                
                 toast.error("Please fill out all required fields");
                 return;
             }
@@ -489,24 +421,20 @@ const CreateOrderPage = () => {
                 order_note: description,
                 created_by_user_id: createdById,
                 department_id: departmentId,
-                factory_id: selectedFactoryId, // orderType === "MTS" ? destFactoryId : selectedFactoryId,
+                factory_id: selectedFactoryId,
                 factory_section_id: selectedFactorySectionId,
-                machine_id: orderType === "MTS" ? srcMachineId : selectedMachineId,
-                machine_name: orderType === "MTS" ? selectedSrcMachineName : selectedMachineName,
+                machine_id: selectedMachineId,
+                machine_name: selectedMachineName,
                 current_status_id: statusId,
                 order_type: orderType!,
-                marked_inactive: false, // Machine status management removed from create order
-                unstable_type: null,
+                marked_inactive: markAsInactive,
+                unstable_type: unstableType || null,
                 src_factory: undefined,
-                src_machine: undefined,
             };
             
 
             
-            // Debug logging for order data (MTS commented out)
-            // if (orderType === "MTS") {
-            //     console.log(`[DEBUG] Creating MTS order with factory_id: ${orderData.factory_id} (destFactoryId: ${destFactoryId})`);
-            // }
+           
             setTempOrderDetails(orderData);
             setShowPartForm(true); // This triggers the scroll due to useEffect
             setIsOrderStarted(true);
@@ -564,9 +492,7 @@ const CreateOrderPage = () => {
             case "STM":
                 validationResult = STM_HELPERS.validatePart(partId, qty, orderedParts, storageParts);
                 break;
-            // case "MTS":
-            //     validationResult = MTS_HELPERS.validatePart(partId, qty, orderedParts, machineParts);
-            //     break;
+            
             default:
                 validationResult = { isValid: false, error: `Unknown order type: ${orderType}` };
         }
@@ -602,8 +528,6 @@ const CreateOrderPage = () => {
                 return await PFS_HELPERS.createOrder(tempOrderDetails);
             case "STM":
                 return await STM_HELPERS.createOrder(tempOrderDetails, srcFactoryId);
-            // case "MTS":
-            //     return await MTS_HELPERS.createOrder(tempOrderDetails, selectedFactoryId, selectedFactorySectionId, srcMachineId);
             default:
                 throw new Error(`Unknown order type: ${orderType}`);
         }
@@ -624,10 +548,9 @@ const CreateOrderPage = () => {
         // Update tempOrderDetails with current state values before creating order
         const updatedOrderDetails = {
             ...tempOrderDetails,
-            marked_inactive: false, // Machine status management removed from create order
-            unstable_type: null,
+            marked_inactive: markAsInactive,
+            unstable_type: unstableType || null,
             src_factory: undefined,
-            src_machine: undefined,
         };
         
         try {
@@ -660,35 +583,7 @@ const CreateOrderPage = () => {
                 }
             }
 
-            // Post-processing AFTER all parts are inserted (once per order, not per part)
-
-            // if (orderType === "PFM" || orderType === "STM" || orderType === "MTS") {
-            //     // Debug logging for factory IDs
-                
-            //     const result = await (orderType === "PFM" 
-            //         ? processPFMPostOrderTasks(orderedParts, selectedMachineId, selectedFactoryId, markAsInactive)
-            //         : orderType === "STM" 
-            //         ? processSTMPostOrderTasks(orderedParts, selectedMachineId, srcFactoryId, markAsInactive)
-            //         : processMTSPostOrderTasks(orderedParts, srcMachineId, destFactoryId, markAsInactive)
-            //     );
-                
-            //     if (result?.success) {
-            //         if (markAsInactive) {
-            //             toast.success("Machine marked as inactive");
-            //         } else {
-            //             toast.success(`Added ${orderedParts.length} parts to defective parts`);
-            //         }
-            //     } else {
-            //         result?.errors.forEach(error => toast.error(error));
-            //     }
-            // }
-            
-            //  else if (orderType === "PFS") {
-            //     const result = await processPFSPostOrderTasks();
-            //     if (!result.success) {
-            //         result.errors.forEach(error => toast.error(error));
-            //     }
-            // }
+           
 
             // Post-order creation tasks (keeping original logic)
             setShowPartForm(false);
@@ -703,16 +598,12 @@ const CreateOrderPage = () => {
     };
     
     const handleCancelOrder = () => {
-        console.log(`[DEBUG] handleCancelOrder called - srcMachineId before reset: ${srcMachineId}`);
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
         setOrderType("");
         setDescription('')
         // Reset order-level settings when canceling
         setTempOrderDetails(null);
-        // Reset MTS-specific fields (commented out)
-        // setDestFactoryId(-1);
-        // setSrcMachineId(-1);
         setSrcFactoryId(-1);
         console.log(`[DEBUG] handleCancelOrder completed`);
     };
@@ -788,30 +679,6 @@ const CreateOrderPage = () => {
         loadMachines();
     }, [selectedFactorySectionId]);
 
-
-
-
-
-    // MTS-specific useEffect hook for loading machine parts when source machine is selected
-    useEffect(() => {
-        if (srcMachineId !== -1 && orderType === "MTS") {
-            const loadMachineParts = async () => {
-                try {
-                    const parts = await fetchMachineParts(srcMachineId);
-                    setMachineParts(parts);
-                    console.log("Loaded machine parts for machine ID:", srcMachineId, parts);
-                } catch (error) {
-                    console.error("Error loading machine parts:", error);
-                    toast.error("Failed to load machine parts");
-                    setMachineParts([]);
-                }
-            };
-            loadMachineParts();
-        } else {
-            setMachineParts([]);
-        }
-    }, [srcMachineId, orderType]);
-
     useEffect(() => {
         if (showPartForm && partsSectionRef.current) {
             partsSectionRef.current.scrollIntoView({ behavior: 'smooth' }); // Auto-scroll to the parts section
@@ -821,13 +688,19 @@ const CreateOrderPage = () => {
     // Parts are now loaded once on component mount via useEffect
 
     const handlePartCreated = (newPart: Part) => {
+        const newOption = {
+            value: newPart,
+            label: `${newPart.name} (${newPart.unit || 'units'})`,
+            isDisabled: orderedParts.some((p) => p.part_id === newPart.id),
+        };
 
+        setAllPartOptions((prev) => [newOption, ...prev]);
+        setSelectedPartOption(newOption);
         handleSelectPart(newPart);
         
-        // Close the dialog after a short delay to show the success state
         setTimeout(() => {
             setIsAddPartDialogOpen(false);
-        }, 2000); // Wait 2 seconds to show the success animation
+        }, 2000);
         
         console.log('New part created and selected:', newPart);
     };
@@ -872,6 +745,7 @@ const CreateOrderPage = () => {
 
     // Simpler approach - just load more parts initially
     const [allPartOptions, setAllPartOptions] = useState<any[]>([]);
+    const [selectedPartOption, setSelectedPartOption] = useState<any | null>(null);
     const [isLoadingMoreParts, setIsLoadingMoreParts] = useState(false);
 
     // Load initial parts when component mounts
@@ -1197,124 +1071,6 @@ const CreateOrderPage = () => {
                                     </>
     );
 
-    // Temporarily commented out MTS form
-    /* const renderMTSForm = () => (
-        <>
-            <div>
-                <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
-                <Input
-                    id="req_num"
-                    value={reqNum}
-                    className="mt-1"
-                    placeholder="Enter requisition number (optional)"
-                    onChange={e => setReqNum(e.target.value)}
-                    onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
-                    disabled={isOrderStarted}
-                />
-            </div>
-            <div>
-                <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
-                    <SelectTrigger className="mt-1">
-                        <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {departments.map((dept) => (
-                            <SelectItem key={dept.id} value={dept.id.toString()}>
-                                {dept.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label htmlFor="srcFactory" className="text-sm font-medium">Source Factory</Label>
-                <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
-                    <SelectTrigger className="mt-1">
-                        <SelectValue>{selectedFactoryName}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {factories.map((factory) => (
-                            <SelectItem key={factory.id} value={factory.id.toString()}>
-                                {factory.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label htmlFor="srcFactorySection" className="text-sm font-medium">Source Factory Section</Label>
-                <Select
-                    onValueChange={(value) => setSelectedFactorySectionId(Number(value))}
-                    disabled={isOrderStarted || selectedFactoryId === -1}
-                >
-                    <SelectTrigger className="mt-1">
-                        <SelectValue>{selectedFactorySectionName}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {factorySections.map((section) => (
-                            <SelectItem key={section.id} value={section.id.toString()}>
-                                {section.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label htmlFor="srcMachine" className="text-sm font-medium">Source Machine</Label>
-                <Select
-                    onValueChange={(value) => {
-                        console.log(`[DEBUG] Source machine dropdown changed to: ${value}`);
-                        setSrcMachineId(Number(value));
-                    }}
-                    disabled={isOrderStarted || selectedFactorySectionId === -1}
-                >
-                    <SelectTrigger className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                        <SelectValue>
-                            {srcMachineId !== -1
-                                ? machines.find(m => m.id === srcMachineId)?.name
-                                : "Select Source Machine"}
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {machines
-                            .sort((a, b) => a.id - b.id)
-                            .map((machine) => (
-                                <SelectItem key={machine.id} value={machine.id.toString()}>
-                                    {machine.name}
-                                </SelectItem>
-                            ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label htmlFor="destFactory" className="text-sm font-medium">Destination Factory (Storage)</Label>
-                <Select onValueChange={(value) => setDestFactoryId(Number(value))} disabled={isOrderStarted}>
-                    <SelectTrigger className="mt-1">
-                        <SelectValue>{selectedDestFactoryName}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {factories.map((factory) => (
-                            <SelectItem key={factory.id} value={factory.id.toString()}>
-                                {factory.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
-                <Textarea
-                    id="description"
-                    value={description}
-                    className="mt-1 min-h-20"
-                    onChange={e => setDescription(e.target.value)}
-                    disabled={isOrderStarted}
-                    placeholder="Enter order description (optional)"
-                />
-                                        </div>
-                                    </>
-    ); */
 
     return (
         <>
@@ -1369,10 +1125,7 @@ const CreateOrderPage = () => {
                                 {/* ============================================================================ */}
                                 {orderType === "STM" && renderSTMForm()}
 
-                                {/* ============================================================================ */}
-                                {/* MTS ORDER FORM */}
-                                {/* ============================================================================ */}
-                                {/* {orderType === "MTS" && renderMTSForm()} */}
+                               
 
                             </div>
                         </CardContent>
@@ -1445,8 +1198,6 @@ const CreateOrderPage = () => {
                                                             return "Storage Order";
                                                         case "STM":
                                                             return `From: ${selectedSrcFactoryName} → ${selectedFactorySectionName} - ${selectedMachineName}`;
-                                                        // case "MTS":
-                                                        //     return `From: ${selectedFactoryName} - ${selectedSrcMachineName} → ${selectedDestFactoryName}`;
                                                         default:
                                                             return "Unknown Order Type";
                                                     }
@@ -1516,54 +1267,13 @@ const CreateOrderPage = () => {
                                                         isDisabled={srcFactoryId === -1}
                                                         isLoading={isLoadingMoreParts}
                                                     />
-                                                ) : orderType === "MTS" ? (
-                                                    // MTS Order - Show machine parts with quantities
-                                                    <AsyncSelect
-                                                        id="partId"
-                                                        cacheOptions
-                                                        defaultOptions={machineParts.map(machinePart => ({
-                                                            value: machinePart.parts,
-                                                            label: `${machinePart.parts.name} (Available: ${machinePart.qty} ${machinePart.parts.unit || 'units'})`,
-                                                            isDisabled: orderedParts.some((p) => p.part_id === machinePart.part_id),
-                                                        }))}
-                                                        loadOptions={async (inputValue: string) => {
-                                                            if (!inputValue) {
-                                                                return machineParts.map(machinePart => ({
-                                                                    value: machinePart.parts,
-                                                                    label: `${machinePart.parts.name} (Available: ${machinePart.qty} ${machinePart.parts.unit || 'units'})`,
-                                                                    isDisabled: orderedParts.some((p) => p.part_id === machinePart.part_id),
-                                                                }));
-                                                            }
-                                                            
-                                                            // Filter machine parts by name
-                                                            const filteredMachineParts = machineParts.filter(machinePart =>
-                                                                machinePart.parts.name.toLowerCase().includes(inputValue.toLowerCase())
-                                                            );
-                                                            
-                                                            return filteredMachineParts
-                                                                .sort((a, b) => a.parts.name.localeCompare(b.parts.name))
-                                                                .map((machinePart) => ({
-                                                                    value: machinePart.parts,
-                                                                    label: `${machinePart.parts.name} (Available: ${machinePart.qty} ${machinePart.parts.unit || 'units'})`,
-                                                                    isDisabled: orderedParts.some((p) => p.part_id === machinePart.part_id),
-                                                                }));
-                                                        }}
-                                                        onChange={(selectedOption) => {
-                                                            if (!tempOrderDetails) return;
-                                                            handleSelectPart(selectedOption?.value);
-                                                        }}
-                                                        placeholder={srcMachineId === -1 ? "Select source machine first" : "Search or Select a Machine Part"}
-                                                        className="mt-1"
-                                                        isSearchable
-                                                        isDisabled={srcMachineId === -1}
-                                                        isLoading={isLoadingMoreParts}
-                                                    />
                                                 ) : (
                                                     // Regular Orders - Show all parts
                                                     <AsyncSelect
                                                         id="partId"
                                                         cacheOptions
                                                         defaultOptions={allPartOptions}
+                                                        value={selectedPartOption}
                                                         loadOptions={async (inputValue: string) => {
                                                             if (!inputValue) {
                                                                 return allPartOptions.map(option => ({
@@ -1584,6 +1294,7 @@ const CreateOrderPage = () => {
                                                         onChange={(selectedOption) => {
                                                             if (!tempOrderDetails) return;
                                                             handleSelectPart(selectedOption?.value);
+                                                            setSelectedPartOption(selectedOption);
                                                         }}
                                                         placeholder="Search or Select a Part"
                                                         className="mt-1"
@@ -1592,24 +1303,7 @@ const CreateOrderPage = () => {
                                                     />
                                                 )}
                                                 
-                                                <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
-                                                    <DialogTrigger asChild>
-                                                        <Button
-                                                            size="sm"
-                                                            className="mt-2 w-full bg-blue-950"
-                                                            disabled={!addPartEnabled}
-                                                        >
-                                                            Create New Part
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="max-w-2xl">
-                                                        <AddPartPopup 
-                                                            addPartEnabled={addPartEnabled}
-                                                            onSuccess={handlePartCreated}
-                                                            showPostAddOptions={true}
-                                                        />
-                                                    </DialogContent>
-                                                </Dialog>
+                                                
                                                                                             
                                             </div>
 
@@ -1668,7 +1362,38 @@ const CreateOrderPage = () => {
                                                 </Label>
                                             </div>
 
+                                            {/* Mark as Inactive slider */}
+                                            {orderType === "PFM" && (
+                                                <div 
+                                                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                                                    onClick={handleOpenMachineUnstabilityDialog}
+                                                >
+                                                    <div className="space-y-1">
+                                                        <Label className="text-sm font-medium cursor-pointer">
+                                                            Mark Machine as Inactive
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {markAsInactive ? 'Machine will be marked inactive' : 'Machine will continue running'}
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={markAsInactive}
+                                                        onCheckedChange={() => {}} // Disabled - handled by click on container
+                                                        className="pointer-events-none" // Prevent direct clicking
+                                                    />
+                                                </div>
+                                            )}
 
+                                            {/* Show unstable type if machine is not marked as inactive */}
+                                            {orderType === "PFM" && !markAsInactive && unstableType && (
+                                                <div className="text-sm text-muted-foreground bg-orange-50 p-3 rounded-lg border border-orange-200">
+                                                    <span className="font-medium">Machine will continue running with:</span>
+                                                    <span className="ml-1 font-semibold text-orange-600">
+                                                        {unstableType === 'defective' ? 'Defective Parts' :
+                                                         unstableType === 'less' ? 'Fewer Parts' : unstableType}
+                                                    </span>
+                                                </div>
+                                            )}
 
                                             {/* Note */}
                                             <div>
@@ -1692,6 +1417,33 @@ const CreateOrderPage = () => {
                                                 <CirclePlus className="h-4 w-4" />
                                                 Add Part
                                             </Button>
+
+                                            {/* Divider OR */}
+                                            <div className="flex items-center my-3">
+                                                <div className="flex-grow border-t border-gray-200"></div>
+                                                <span className="mx-2 text-xs text-muted-foreground">OR</span>
+                                                <div className="flex-grow border-t border-gray-200"></div>
+                                            </div>
+
+                                            {/* Create New Part Button */}
+                                            <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        className="w-full bg-blue-950"
+                                                        disabled={!addPartEnabled}
+                                                    >
+                                                        Create New Part
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-2xl">
+                                                    <AddPartPopup 
+                                                        addPartEnabled={addPartEnabled}
+                                                        onSuccess={handlePartCreated}
+                                                        showPostAddOptions={true}
+                                                    />
+                                                </DialogContent>
+                                            </Dialog>
                                         </div>
                                     )}
                                 </div>
@@ -1815,6 +1567,21 @@ const CreateOrderPage = () => {
 
 
 
+            {/* Machine Instability Form Dialog */}
+            <MachineUnstabilityForm
+                isOpen={showMachineUnstabilityDialog}
+                onOpenChange={setShowMachineUnstabilityDialog}
+                unstableType={unstableType}
+                onUnstableTypeChange={handleMachineUnstabilitySelection}
+                onMarkInactiveInstead={() => {
+                    setMarkAsInactive(true);
+                    setUnstableType('');
+                    setShowMachineUnstabilityDialog(false);
+                }}
+                showMarkInactiveOption={true}
+                title="How will you keep the machine running?"
+                description="Since you're not marking the machine as inactive, please specify how it will continue operating."
+            />
 
         </>
     );

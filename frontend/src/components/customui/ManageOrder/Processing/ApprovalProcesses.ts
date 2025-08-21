@@ -3,7 +3,7 @@ import { reduceMachinePartQty, addDefectiveQuantity, increaseMachinePartQty } fr
 import { setMachineIsRunningById } from '@/services/MachineServices';
 import { increaseStoragePartQty, reduceStoragePartQty } from '@/services/StorageService';
 import { fetchOrderedPartsByOrderID } from '@/services/OrderedPartsService';
-import { createLoanTransfer } from '@/services/LoanTransferService';
+
 import { Order, OrderedPart } from '@/types';
 
 /**
@@ -30,9 +30,7 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                     order.machine_id,
                     order.factory_id,
                     order.marked_inactive ?? true,
-                    order.unstable_type,
-                    order.src_machine,
-                    order.src_factory
+                    order.unstable_type
                 );
 
             case "PFS":
@@ -46,13 +44,6 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                     order.marked_inactive ?? false
                 );
 
-            case "MTS":
-                return await handleMTSApproval(
-                    orderedParts,
-                    order.src_machine || order.machine_id,
-                    order.factory_id,
-                    order.marked_inactive ?? false
-                );
 
             default:
                 console.log(`Unknown order type: ${order.order_type}`);
@@ -73,9 +64,7 @@ export const handlePFMApproval = async (
     machine_id: number,
     factory_id: number,
     marked_inactive: boolean,
-    unstable_type?: string | null,
-    src_machine?: number | null,
-    src_factory?: number | null
+    unstable_type?: string | null
 ): Promise<{ success: boolean; errors: string[] }> => {
     const errors: string[] = [];
 
@@ -107,45 +96,7 @@ export const handlePFMApproval = async (
                     }
                     break;
                 
-                case 'borrowed':
-                    // Borrowing parts: create loan transfers for each part
-                    // If src_machine exists, borrow from machine; otherwise borrow from storage (src_factory)
-                    if (!src_machine && !src_factory) {
-                        throw new Error('Borrowing source information is missing - need either src_machine or src_factory');
-                    }
 
-                    for (const part of orderedParts) {
-                        try {
-                            if (src_machine) {
-                                // Create loan transfer from machine to machine
-                                await createLoanTransfer({
-                                    part_id: part.part_id,
-                                    qty: part.qty,
-                                    is_completed: false,
-                                    completed_at: null,
-                                    borrowed_factory_id: null,
-                                    borrowed_machine_id: src_machine,
-                                    factory_id: factory_id,
-                                    machine_id: machine_id,
-                                });
-                            } else if (src_factory) {
-                                // Create loan transfer from storage to machine
-                                await createLoanTransfer({
-                                    part_id: part.part_id,
-                                    qty: part.qty,
-                                    is_completed: false,
-                                    completed_at: null,
-                                    borrowed_factory_id: src_factory,
-                                    borrowed_machine_id: null,
-                                    factory_id: factory_id,
-                                    machine_id: machine_id,
-                                });
-                            }
-                        } catch (loanError) {
-                            errors.push(`Failed to create loan transfer for part ${part.part_id}: ${loanError}`);
-                        }
-                    }
-                    break;
                 
                 default:
                     // Fallback to standard process if unstable_type is not recognized
@@ -218,33 +169,4 @@ export const handleSTMApproval = async (
     }
 };
 
-/**
- * Handles the MTS (Machine to Storage) approval process
- * Transfers parts from machine to storage and handles machine status
- */
-export const handleMTSApproval = async (
-    orderedParts: OrderedPart[],
-    src_machine_id: number,
-    dest_factory_id: number,
-    marked_inactive: boolean
-): Promise<{ success: boolean; errors: string[] }> => {
-    const errors: string[] = [];
 
-    try {
-        // Handle machine status based on marked_inactive
-        if (marked_inactive) {
-            await setMachineIsRunningById(src_machine_id, false);
-        }
-
-        // Transfer parts from machine to storage
-        for (const part of orderedParts) {
-            await reduceMachinePartQty(src_machine_id, part.part_id, part.qty);
-            await increaseStoragePartQty(part.part_id, dest_factory_id, part.qty);
-        }
-
-        return { success: true, errors };
-    } catch (error) {
-        console.error("Error in MTS approval processing:", error);
-        return { success: false, errors: [`MTS processing error: ${error}`] };
-    }
-};
