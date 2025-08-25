@@ -118,6 +118,29 @@ export const fetchAllMachines = async (
     return data as unknown as Machine[];  
 };
 
+// New optimized function specifically for dropdowns - only fetches essential data
+export const fetchAllMachineIdNames = async (
+    factorySectionId?: number | undefined,
+) => {
+    let queryBuilder = supabase_client
+        .from('machines')
+        .select('id, name'); // Only fetch essential data for dropdown
+
+    // Apply filter if factorySectionId is provided
+    if (factorySectionId !== undefined && factorySectionId !== -1) {
+        queryBuilder = queryBuilder.eq('factory_section_id', factorySectionId);
+    }
+
+    const { data, error } = await queryBuilder;
+
+    if (error) {
+        console.error('Error fetching machine id/names:', error.message);
+        return []; 
+    }
+
+    return data as { id: number; name: string }[];
+};
+
 
 export const fetchAllMachinesEnriched = async (factorySectionId?: number | undefined) => {
     try {
@@ -171,7 +194,7 @@ export const fetchMachineById = async (machineId: number) => {
         return null;
     }
 
-    return data as Machine;
+    return data as unknown as Machine;
 };
 
 export const setMachineIsRunningById = async (machineId: number, isRunning: boolean) => {
@@ -187,7 +210,7 @@ export const setMachineIsRunningById = async (machineId: number, isRunning: bool
         return null;
     }
     // toast.success('Machine status updated successfully!'); // Optional: Show success message
-    return data;
+    return data as unknown as Machine;
 };
 
 export const fetchMetricRunningMachines = async () => {

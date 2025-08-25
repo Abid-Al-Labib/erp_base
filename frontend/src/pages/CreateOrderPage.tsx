@@ -25,7 +25,6 @@ import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts, searchPartsByName, fetchPageParts } from "@/services/PartsService";
 import { Part, StoragePart } from "@/types"
 import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
-import { fetchMachineParts } from "@/services/MachinePartsService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
 import MachineUnstabilityForm, { UnstableType } from "@/components/customui/MachineUnstabilityForm"
@@ -1430,7 +1429,7 @@ const CreateOrderPage = () => {
                                                 <DialogTrigger asChild>
                                                     <Button
                                                         size="sm"
-                                                        className="w-full bg-blue-950"
+                                                        className="w-full bg-white-950 border-blue-950 border-2 text-blue-950 hover:bg-blue-950 hover:text-white"
                                                         disabled={!addPartEnabled}
                                                     >
                                                         Create New Part
@@ -1578,7 +1577,6 @@ const CreateOrderPage = () => {
                     setUnstableType('');
                     setShowMachineUnstabilityDialog(false);
                 }}
-                showMarkInactiveOption={true}
                 title="How will you keep the machine running?"
                 description="Since you're not marking the machine as inactive, please specify how it will continue operating."
             />

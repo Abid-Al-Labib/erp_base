@@ -235,14 +235,7 @@ const handleOrderManagement = async () => {
             This is a list of parts that were ordered, you can complete actions on each ordered part.
           </CardDescription>
         </div>
-      </CardHeader>
-      {(loadingTable===true)? (
-                  <div className='animate-spin flex flex-row justify-center p-5'>
-                      <Loader2 />
-                  </div>
-        ):
-        <CardContent>
-        <div className="flex justify-end gap-2 mb-2">
+        <div className="flex flex-wrap justify-end items-center gap-2">
           {showPendingOrderApproveButton(order.statuses.name,false) && !orderedParts.every(part => part.approved_pending_order) && (
             <Button disabled={loadingTableButtons} onClick={()=>setIsApprovePendingDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all pending parts"}</Button>
           )}
@@ -255,19 +248,20 @@ const handleOrderManagement = async () => {
           {showAddPartButton(order.statuses.name) && (
             <Button className="bg-blue-700" disabled={loadingAddPart} onClick={()=>setIsAddPartDialogOpen(true)}>{loadingAddPart? "Adding...": "Add Part"}</Button>
           )}
-          {
-            showAdvanceButton && 
-              (
-                <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
-              )
-            
-          }
-
-          {
-            showRevertButton && 
+          {showAdvanceButton && (
+            <Button disabled={loadingTableButtons} className="bg-green-700" onClick={()=>setIsAdvanceDialogOpen(true)}><Flag/>Advance</Button>
+          )}
+          {showRevertButton && (
             <Button disabled={loadingTableButtons} className="bg-orange-600" onClick={()=>setIsRevertDialogOpen(true)}><FlagOff/>Revert to Quotation</Button>
-          }
+          )}
         </div>
+      </CardHeader>
+      {(loadingTable===true)? (
+                  <div className='animate-spin flex flex-row justify-center p-5'>
+                      <Loader2 />
+                  </div>
+        ):
+        <CardContent>
         <Table>
         <TableHeader>
         <TableRow>

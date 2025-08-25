@@ -112,7 +112,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                                 <span className="font-medium">Status:</span>
                                 <Badge 
                                     variant="secondary" 
-                                    className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+                                    className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-gray-800'}
                                 >
                                     {machine.is_running ? "Active" : "Inactive"}
                                 </Badge>

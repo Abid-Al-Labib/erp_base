@@ -1,23 +1,21 @@
 // MachinePage.tsx
-import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
 import { fetchMachineParts } from "@/services/MachinePartsService";
-import { fetchMachineById, setMachineIsRunningById, fetchAllMachines } from "@/services/MachineServices";
+import { fetchMachineById, fetchAllMachineIdNames } from "@/services/MachineServices";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import MachinePartsTable from "@/components/customui/MachinePartsTable";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Machine, Order, MachinePart } from "@/types";
+import { Machine, MachinePart } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
-import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AllMachinesStatus from "@/components/customui/AllMachineStatus";
+import RunningOrders from "@/components/customui/RunningOrders";
 
 const MachinePartsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,6 +25,11 @@ const MachinePartsPage = () => {
   const [factories, setFactories] = useState<{ id: number; name: string }[]>([]);
   const [factorySections, setFactorySections] = useState<{ id: number; name: string }[]>([]);
   const [machines, setMachines] = useState<{ id: number; name: string }[]>([]);
+  
+  // Add loading states for better UX
+  const [machinesLoading, setMachinesLoading] = useState(false);
+  const [sectionsLoading, setSectionsLoading] = useState(false);
+  const [factoryLoading, setFactoryLoading] = useState(false);
   
   // Initialize state from URL parameters
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(() => {
@@ -43,8 +46,63 @@ const MachinePartsPage = () => {
   });
   
   const [selectedMachine, setSelectedMachine] = useState<Machine>();
-  const [runningOrders, setRunningOrders] = useState<Order[]>([]); // State for running orders
 
+  // Add simple caching for machines to prevent refetching
+  const machinesCache = useRef<Map<number, { id: number; name: string }[]>>(new Map());
+  const sectionsCache = useRef<Map<number, { id: number; name: string }[]>>(new Map());
+  
+  // Function to clear cache
+  const clearCache = useCallback(() => {
+    machinesCache.current.clear();
+    sectionsCache.current.clear();
+  }, []);
+  
+  // Memoize sorted machines to prevent unnecessary re-sorting
+  const sortedMachines = useMemo(() => {
+    return [...machines].sort((a, b) => a.id - b.id);
+  }, [machines]);
+  
+  // Load machines immediately without debouncing for better performance
+  const loadMachines = useCallback(async (factorySectionId: number | undefined) => {
+    if (factorySectionId !== undefined && factorySectionId !== -1) {
+      try {
+        // Check cache first
+        if (machinesCache.current.has(factorySectionId)) {
+          const cachedMachines = machinesCache.current.get(factorySectionId);
+          if (cachedMachines) {
+            setMachines(cachedMachines);
+            if (!searchParams.get('machine')) {
+              setSelectedMachineId(undefined);
+            }
+            return;
+          }
+        }
+        
+        setMachinesLoading(true);
+        const fetchedMachines = await fetchAllMachineIdNames(factorySectionId);
+        setMachines(fetchedMachines);
+        
+        // Cache the result
+        machinesCache.current.set(factorySectionId, fetchedMachines);
+        
+        // Only reset machine selection if not loading from URL
+        if (!searchParams.get('machine')) {
+          setSelectedMachineId(undefined);
+        }
+      } catch (error) {
+        toast.error("Failed to load machines");
+      } finally {
+        setMachinesLoading(false);
+      }
+    } else {
+      setMachines([]);
+      setMachinesLoading(false);
+      if (!searchParams.get('machine')) {
+        setSelectedMachineId(undefined);
+      }
+    }
+  }, [searchParams]);
+  
   // Update URL parameters when selections change
   const updateUrlParams = useCallback((factory?: number, section?: number, machine?: number) => {
     setSearchParams(prev => {
@@ -79,9 +137,8 @@ const MachinePartsPage = () => {
     try {
       setLoading(true);
 
-      // Reset the machine parts, running orders, and selected machine to blank or initial states
+      // Reset the machine parts and selected machine to blank or initial states
       setMachineParts([]); // Clear machine parts
-      setRunningOrders([]); // Clear running orders
       setSelectedMachine(undefined); // Reset the selected machine
 
       // Fetch the machine details and handle null by converting to undefined
@@ -154,7 +211,7 @@ const MachinePartsPage = () => {
       const machineParam = searchParams.get('machine');
       if (selectedFactorySectionId && machineParam) {
         try {
-          const machinesList = await fetchAllMachines(selectedFactorySectionId);
+          const machinesList = await fetchAllMachineIdNames(selectedFactorySectionId);
           setMachines(machinesList);
           
           const machineId = Number(machineParam);
@@ -169,33 +226,22 @@ const MachinePartsPage = () => {
     loadMachinesFromUrl();
   }, [selectedFactorySectionId, searchParams]);
 
-  // Load running orders and machine details when selectedMachineId changes
+  // Load machine details when selectedMachineId changes
   useEffect(() => {
     const loadMachineData = async () => {
       if (!selectedMachineId) {
-        setRunningOrders([]);
         setSelectedMachine(undefined);
         return;
       }
 
       try {
-        const runningOrdersData = await fetchRunningOrdersByMachineId(selectedMachineId);
-        setRunningOrders(runningOrdersData);
-
-        if (runningOrdersData.length === 0 && selectedMachine?.is_running === false) {
-          toast.success("Machine is now running")
-          await setMachineIsRunningById(selectedMachineId, true);
-        }
-        
-
         const machine = await fetchMachineById(selectedMachineId);
         if (machine) {
           setSelectedMachine(machine);
         }
       } catch (error) {
-        console.error("Error fetching machine or running orders:", error);
+        console.error("Error fetching machine:", error);
         setSelectedMachine(undefined);
-        setRunningOrders([]);
       }
     };
 
@@ -220,6 +266,7 @@ const MachinePartsPage = () => {
     const loadFactorySections = async () => {
       if (selectedFactoryId === undefined) {
         setFactorySections([]);
+        setSectionsLoading(false);
         // Only reset section if not loading from URL
         if (!searchParams.get('section')) {
           setSelectedFactorySectionId(undefined);
@@ -227,39 +274,40 @@ const MachinePartsPage = () => {
         return;
       }
       
+      // Load factory sections immediately for better performance
       try {
+        // Check cache first
+        if (sectionsCache.current.has(selectedFactoryId)) {
+          const cachedSections = sectionsCache.current.get(selectedFactoryId);
+          if (cachedSections) {
+            setFactorySections(cachedSections);
+            setSectionsLoading(false);
+            return;
+          }
+        }
+        
+        setSectionsLoading(true);
         const fetchedSections = await fetchFactorySections(selectedFactoryId);
         setFactorySections(fetchedSections);
+        
+        // Cache the result
+        sectionsCache.current.set(selectedFactoryId, fetchedSections);
       } catch (error) {
         toast.error("Failed to load factory sections");
+      } finally {
+        setSectionsLoading(false);
       }
     };
+    
     loadFactorySections();
   }, [selectedFactoryId, searchParams]);
 
   useEffect(() => {
-    const loadMachines = async () => {
-      if (selectedFactorySectionId !== undefined && selectedFactorySectionId !== -1) {
-        try {
-          const fetchedMachines = (await fetchAllMachines(selectedFactorySectionId));
-          setMachines(fetchedMachines);
-          
-          // Only reset machine selection if not loading from URL
-          if (!searchParams.get('machine')) {
-            setSelectedMachineId(undefined);
-          }
-        } catch (error) {
-          toast.error("Failed to load machines");
-        }
-      } else {
-        setMachines([]);
-        if (!searchParams.get('machine')) {
-          setSelectedMachineId(undefined);
-        }
-      }
+    const loadMachinesEffect = async () => {
+      loadMachines(selectedFactorySectionId);
     };
-    loadMachines();
-  }, [selectedFactorySectionId, searchParams]);
+    loadMachinesEffect();
+  }, [selectedFactorySectionId, loadMachines]);
 
   useEffect(() => {
     const loadParts = async () => {
@@ -347,20 +395,25 @@ const MachinePartsPage = () => {
                       value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
                       onValueChange={async (value) => {
                         const factoryId = value === "" ? undefined : Number(value);
+                        setFactoryLoading(true);
                         setSelectedFactoryId(factoryId);
                         setSelectedFactorySectionId(undefined);
                         setSelectedMachineId(undefined);
                         setMachineParts([]);
-                        setRunningOrders([]);
+                        // clear any dependent data
                         setSelectedMachine(undefined);
                         updateUrlParams(factoryId, undefined, undefined);
+                        setFactoryLoading(false);
                       }}
+                      disabled={factoryLoading}
                     >
                       <SelectTrigger className="mt-2">
                         <SelectValue>
-                          {selectedFactoryId === undefined
-                            ? "Select a Factory"
-                            : factories.find((f) => f.id === selectedFactoryId)?.name}
+                          {factoryLoading 
+                            ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing...</div>
+                            : selectedFactoryId === undefined
+                              ? "Select a Factory"
+                              : factories.find((f) => f.id === selectedFactoryId)?.name}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -384,16 +437,19 @@ const MachinePartsPage = () => {
                           setSelectedFactorySectionId(sectionId);
                           setSelectedMachineId(undefined);
                           setMachineParts([]);
-                          setRunningOrders([]);
+                          // clear any dependent data
                           setSelectedMachine(undefined);
                           updateUrlParams(selectedFactoryId, sectionId, undefined);
                         }}
+                        disabled={sectionsLoading}
                       >
                         <SelectTrigger className="mt-2">
                           <SelectValue>
-                            {selectedFactorySectionId === undefined
-                              ? "Select a Section"
-                              : factorySections.find((s) => s.id === selectedFactorySectionId)?.name}
+                            {sectionsLoading 
+                              ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading sections...</div>
+                              : selectedFactorySectionId === undefined
+                                ? "Select a Section"
+                                : factorySections.find((s) => s.id === selectedFactorySectionId)?.name}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -414,22 +470,23 @@ const MachinePartsPage = () => {
                       <Select
                         value={selectedMachineId === undefined ? "" : selectedMachineId.toString()}
                         onValueChange={handleSelectMachine}
+                        disabled={machinesLoading}
                       >
                         <SelectTrigger className="mt-2">
                           <SelectValue>
-                            {selectedMachineId === undefined
-                              ? "Select a Machine"
-                              : machines.find((m) => m.id === selectedMachineId)?.name}
+                            {machinesLoading 
+                              ? <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading machines...</div>
+                              : selectedMachineId === undefined
+                                ? "Select a Machine"
+                                : machines.find((m) => m.id === selectedMachineId)?.name}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {machines
-                            .sort((a, b) => a.id - b.id) // Sorting machines by ID in ascending order
-                            .map((machine) => (
-                              <SelectItem key={machine.id} value={machine.id.toString()}>
-                                {machine.name}
-                              </SelectItem>
-                            ))}
+                          {sortedMachines.map((machine) => (
+                            <SelectItem key={machine.id} value={machine.id.toString()}>
+                              {machine.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -444,9 +501,8 @@ const MachinePartsPage = () => {
                       setSelectedFactorySectionId(undefined);
                       setSelectedMachineId(undefined);
                       setMachineParts([]);
-                      setRunningOrders([]);
-                      setSelectedMachine(undefined);
                       setSearchParams({}); // Clear all URL parameters
+                      clearCache(); // Clear cache on reset
                     }}
                   >
                     Reset And Show All Statuses
@@ -461,80 +517,7 @@ const MachinePartsPage = () => {
             </div>
             
             {/* Running Orders Section */}
-            <div className="flex-1"> {/* Takes remaining width */}
-                <Card className="mb-4 h-full">
-                    <CardHeader>
-                        <CardTitle>Running Orders</CardTitle>
-                        <CardDescription>A list of current running orders.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {selectedMachineId === undefined || runningOrders.length === 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[100px]">Order ID</TableHead>
-                                        <TableHead className="w-[100px]">Req #</TableHead>
-                                        <TableHead className="w-[120px]">Created At</TableHead>
-                                        <TableHead>Order Note</TableHead>
-                                        <TableHead>Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-[250px] text-muted-foreground">
-                                            {selectedMachineId === undefined ? "Select a machine to view orders" : "No running orders for this machine"}
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                        ) : (
-                            <div className="h-[293px] overflow-y-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-[100px]">Order ID</TableHead>
-                                            <TableHead className="w-[100px]">Req #</TableHead>
-                                            <TableHead className="w-[120px]">Created At</TableHead>
-                                            <TableHead>Order Note</TableHead>
-                                            <TableHead>Status</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {runningOrders.map((order) => (
-                                            <TableRow key={order.id}>
-                                                <TableCell>
-                                                    <Badge variant="secondary" className="bg-blue-100">
-                                                        <Link to={`/vieworder/${order.id}`}>{order.id}</Link>
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>{order.req_num}</TableCell>
-                                                <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
-                                                <TableCell className="max-w-[200px] truncate" title={order.order_note}>
-                                                    {order.order_note}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge
-                                                        className={
-                                                            order.statuses.name === "Parts Received"
-                                                                ? "bg-green-100"
-                                                                : order.statuses.name === "Pending"
-                                                                    ? "bg-red-100"
-                                                                    : "bg-orange-100"
-                                                        }
-                                                        variant="secondary"
-                                                    >
-                                                        {order.statuses.name}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+            <RunningOrders machine={selectedMachine} />
           </div>
 
           {

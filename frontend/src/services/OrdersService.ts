@@ -3,6 +3,7 @@ import { supabase_client } from "./SupabaseClient";
 import { convertBDTimeToUtc, isManagebleOrder, managePermission } from "./helper.ts";
 import toast from "react-hot-toast";
 import { fetchFactoriesByIds, fetchFactorySectionsByIds } from "./FactoriesService.ts";
+import { getOrderTypeLastStatusMap } from "./OrderWorkflowService.ts";
 
 
 export const fetchOrders = async ({
@@ -375,9 +376,11 @@ export const insertOrderStorageSTM = async (
 }
 
 
+
 export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
-    const { data, error } = await supabase_client.from('orders').
-        select(
+    const { data, error } = await supabase_client
+        .from('orders')
+        .select(
             `
             id,
             req_num,
@@ -397,14 +400,30 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
             factory_sections(*),
             factories(*),
             machines(*)
-        `
-    ).eq('machine_id', machine_id)
-        .neq('current_status_id', 8)
+            `
+        )
+        .eq('machine_id', machine_id);
+
     if (error) {
-        toast.error(error.message)
+        toast.error(error.message);
+        return [] as unknown as Order[];
     }
-    console.log("Returned Current Orders of",machine_id, data)
-    return data as unknown as Order[];
+
+    // Filter out completed orders by comparing to last workflow status for each type
+    const orders = (data || []) as Array<any>;
+    if (orders.length === 0) {
+        return orders as unknown as Order[];
+    }
+
+    // Get dictionary of all OrderType -> LastStatusId once, then filter using dict
+    const typeLastMap = await getOrderTypeLastStatusMap();
+    const activeOrders = orders.filter((o: any) => {
+        const lastId = (typeLastMap as any)[o.order_type];
+        if (typeof lastId !== 'number') return true; // no mapping → assume running
+        return o.current_status_id !== lastId;
+    });
+
+    return activeOrders as unknown as Order[];
 }
 
 

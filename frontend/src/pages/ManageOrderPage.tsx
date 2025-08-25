@@ -124,7 +124,7 @@ const ManageOrderPage = () => {
       <div className="mx-4 my-4">
         {/* Flex layout - 3/5 and 2/5 proportions with equal heights */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6 w-full">
-          <div className="w-full lg:w-3/6 h-[50vh]">
+          <div className="w-full lg:w-3/6 h-[45vh]">
             <OrderInfo
               order={order}
               mode="manage"
@@ -133,7 +133,7 @@ const ManageOrderPage = () => {
           
           <div className="w-full lg:w-2/6">
             {order.order_type === 'PFM' && (
-              <div className="h-[50vh]">
+              <div className="h-[45vh]">
                 <OrderMachineInfo
                   order={order}
                   mode="manage"
@@ -142,7 +142,7 @@ const ManageOrderPage = () => {
             )}
             
             {order.order_type === 'PFS' && (
-              <div className="h-[50vh]">
+              <div className="h-[45vh]">
                 <OrderStorageInfo
                   order={order}
                   mode="manage"
@@ -151,7 +151,7 @@ const ManageOrderPage = () => {
             )}
             
             {order.order_type === 'STM' && (
-              <div className="h-[50vh]">
+              <div className="h-[45vh]">
                 <OrderMachineAndStorageInfo
                   order={order}
                   mode="manage"
@@ -160,7 +160,7 @@ const ManageOrderPage = () => {
             )}
           </div>
 
-          <div className="w-full sm:w-1/6 h-[50vh]">
+          <div className="w-full sm:w-1/6 h-[45vh]">
               <StatusTracker order={order} />
           </div>
         </div>
