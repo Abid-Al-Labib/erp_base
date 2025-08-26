@@ -4,26 +4,24 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import toast from "react-hot-toast";
-import { Machine, Order } from "@/types";
-import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
+import { Factory, Machine, Order } from "@/types";
+import { fetchRunningOrdersByMachineId, fetchRunningOrdersByFactoryId } from "@/services/OrdersService";
 import { setMachineIsRunningById } from "@/services/MachineServices";
 
 type RunningOrdersProps = {
   machine?: Machine | undefined;
-  machineId?: number | undefined;
-  // future-ready: storage variants can be added later
-  storage?: unknown;
-  storageId?: number | undefined;
+  factory?: Factory | undefined;
 };
 
-const RunningOrders = ({ machine, machineId, storageId }: RunningOrdersProps) => {
+const RunningOrders = ({ machine, factory }: RunningOrdersProps) => {
   const [runningOrders, setRunningOrders] = useState<Order[]>([]);
-  const selectedMachineId = machineId ?? machine?.id;
+  const mode: 'machine' | 'factory' | 'none' = machine?.id ? 'machine' : factory?.id ? 'factory' : 'none';
+  const selectedMachineId = mode === 'machine' ? machine!.id : undefined;
+  const selectedFactoryId = mode === 'factory' ? factory!.id : undefined;
 
   useEffect(() => {
     const load = async () => {
-      // Prefer machine flow if provided
-      if (selectedMachineId) {
+      if (mode === 'machine' && selectedMachineId) {
         try {
           const orders = await fetchRunningOrdersByMachineId(selectedMachineId);
           setRunningOrders(orders);
@@ -38,17 +36,20 @@ const RunningOrders = ({ machine, machineId, storageId }: RunningOrdersProps) =>
         return;
       }
 
-      // Storage flow placeholder (to be implemented later)
-      if (storageId) {
-        setRunningOrders([]);
+      if (mode === 'factory' && selectedFactoryId) {
+        try {
+          const orders = await fetchRunningOrdersByFactoryId(selectedFactoryId);
+          setRunningOrders(orders);
+        } catch {
+          setRunningOrders([]);
+        }
         return;
       }
 
-      // No target selected
       setRunningOrders([]);
     };
     load();
-  }, [selectedMachineId, storageId, machine?.is_running]);
+  }, [mode, selectedMachineId, selectedFactoryId, machine?.is_running]);
 
   return (
     <div className="flex-1">
@@ -58,7 +59,7 @@ const RunningOrders = ({ machine, machineId, storageId }: RunningOrdersProps) =>
           <CardDescription>A list of current running orders.</CardDescription>
         </CardHeader>
         <CardContent>
-          {selectedMachineId === undefined || runningOrders.length === 0 ? (
+          {mode === 'none' || runningOrders.length === 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -72,7 +73,7 @@ const RunningOrders = ({ machine, machineId, storageId }: RunningOrdersProps) =>
               <TableBody>
                 <TableRow>
                   <TableCell colSpan={5} className="text-center h-[250px] text-muted-foreground">
-                    {selectedMachineId === undefined ? "Select a machine to view orders" : "No running orders for this machine"}
+                    {mode === 'none' ? "Select a machine or factory to view orders" : mode === 'machine' ? "No running orders for this machine" : "No running orders for this storage"}
                   </TableCell>
                 </TableRow>
               </TableBody>

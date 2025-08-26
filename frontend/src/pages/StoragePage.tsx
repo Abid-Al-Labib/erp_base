@@ -19,6 +19,8 @@ import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import AsyncSelect from 'react-select/async';
+import StorageDetails from "@/components/customui/StorageDetails";
+import RunningOrders from "@/components/customui/RunningOrders";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -250,28 +252,47 @@ const StoragePage = () => {
       <NavigationBar />
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <main className="p-4 sm:px-6 sm:py-0 mt-2">
-          {/* Factory Selection Dropdown */}
-          <div className="mb-4">
-            <Label className="mb-2">Select Factory</Label>
-            <Select
-              value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
-              onValueChange={(value) => setSelectedFactoryId(value === "" ? undefined : Number(value))}
-            >
-              <SelectTrigger className="w-[220px] mt-2">
-                <SelectValue>
-                  {selectedFactoryId === undefined ? "Select a Factory" : factories.find(f => f.id === selectedFactoryId)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {factories.map(factory => (
-                  <SelectItem key={factory.id} value={factory.id.toString()}>
-                    {factory.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Top row: Selection, Details, Running Orders */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-4 h-full mb-4">
+            {/* Storage Selection (Factory only) */}
+            <div className="flex-none min-w-72 max-w-96 w-1/6">
+              <Card className="mb-4 h-full">
+                <CardHeader>
+                  <CardTitle>Storage Selection</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <Label className="mb-2">Select Factory</Label>
+                    <Select
+                      value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
+                      onValueChange={(value) => setSelectedFactoryId(value === "" ? undefined : Number(value))}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue>
+                          {selectedFactoryId === undefined ? "Select a Factory" : factories.find(f => f.id === selectedFactoryId)?.name}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {factories.map(factory => (
+                          <SelectItem key={factory.id} value={factory.id.toString()}>
+                            {factory.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Storage Details */}
+            <StorageDetails factoryName={factories.find(f => f.id === selectedFactoryId)?.name} totalItems={totalItems} />
+
+            {/* Running Orders for storage (by factory) */}
+            <RunningOrders factory={factories.find(f => f.id === selectedFactoryId)} />
           </div>
 
+          {/* Bottom: Storage/Damaged parts table and controls */}
           {selectedFactoryId === undefined ? (
             <div className="text-center text-lg">Please select a factory to view parts</div>
           ) : (

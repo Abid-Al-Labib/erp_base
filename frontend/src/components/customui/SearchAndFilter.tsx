@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
@@ -29,269 +29,489 @@ import {
 } from "@/services/FactoriesService";
 import { fetchAllMachines } from "@/services/MachineServices";
 import { fetchStatuses } from "@/services/StatusesService";
+import { getOrderTypes } from "@/services/OrderWorkflowService";
 import { Factory, FactorySection, Machine } from "@/types";
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 
 interface FilterOption {
   type: string;
-  label?: string | string[];  // Can be a single string or an array of labels
+  label?: string | string[];
+  placeholder?: string;
 }
 
 interface SearchAndFilterProps {
   filterConfig?: FilterOption[];
+  onFiltersChange?: (filters: FilterState) => void;
 }
 
+interface FilterState {
+  searchType: "id" | "date";
+  searchQuery: string;
+  reqNumQuery: string;
+  selectedDate: Date | undefined;
+  dateFilterType: 1 | 2 | 3;
+  factory: Factory | null;
+  factorySection: FactorySection | null;
+  machine: Machine | null;
+  departmentId: number;
+  statusId: number;
+  orderType: string;
+  partIdQuery: string;
+  partNameQuery: string;
+}
+
+interface DropdownOption {
+  id: number;
+  name: string;
+}
+
+// ============================================================================
+// REUSABLE COMPONENTS
+// ============================================================================
+
+interface FilterDropdownProps {
+  label: string;
+  value: number;
+  onValueChange: (value: number) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+const FilterDropdown: React.FC<FilterDropdownProps> = ({
+  label,
+  value,
+  onValueChange,
+  options,
+  placeholder = "Select...",
+  disabled = false,
+}) => (
+  <div className="space-y-2">
+    <Label>{label}</Label>
+    <Select
+      value={value.toString()}
+      onValueChange={(val) => onValueChange(Number(val))}
+      disabled={disabled}
+    >
+      <SelectTrigger>
+        <SelectValue>
+          {options.find(opt => opt.id === value)?.name || placeholder}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="-1">All</SelectItem>
+        {options.map((option) => (
+          <SelectItem key={option.id} value={option.id.toString()}>
+            {option.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
+interface SearchTypeToggleProps {
+  searchType: "id" | "date";
+  onSearchTypeChange: (type: "id" | "date") => void;
+  showId: boolean;
+  showDate: boolean;
+}
+
+const SearchTypeToggle: React.FC<SearchTypeToggleProps> = ({
+  searchType,
+  onSearchTypeChange,
+  showId,
+  showDate,
+}) => (
+  <div className="flex gap-2">
+    {showId && (
+      <Button
+        variant={searchType === "id" ? "default" : "outline"}
+        onClick={() => onSearchTypeChange("id")}
+        className="flex-1"
+      >
+        Search by ID
+      </Button>
+    )}
+    {showDate && (
+      <Button
+        variant={searchType === "date" ? "default" : "outline"}
+        onClick={() => onSearchTypeChange("date")}
+        className="flex-1"
+      >
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        Search by Date
+      </Button>
+    )}
+  </div>
+);
+
+interface DateFilterProps {
+  selectedDate: Date | undefined;
+  onDateChange: (date: Date | undefined) => void;
+  dateFilterType: 1 | 2 | 3;
+  onDateFilterTypeChange: (type: 1 | 2 | 3) => void;
+}
+
+const DateFilter: React.FC<DateFilterProps> = ({
+  selectedDate,
+  onDateChange,
+  dateFilterType,
+  onDateFilterTypeChange,
+}) => (
+  <div className="space-y-4">
+    <Label>Select Date</Label>
+    <Calendar
+      mode="single"
+      selected={selectedDate}
+      onSelect={onDateChange}
+      className="rounded-md border"
+    />
+    
+    <div className="flex gap-2">
+      {[
+        { value: 1, label: "On" },
+        { value: 2, label: "Before" },
+        { value: 3, label: "After" }
+      ].map(({ value, label }) => (
+        <Button
+          key={value}
+          variant={dateFilterType === value ? "default" : "outline"}
+          onClick={() => onDateFilterTypeChange(value as 1 | 2 | 3)}
+          className="flex-1"
+        >
+          {label}
+        </Button>
+      ))}
+    </div>
+  </div>
+);
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
-  filterConfig,
+  filterConfig = [],
+  onFiltersChange,
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+  
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    searchType: (searchParams.get("searchType") as "id" | "date") || "id",
+    searchQuery: searchParams.get("query") || "",
+    reqNumQuery: searchParams.get("reqNum") || "",
+    selectedDate: searchParams.get("date") ? new Date(searchParams.get("date")!) : undefined,
+    dateFilterType: (searchParams.get("dateFilterType") ? Number(searchParams.get("dateFilterType")) : 1) as 1 | 2 | 3,
+    factory: null,
+    factorySection: null,
+    machine: null,
+    departmentId: searchParams.get("department") ? Number(searchParams.get("department")) : -1,
+    statusId: searchParams.get("status") ? Number(searchParams.get("status")) : -1,
+    orderType: searchParams.get("orderType") || "all",
+    partIdQuery: searchParams.get("partId") || "",
+    partNameQuery: searchParams.get("partName") || "",
+  }));
+
+  // Data states
+  const [factories, setFactories] = useState<Factory[]>([]);
+  const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [departments, setDepartments] = useState<DropdownOption[]>([]);
+  const [statuses, setStatuses] = useState<DropdownOption[]>([]);
+  const [orderTypes, setOrderTypes] = useState<{ type: string }[]>([]);
+
+  // ============================================================================
+  // HELPER FUNCTIONS
+  // ============================================================================
 
   const shouldShowFilter = (type: string) => {
-    return !filterConfig || filterConfig.some((filter) => filter.type === type);
+    return !filterConfig.length || filterConfig.some((filter) => filter.type === type);
   };
 
   const getFilterLabel = (type: string, index = 0): string => {
-    const label = filterConfig?.find(filter => filter.type === type)?.label;
-    if (Array.isArray(label)) {
-      return label[index] ?? label[0]; // Return requested index, fallback to first index if undefined
+    const filter = filterConfig.find(f => f.type === type);
+    if (!filter) return `Enter ${type}`;
+    
+    if (filter.placeholder) return filter.placeholder;
+    
+    if (Array.isArray(filter.label)) {
+      return filter.label[index] ?? filter.label[0] ?? `Enter ${type}`;
     }
-    return label ?? `Enter ${type}`; // If it's a string, return it; otherwise, use default
+    
+    return filter.label ?? `Enter ${type}`;
   };
-  
-  
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // States for filters and dropdowns
-  const [searchType, setSearchType] = useState<"id" | "date">(
-    (searchParams.get("searchType") as "id" | "date") || "id"
-  );
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
-  const [reqNumQuery, setReqNumQuery] = useState(searchParams.get("reqNum") || "");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    searchParams.get("date") ? new Date(searchParams.get("date")!) : undefined
-  );
-  const [dateFilterType, setDateFilterType] = useState<number>(
-    searchParams.get("dateFilterType") 
-      ? Number(searchParams.get("dateFilterType")) 
-      : 1
-  );
-  
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
 
-  const [factories, setFactories] = useState<Factory[]>([]);
-  const [selectedFactory, setSelectedFactory] = useState<Factory | null>(null);
-
-  const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
-  const [selectedFactorySection, setSelectedFactorySection] =useState<FactorySection | null>(null);
-
-  const [machines, setMachines] = useState<any[]>([]);
-  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
-
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [statuses, setStatuses] = useState<any[]>([]);
-
-  // Store full objects instead of just IDs
-
-  // Dropdown states
-  const [selectedMachineId, setSelectedMachineId] = useState<number>(
-    searchParams.get("machine") ? Number(searchParams.get("machine")) : -1
-  );
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number>(
-    searchParams.get("department") ? Number(searchParams.get("department")) : -1
-  );
-  const [selectedStatusId, setSelectedStatusId] = useState<number>(
-    searchParams.get("status") ? Number(searchParams.get("status")) : -1
-  );
-
-  // Order Type State (Toggle between All, Machine, Storage)
-  const [selectedOrderType, setSelectedOrderType] = useState<"all" | "Machine" | "Storage">(
-    (searchParams.get("orderType") as "all" | "Machine" | "Storage") || "all"
-  );
-
-// State for Part ID & Part Name filters
-  const [partIdQuery, setPartIdQuery] = useState<string>(searchParams.get("partId") || "");
-  const [partNameQuery, setPartNameQuery] = useState<string>(searchParams.get("partName") || "");
-
+  // Load initial data
   useEffect(() => {
-    const fetchData = async () => {
-      setFactories(await fetchFactories());
-      setDepartments(await fetchDepartments());
-      setStatuses(await fetchStatuses());
+    const fetchInitialData = async () => {
+      try {
+        const [factoriesData, departmentsData, statusesData, orderTypesData] = await Promise.all([
+          fetchFactories(),
+          fetchDepartments(),
+          fetchStatuses(),
+          getOrderTypes(),
+        ]);
+        
+        setFactories(factoriesData);
+        setDepartments(departmentsData);
+        setStatuses(statusesData);
+        setOrderTypes(orderTypesData);
+      } catch (error) {
+        console.error("Failed to fetch initial data:", error);
+      }
     };
-    fetchData();
+
+    fetchInitialData();
   }, []);
 
+  // Load factory sections when factory changes
   useEffect(() => {
-    if (selectedFactory) {
+    if (filters.factory) {
       const fetchSections = async () => {
-        const sections = await fetchFactorySections(selectedFactory.id);
-        setFactorySections(sections);
-        setSelectedFactorySection(null); // Reset selection
-        setSelectedMachineId(-1);
+        try {
+          const sections = await fetchFactorySections(filters.factory!.id);
+          setFactorySections(sections);
+          
+          // Reset dependent selections
+          setFilters(prev => ({
+            ...prev,
+            factorySection: null,
+            machine: null,
+          }));
+        } catch (error) {
+          console.error("Failed to fetch factory sections:", error);
+        }
       };
       fetchSections();
     } else {
       setFactorySections([]);
     }
-  }, [selectedFactory]);
+  }, [filters.factory]);
 
+  // Load machines when factory section changes
   useEffect(() => {
-    if (selectedFactorySection) {
-      const fetchMachinesData = async () => {
-        setMachines(await fetchAllMachines(selectedFactorySection.id));
-        setSelectedMachine(null);
+    if (filters.factorySection) {
+      const fetchMachines = async () => {
+        try {
+          const machinesData = await fetchAllMachines(filters.factorySection!.id);
+          setMachines(machinesData);
+          
+          // Reset machine selection
+          setFilters(prev => ({ ...prev, machine: null }));
+        } catch (error) {
+          console.error("Failed to fetch machines:", error);
+        }
       };
-      fetchMachinesData();
+      fetchMachines();
     } else {
       setMachines([]);
     }
-  }, [selectedFactorySection]);
+  }, [filters.factorySection]);
 
-  useEffect(() => {
-    console.log("Selected Factory:", selectedFactory);
-    console.log("Selected Factory Section:", selectedFactorySection);
-    console.log("Selected Machine:", selectedMachine);
-  }, [selectedFactory, selectedFactorySection, selectedMachine]);
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
+
+  const updateFilters = (updates: Partial<FilterState>) => {
+    setFilters(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleSearchTypeChange = (type: "id" | "date") => {
+    updateFilters({
+      searchType: type,
+      selectedDate: type === "id" ? undefined : filters.selectedDate,
+      searchQuery: type === "date" ? "" : filters.searchQuery,
+      reqNumQuery: type === "date" ? "" : filters.reqNumQuery,
+    });
+  };
+
+  const handleFactoryChange = (factoryId: string) => {
+    const factory = factories.find(f => f.id.toString() === factoryId) || null;
+    updateFilters({ factory });
+  };
+
+  const handleFactorySectionChange = (sectionId: string) => {
+    const section = factorySections.find(s => s.id.toString() === sectionId) || null;
+    updateFilters({ factorySection: section });
+  };
+
+  const handleMachineChange = (machineId: string) => {
+    const machine = machines.find(m => m.id.toString() === machineId) || null;
+    updateFilters({ machine });
+  };
 
   const handleApplyFilters = () => {
     const params = new URLSearchParams();
 
-    if (selectedFactory) params.set("factory", selectedFactory.id.toString());
-    if (selectedFactorySection) params.set("section", selectedFactorySection.id.toString());
-    if (selectedMachine) params.set("machine", selectedMachine.id.toString());
-    if (selectedDepartmentId !== -1) params.set("department", selectedDepartmentId.toString());
-    if (selectedStatusId !== -1) params.set("status", selectedStatusId.toString());
-    params.set("searchType", searchType);
-    if (searchQuery) params.set("query", searchQuery);
-    if (reqNumQuery) params.set("reqNum", reqNumQuery);
-    if (selectedOrderType !== "all") {
-      params.set("orderType", selectedOrderType);
-    }
-    if (dateFilterType !== 1) {
-      params.set("dateFilterType", dateFilterType.toString());
-    }
-    if (selectedDate) params.set("date", selectedDate.toISOString());
-
-    if (partIdQuery) params.set("partId", partIdQuery);
-    if (partNameQuery) params.set("partName", partNameQuery);
+    // Add all filter values to URL params
+    if (filters.factory) params.set("factory", filters.factory.id.toString());
+    if (filters.factorySection) params.set("section", filters.factorySection.id.toString());
+    if (filters.machine) params.set("machine", filters.machine.id.toString());
+    if (filters.departmentId !== -1) params.set("department", filters.departmentId.toString());
+    if (filters.statusId !== -1) params.set("status", filters.statusId.toString());
+    if (filters.searchQuery) params.set("query", filters.searchQuery);
+    if (filters.reqNumQuery) params.set("reqNum", filters.reqNumQuery);
+    if (filters.partIdQuery) params.set("partId", filters.partIdQuery);
+    if (filters.partNameQuery) params.set("partName", filters.partNameQuery);
+    if (filters.selectedDate) params.set("date", filters.selectedDate.toISOString());
+    if (filters.dateFilterType !== 1) params.set("dateFilterType", filters.dateFilterType.toString());
+    if (filters.orderType !== "all") params.set("orderType", filters.orderType);
+    
+    params.set("searchType", filters.searchType);
 
     setSearchParams(params);
-
-    // Call the onApplyFilters callback if provided
     
+    // Notify parent component if callback provided
+    if (onFiltersChange) {
+      onFiltersChange(filters);
+    }
+    
+    setIsOpen(false);
   };
 
   const handleResetFilters = () => {
-    setSearchQuery("");
-    setReqNumQuery("");
-    setSelectedDate(undefined);
-    setDateFilterType(1);
-    setSelectedFactory(null);
-    setSelectedFactorySection(null);
-    setSelectedMachine(null);
-    setSelectedDepartmentId(-1);
-    setSelectedStatusId(-1);
-    setSelectedOrderType("all");
-    setSearchType("id");
-    setPartIdQuery("");
-    setPartNameQuery("");
-  
-    // ✅ Clear filters from URL
+    const resetFilters: FilterState = {
+      searchType: "id",
+      searchQuery: "",
+      reqNumQuery: "",
+      selectedDate: undefined,
+      dateFilterType: 1,
+      factory: null,
+      factorySection: null,
+      machine: null,
+      departmentId: -1,
+      statusId: -1,
+      orderType: "all",
+      partIdQuery: "",
+      partNameQuery: "",
+    };
+
+    setFilters(resetFilters);
     setSearchParams(new URLSearchParams());
-  
+    
+    if (onFiltersChange) {
+      onFiltersChange(resetFilters);
+    }
   };
+
+  // ============================================================================
+  // MEMOIZED VALUES
+  // ============================================================================
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      filters.searchQuery ||
+      filters.reqNumQuery ||
+      filters.selectedDate ||
+      filters.factory ||
+      filters.factorySection ||
+      filters.machine ||
+      filters.departmentId !== -1 ||
+      filters.statusId !== -1 ||
+      filters.orderType !== "all" ||
+      filters.partIdQuery ||
+      filters.partNameQuery
+    );
+  }, [filters]);
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="default">Search & Filters</Button>
+        <Button 
+          variant="outline" 
+          className={hasActiveFilters ? "bg-amber-100 text-yellow-800 hover:bg-yellow-200" : ""}
+        >
+          <Filter className="mr-2 h-4 w-4 md:mr-2" />
+          <span className="hidden md:inline">Search & Filters</span>
+        </Button>
       </SheetTrigger>
+      
       <SheetContent className="h-full overflow-y-auto" side="right">
         <SheetHeader>
-          <SheetTitle>Search & Filter Orders</SheetTitle>
-          <SheetDescription>Use the filters below to search for orders.</SheetDescription>
+          <SheetTitle className="flex items-center justify-between">
+            Search & Filter Orders
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </SheetTitle>
+          <SheetDescription>
+            Use the filters below to search for orders.
+          </SheetDescription>
         </SheetHeader>
-  
-        <div className="grid gap-4 py-4 px-2">
-          {/* Search by ID or Date */}
+
+        <div className="grid gap-6 py-6 px-2">
+          {/* Search Type Toggle */}
           {(shouldShowFilter("id") || shouldShowFilter("date")) && (
-            <div className="flex gap-2">
-              {shouldShowFilter("id") && (
-                <Button variant={searchType === "id" ? "default" : "outline"} onClick={() => {setSearchType("id");setSelectedDate(undefined)}}>
-                  Search by ID
-                </Button>
-              )}
-              {shouldShowFilter("date") && (
-                <Button variant={searchType === "date" ? "default" : "outline"} onClick={() => {setSearchType("date"); setSearchQuery(""); setReqNumQuery("")}}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  Search by Date
-                </Button>
-              )}
-            </div>
+            <SearchTypeToggle
+              searchType={filters.searchType}
+              onSearchTypeChange={handleSearchTypeChange}
+              showId={shouldShowFilter("id")}
+              showDate={shouldShowFilter("date")}
+            />
           )}
 
-          {/* ID & Requisition Number */}
-          {shouldShowFilter("id") && searchType === "id" && (
-            <>
+          {/* ID & Requisition Number Search */}
+          {shouldShowFilter("id") && filters.searchType === "id" && (
+            <div className="space-y-3">
               <Input
                 type="search"
                 placeholder={getFilterLabel("id")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={filters.searchQuery}
+                onChange={(e) => updateFilters({ searchQuery: e.target.value })}
               />
               <Input
                 type="search"
                 placeholder={getFilterLabel("id", 1)}
-                value={reqNumQuery}
-                onChange={(e) => setReqNumQuery(e.target.value)}
+                value={filters.reqNumQuery}
+                onChange={(e) => updateFilters({ reqNumQuery: e.target.value })}
               />
-            </>
-          )}
-
-          {/* Date Picker */}
-          {shouldShowFilter("date") && searchType === "date" && (
-            <div className="flex flex-col gap-2 mt-2">
-              <Label className="mb-2">Select Date</Label>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  setSelectedDate(date);
-                }}
-                className="rounded-md border"
-              />
-
-              {/* Date Filter Buttons (On | Before | After) */}
-              <div className="flex gap-2 mt-2">
-                {[{ value: 1, label: "On" }, { value: 2, label: "Before" }, { value: 3, label: "After" }].map(({ value, label }) => (
-                  <Button
-                    key={value}
-                    variant={dateFilterType === value ? "default" : "outline"}
-                    onClick={() => setDateFilterType(value as 1 | 2 | 3)}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
             </div>
           )}
 
+          {/* Date Filter */}
+          {shouldShowFilter("date") && filters.searchType === "date" && (
+            <DateFilter
+              selectedDate={filters.selectedDate}
+              onDateChange={(date) => updateFilters({ selectedDate: date })}
+              dateFilterType={filters.dateFilterType}
+              onDateFilterTypeChange={(type) => updateFilters({ dateFilterType: type })}
+            />
+          )}
 
-          {/* Factory Dropdown */}
+          {/* Factory Selection */}
           {shouldShowFilter("factory") && (
-            <>
+            <div className="space-y-2">
               <Label>Factory</Label>
               <Select
-                onValueChange={(value) => {
-                  const factory = factories.find(
-                    (f) => f.id.toString() === value
-                  );
-                  setSelectedFactory(factory || null);
-                }}
+                value={filters.factory?.id.toString() || "-1"}
+                onValueChange={handleFactoryChange}
               >
                 <SelectTrigger>
-  <SelectValue>
-    {selectedFactory && selectedFactory.name ? selectedFactory.name : "Select Factory"}
-  </SelectValue>
-</SelectTrigger>
+                  <SelectValue placeholder="Select Factory" />
+                </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="-1">All Factories</SelectItem>
                   {factories.map((factory) => (
                     <SelectItem key={factory.id} value={factory.id.toString()}>
                       {factory.name}
@@ -299,27 +519,23 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-            </>
+            </div>
           )}
-  
-          {/* Factory Section Dropdown */}
+
+          {/* Factory Section Selection */}
           {shouldShowFilter("factorySection") && (
-            <>
+            <div className="space-y-2">
               <Label>Factory Section</Label>
               <Select
-                disabled={!selectedFactory}
-                onValueChange={(value) => {
-                  const section = factorySections.find(
-                    (s) => s.id.toString() === value
-                  );
-                  setSelectedFactorySection(section || null);
-                }}
+                value={filters.factorySection?.id.toString() || "-1"}
+                onValueChange={handleFactorySectionChange}
+                disabled={!filters.factory}
               >
                 <SelectTrigger>
-                  <SelectValue>{selectedFactorySection ? selectedFactorySection.name : "Select Section"}</SelectValue>
-
+                  <SelectValue placeholder="Select Section" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="-1">All Sections</SelectItem>
                   {factorySections.map((section) => (
                     <SelectItem key={section.id} value={section.id.toString()}>
                       {section.name}
@@ -327,28 +543,23 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-            </>
+            </div>
           )}
-  
-          {/* Machine Dropdown */}
+
+          {/* Machine Selection */}
           {shouldShowFilter("machine") && (
-            <>
+            <div className="space-y-2">
               <Label>Machine</Label>
               <Select
-                disabled={!selectedFactorySection}
-                onValueChange={(value) => {
-                  const machine = machines.find(
-                    (m) => m.id.toString() === value
-                  );
-                  setSelectedMachine(machine || null);
-                }}
+                value={filters.machine?.id.toString() || "-1"}
+                onValueChange={handleMachineChange}
+                disabled={!filters.factorySection}
               >
                 <SelectTrigger>
-                  <SelectValue>
-                    {selectedMachine ? selectedMachine.name : "Select Machine"}
-                  </SelectValue>
+                  <SelectValue placeholder="Select Machine" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="-1">All Machines</SelectItem>
                   {machines.map((machine) => (
                     <SelectItem key={machine.id} value={machine.id.toString()}>
                       {machine.name}
@@ -356,80 +567,76 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-            </>
+            </div>
           )}
 
-          {/* Department Dropdown */}
+          {/* Department & Status Dropdowns */}
           {shouldShowFilter("department") && (
-            <>
-              <Label>Department</Label>
-              <Select value={selectedDepartmentId.toString()} onValueChange={(value) => setSelectedDepartmentId(Number(value))}>
-                <SelectTrigger>
-                  <SelectValue>{departments.find(d => d.id === selectedDepartmentId)?.name || "Select Department"}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept.id} value={dept.id.toString()}>{dept.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
+            <FilterDropdown
+              label="Department"
+              value={filters.departmentId}
+              onValueChange={(value) => updateFilters({ departmentId: value })}
+              options={departments}
+              placeholder="Select Department"
+            />
           )}
 
-          {/* Status Dropdown */}
           {shouldShowFilter("status") && (
-            <>
-              <Label>Status</Label>
-              <Select value={selectedStatusId.toString()} onValueChange={(value) => setSelectedStatusId(Number(value))}>
-                <SelectTrigger>
-                  <SelectValue>{statuses.find(s => s.id === selectedStatusId)?.name || "Select Status"}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map(status => (
-                    <SelectItem key={status.id} value={status.id.toString()}>{status.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
+            <FilterDropdown
+              label="Status"
+              value={filters.statusId}
+              onValueChange={(value) => updateFilters({ statusId: value })}
+              options={statuses}
+              placeholder="Select Status"
+            />
           )}
-  
+
           {/* Order Type Toggle */}
           {shouldShowFilter("orderType") && (
-          <>
-            <Label>Order Type</Label>
-            <div className="flex gap-2">
-              <Button variant={selectedOrderType === "all" ? "default" : "outline"} onClick={() => setSelectedOrderType("all")}>
-                All
-              </Button>
-              <Button variant={selectedOrderType === "Machine" ? "default" : "outline"} onClick={() => setSelectedOrderType("Machine")}>
-                Machine
-              </Button>
-              <Button variant={selectedOrderType === "Storage" ? "default" : "outline"} onClick={() => setSelectedOrderType("Storage")}>
-                Storage
-              </Button>
+            <div className="space-y-2">
+              <Label>Order Type</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={filters.orderType === "all" ? "default" : "outline"}
+                  onClick={() => updateFilters({ orderType: "all" })}
+                  className="flex-1"
+                >
+                  All
+                </Button>
+                {orderTypes.map((orderType) => (
+                  <Button
+                    key={orderType.type}
+                    variant={filters.orderType === orderType.type ? "default" : "outline"}
+                    onClick={() => updateFilters({ orderType: orderType.type })}
+                    className="flex-1"
+                  >
+                    {orderType.type}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </>
-        )}
-          {/* Only for PartsPage*/}
+          )}
+
+          {/* Part Filters */}
           {shouldShowFilter("partId") && (
             <Input
               type="search"
               placeholder={getFilterLabel("partId")}
-              value={partIdQuery}
-              onChange={(e) => setPartIdQuery(e.target.value)}
+              value={filters.partIdQuery}
+              onChange={(e) => updateFilters({ partIdQuery: e.target.value })}
             />
           )}
+
           {shouldShowFilter("partName") && (
             <Input
               type="search"
               placeholder={getFilterLabel("partName")}
-              value={partNameQuery}
-              onChange={(e) => setPartNameQuery(e.target.value)}
+              value={filters.partNameQuery}
+              onChange={(e) => updateFilters({ partNameQuery: e.target.value })}
             />
           )}
-
         </div>
-  
+
         <SheetFooter className="flex justify-between">
           <Button onClick={handleResetFilters} type="button" variant="outline">
             Reset Filters
@@ -441,5 +648,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
       </SheetContent>
     </Sheet>
   );
-};  
+};
+
 export default SearchAndFilter;

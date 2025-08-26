@@ -1417,32 +1417,36 @@ const CreateOrderPage = () => {
                                                 Add Part
                                             </Button>
 
-                                            {/* Divider OR */}
-                                            <div className="flex items-center my-3">
-                                                <div className="flex-grow border-t border-gray-200"></div>
-                                                <span className="mx-2 text-xs text-muted-foreground">OR</span>
-                                                <div className="flex-grow border-t border-gray-200"></div>
-                                            </div>
+                                            {/* Divider OR - Only show for non-STM orders */}
+                                            {orderType !== "STM" && (
+                                                <>
+                                                    <div className="flex items-center my-3">
+                                                        <div className="flex-grow border-t border-gray-200"></div>
+                                                        <span className="mx-2 text-xs text-muted-foreground">OR</span>
+                                                        <div className="flex-grow border-t border-gray-200"></div>
+                                                    </div>
 
-                                            {/* Create New Part Button */}
-                                            <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
-                                                <DialogTrigger asChild>
-                                                    <Button
-                                                        size="sm"
-                                                        className="w-full bg-white-950 border-blue-950 border-2 text-blue-950 hover:bg-blue-950 hover:text-white"
-                                                        disabled={!addPartEnabled}
-                                                    >
-                                                        Create New Part
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="max-w-2xl">
-                                                    <AddPartPopup 
-                                                        addPartEnabled={addPartEnabled}
-                                                        onSuccess={handlePartCreated}
-                                                        showPostAddOptions={true}
-                                                    />
-                                                </DialogContent>
-                                            </Dialog>
+                                                    {/* Create New Part Button */}
+                                                    <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+                                                        <DialogTrigger asChild>
+                                                            <Button
+                                                                size="sm"
+                                                                className="w-full bg-white-950 border-blue-950 border-2 text-blue-950 hover:bg-blue-950 hover:text-white"
+                                                                disabled={!addPartEnabled}
+                                                            >
+                                                                Create New Part
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="max-w-2xl">
+                                                            <AddPartPopup 
+                                                                addPartEnabled={addPartEnabled}
+                                                                onSuccess={handlePartCreated}
+                                                                showPostAddOptions={true}
+                                                            />
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </div>

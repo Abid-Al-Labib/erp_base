@@ -402,7 +402,8 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
             machines(*)
             `
         )
-        .eq('machine_id', machine_id);
+        .eq('machine_id', machine_id)
+        .eq('order_type', 'PFM');
 
     if (error) {
         toast.error(error.message);
@@ -420,6 +421,54 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
     const activeOrders = orders.filter((o: any) => {
         const lastId = (typeLastMap as any)[o.order_type];
         if (typeof lastId !== 'number') return true; // no mapping → assume running
+        return o.current_status_id !== lastId;
+    });
+
+    return activeOrders as unknown as Order[];
+}
+
+export const fetchRunningOrdersByFactoryId = async (factory_id: number) => {
+    const { data, error } = await supabase_client
+        .from('orders')
+        .select(
+            `
+            id,
+            req_num,
+            created_at,
+            order_note,
+            created_by_user_id,
+            department_id,
+            current_status_id,
+            factory_id,
+            machine_id,
+            factory_section_id,
+            order_type,
+            order_workflows(*),
+            departments(*),
+            profiles(*),
+            statuses(*),
+            factory_sections(*),
+            factories(*),
+            machines(*)
+            `
+        )
+        .eq('factory_id', factory_id)
+        .eq('order_type', 'PFS')
+
+    if (error) {
+        toast.error(error.message);
+        return [] as unknown as Order[];
+    }
+
+    const orders = (data || []) as Array<any>;
+    if (orders.length === 0) {
+        return orders as unknown as Order[];
+    }
+
+    const typeLastMap = await getOrderTypeLastStatusMap();
+    const activeOrders = orders.filter((o: any) => {
+        const lastId = (typeLastMap as any)[o.order_type];
+        if (typeof lastId !== 'number') return true; // assume running if unknown mapping
         return o.current_status_id !== lastId;
     });
 
