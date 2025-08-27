@@ -342,14 +342,14 @@ const StoragePage = () => {
                   </TableHeader>
                   <TableBody>
                     {(activeTab === "storage" ? loadingStorage : loadingDamaged) ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center">
-                          <div className="flex items-center justify-center space-x-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Loading {activeTab === "storage" ? "storage" : "damaged"} parts...</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      Array.from({ length: 6 }).map((_, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell><div className="h-5 w-16 bg-muted rounded" /></TableCell>
+                          <TableCell><div className="h-5 w-40 bg-muted rounded" /></TableCell>
+                          <TableCell><div className="h-5 w-20 bg-muted rounded" /></TableCell>
+                          <TableCell className="text-right"><div className="h-5 w-10 bg-muted rounded ml-auto" /></TableCell>
+                        </TableRow>
+                      ))
                     ) : (
                       (activeTab === "storage" ? storageParts : damagedParts).map((part) => (
                         <StoragePartsRow 

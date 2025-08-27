@@ -354,7 +354,8 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
   };
 
   const handleApplyFilters = () => {
-    const params = new URLSearchParams();
+    // Start from current URL params to avoid wiping unrelated state (e.g., factory/section/machine on other pages)
+    const params = new URLSearchParams(searchParams);
 
     // Add all filter values to URL params
     if (filters.factory) params.set("factory", filters.factory.id.toString());

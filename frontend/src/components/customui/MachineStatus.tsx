@@ -69,11 +69,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
         }
     };
 
-    if (loading) {
-        return <Loader2 className="animate-spin" />;
-    }
-
-    if (!machine) {
+    if (!machineId) {
         return (
             <Card className="mb-4 h-full">
                 <CardHeader>
@@ -99,78 +95,87 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
                         <CardTitle className="text-lg font-semibold">
-                            {machine.name}
+                            {loading || !machine ? 'Machine Status' : machine.name}
                         </CardTitle>
-                        <div className="flex flex-col gap-2 text-sm text-gray-600 mt-2">
-                            <div>
-                                <span className="font-medium">Factory Section:</span> {machine.factory_sections?.name || "N/A"}
+                        {!loading && machine && (
+                            <div className="flex flex-col gap-2 text-sm text-gray-600 mt-2">
+                                <div>
+                                    <span className="font-medium">Factory Section:</span> {machine.factory_sections?.name || "N/A"}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Factory:</span> {machine.factory_sections?.factories?.name || "N/A"}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">Status:</span>
+                                    <Badge 
+                                        variant="secondary" 
+                                        className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-gray-800'}
+                                    >
+                                        {machine.is_running ? "Active" : "Inactive"}
+                                    </Badge>
+                                </div>
                             </div>
-                            <div>
-                                <span className="font-medium">Factory:</span> {machine.factory_sections?.factories?.name || "N/A"}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">Status:</span>
-                                <Badge 
-                                    variant="secondary" 
-                                    className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-gray-800'}
-                                >
-                                    {machine.is_running ? "Active" : "Inactive"}
-                                </Badge>
-                            </div>
-                        </div>
-                    </div>
-                    <Button
-                        onClick={handleToggleStatus}
-                        disabled={updating}
-                        variant={machine.is_running ? "destructive" : "default"}
-                        size="sm"
-                        className="ml-4"
-                    >
-                        {updating ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            machine.is_running ? "Mark Inactive" : "Mark Active"
                         )}
-                    </Button>
+                    </div>
+                    {machine && (
+                        <Button
+                            onClick={handleToggleStatus}
+                            disabled={updating || loading}
+                            variant="default"
+                            size="sm"
+                            className={`ml-4 ${machine.is_running ? 'bg-black text-white hover:bg-black/90' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                        >
+                            {updating ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                machine.is_running ? "Mark Inactive" : "Mark Active"
+                            )}
+                        </Button>
+                    )}
                 </div>
             </CardHeader>
 
             <CardContent>
-                <div className="space-y-3">
-                    <h4 className="font-medium text-gray-700 mb-2">Machine Conditions</h4>
-                    
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium min-w-[100px]">Running:</span>
-                        <Badge 
-                            variant="secondary" 
-                            className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
-                        >
-                            {machine.is_running ? "Running" : "Not Running"}
-                        </Badge>
+                {loading || !machine ? (
+                    <div className="flex items-center gap-2 text-muted-foreground h-20">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading machine details...</span>
                     </div>
+                ) : (
+                    <div className="space-y-3">
+                        <h4 className="font-medium text-gray-700 mb-2">Machine Conditions</h4>
+                        
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[100px]">Running:</span>
+                            <Badge 
+                                variant="secondary" 
+                                className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                            >
+                                {machine.is_running ? "Running" : "Not Running"}
+                            </Badge>
+                        </div>
 
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium min-w-[100px]">Defective Parts:</span>
-                        <Badge 
-                            variant="secondary" 
-                            className={hasDefectiveParts ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}
-                        >
-                            {hasDefectiveParts ? "Has Defective Parts" : "No Defective Parts"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[100px]">Defective Parts:</span>
+                            <Badge 
+                                variant="secondary" 
+                                className={hasDefectiveParts ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}
+                            >
+                                {hasDefectiveParts ? "Has Defective Parts" : "No Defective Parts"}
+                            </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[100px]">Parts Status:</span>
+                            <Badge 
+                                variant="secondary" 
+                                className={hasInsufficientParts ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}
+                            >
+                                {hasInsufficientParts ? "Insufficient Parts" : "Parts Sufficient"}
+                            </Badge>
+                        </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium min-w-[100px]">Parts Status:</span>
-                        <Badge 
-                            variant="secondary" 
-                            className={hasInsufficientParts ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}
-                        >
-                            {hasInsufficientParts ? "Insufficient Parts" : "Parts Sufficient"}
-                        </Badge>
-                    </div>
-
-
-                </div>
+                )}
             </CardContent>
         </Card>
     );
