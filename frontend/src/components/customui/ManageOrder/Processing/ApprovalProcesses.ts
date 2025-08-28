@@ -34,7 +34,7 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                 );
 
             case "PFS":
-                return await handlePFSApproval(orderedParts, order.factory_id);
+                return {success:true, errors:[]};
 
             case "STM":
                 return await handleSTMApproval(
@@ -47,7 +47,7 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
 
             default:
                 console.log(`Unknown order type: ${order.order_type}`);
-                return { success: true, errors: [`Unknown order type: ${order.order_type}`] };
+                return { success: false, errors: [`Unknown order type: ${order.order_type}`] };
         }
     } catch (error) {
         console.error("Error in unified order approval processing:", error);
@@ -121,22 +121,21 @@ export const handlePFMApproval = async (
  * Handles the PFS (Purchase for Storage) approval process
  * Increases storage part quantities for all ordered parts
  */
-export const handlePFSApproval = async (
-    orderedParts: OrderedPart[],
-    factory_id: number
-): Promise<{ success: boolean; errors: string[] }> => {
-    const errors: string[] = [];
-
-    try {
-        for (const part of orderedParts) {
-            await increaseStoragePartQty(part.part_id, factory_id, part.qty);
-        }
-        return { success: errors.length === 0, errors };
-    } catch (error) {
-        console.error("Error in PFS approval processing:", error);
-        return { success: false, errors: [`PFS processing error: ${error}`] };
-    }
-};
+// export const handlePFSApproval = async (
+//     orderedParts: OrderedPart[],
+//     factory_id: number
+// ): Promise<{ success: boolean; errors: string[] }> => {
+//     const errors: string[] = [];
+//     try {
+//         for (const part of orderedParts) {
+//             await increaseStoragePartQty(part.part_id, factory_id, part.qty);
+//         }
+//     } catch (error) {
+//         console.error("Error in PFS approval processing:", error);
+//         return { success: false, errors: [`PFS processing error: ${error}`] };
+//     }
+//     return { success: errors.length==0, errors };
+// };
 
 /**
  * Handles the STM (Storage to Machine) approval process

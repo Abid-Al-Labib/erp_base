@@ -16,7 +16,7 @@ import { convertUtcToBDTime} from "@/services/helper"
 import { Checkbox } from "../ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { Textarea } from "../ui/textarea"
-import { fetchStoragePartQuantityByFactoryID, reduceStoragePartQty, upsertStoragePart, increaseStoragePartQty } from "@/services/StorageService"
+import { fetchStoragePartByFactoryAndPartID, reduceStoragePartQty, upsertStoragePart } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { reduceMachinePartQty, increaseMachinePartQty } from "@/services/MachinePartsService"
 import { Badge } from "../ui/badge"
@@ -87,9 +87,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({index, mode, ordere
             setDisableTakeStorageRow(disableRow)
             if (order_type == "PFM")
             {
-              const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
-              if (storage_data && storage_data.length>0) {
-                setCurrentStorageQty(storage_data[0].qty)
+              const storage_data = await fetchStoragePartByFactoryAndPartID(orderedPartInfo.part_id,factory_id) 
+              if (storage_data) {
+                setCurrentStorageQty(storage_data.qty)
               }
               else {
                 console.log(`no storage data found for partid ${orderedPartInfo.part_id} in factoryid ${factory_id}`)

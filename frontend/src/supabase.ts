@@ -59,18 +59,21 @@ export type Database = {
       }
       damaged_parts: {
         Row: {
+          avg_price: number | null
           factory_id: number
           id: number
           part_id: number
           qty: number
         }
         Insert: {
+          avg_price?: number | null
           factory_id: number
           id?: number
           part_id: number
           qty: number
         }
         Update: {
+          avg_price?: number | null
           factory_id?: number
           id?: number
           part_id?: number
@@ -166,7 +169,127 @@ export type Database = {
           },
         ]
       }
-
+      instant_add_damaged_part: {
+        Row: {
+          added_at: string
+          added_by: number | null
+          factory_id: number | null
+          id: number
+          note: string | null
+          part_id: number | null
+          qty: number
+        }
+        Insert: {
+          added_at?: string
+          added_by?: number | null
+          factory_id?: number | null
+          id?: number
+          note?: string | null
+          part_id?: number | null
+          qty: number
+        }
+        Update: {
+          added_at?: string
+          added_by?: number | null
+          factory_id?: number | null
+          id?: number
+          note?: string | null
+          part_id?: number | null
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_add_damaged_part_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_add_damaged_part_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_add_damaged_part_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_add_damaged_part_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_add_storage_part: {
+        Row: {
+          added_at: string
+          added_by: number
+          avg_price: number
+          factory_id: number
+          id: number
+          note: string | null
+          part_id: number
+          qty: number
+        }
+        Insert: {
+          added_at?: string
+          added_by: number
+          avg_price: number
+          factory_id: number
+          id?: number
+          note?: string | null
+          part_id: number
+          qty: number
+        }
+        Update: {
+          added_at?: string
+          added_by?: number
+          avg_price?: number
+          factory_id?: number
+          id?: number
+          note?: string | null
+          part_id?: number
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storage_instant_add_part_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storage_instant_add_part_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storage_instant_add_part_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storage_instant_add_part_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       machine_parts: {
         Row: {
           defective_qty: number | null
@@ -276,6 +399,9 @@ export type Database = {
           qty: number
           qty_taken_from_storage: number
           unit_cost: number | null
+          unstable_type:
+            | Database["public"]["Enums"]["unstabling_effects"]
+            | null
           vendor: string | null
         }
         Insert: {
@@ -301,6 +427,9 @@ export type Database = {
           qty: number
           qty_taken_from_storage?: number
           unit_cost?: number | null
+          unstable_type?:
+            | Database["public"]["Enums"]["unstabling_effects"]
+            | null
           vendor?: string | null
         }
         Update: {
@@ -326,6 +455,9 @@ export type Database = {
           qty?: number
           qty_taken_from_storage?: number
           unit_cost?: number | null
+          unstable_type?:
+            | Database["public"]["Enums"]["unstabling_effects"]
+            | null
           vendor?: string | null
         }
         Relationships: [
@@ -665,18 +797,21 @@ export type Database = {
       }
       storage_parts: {
         Row: {
+          avg_price: number | null
           factory_id: number
           id: number
           part_id: number
           qty: number
         }
         Insert: {
+          avg_price?: number | null
           factory_id: number
           id?: number
           part_id: number
           qty: number
         }
         Update: {
+          avg_price?: number | null
           factory_id?: number
           id?: number
           part_id?: number
@@ -725,7 +860,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      unstabling_effects: "NONE" | "DEFECTIVE" | "LESS"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -855,6 +990,8 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      unstabling_effects: ["NONE", "DEFECTIVE", "LESS"],
+    },
   },
 } as const

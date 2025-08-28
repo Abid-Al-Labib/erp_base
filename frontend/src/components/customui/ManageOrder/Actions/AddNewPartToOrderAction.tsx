@@ -4,7 +4,7 @@ import { useState } from "react";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import { Part, OrderedPart, Order } from "@/types";
-import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService";
+import { fetchStoragePartByFactoryAndPartID } from "@/services/StorageService";
 import { insertOrderedParts } from "@/services/OrderedPartsService";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -51,8 +51,8 @@ const AddNewPartToOrderAction: React.FC<AddNewPartToOrderActionProps> = ({
     setAddPartDialogOpen(false);
     setLoading(true);
     try {
-      const storage_data = await fetchStoragePartQuantityByFactoryID(selectedPartId, order.factory_id);
-      const in_storage = order.order_type === "PFM" && storage_data.length > 0 && storage_data[0].qty > 0;
+      const storage_data = await fetchStoragePartByFactoryAndPartID(selectedPartId, order.factory_id);
+      const in_storage = order.order_type === "PFM" && storage_data!==null && storage_data.qty > 0;
 
       await insertOrderedParts(
         selectedPartQty,

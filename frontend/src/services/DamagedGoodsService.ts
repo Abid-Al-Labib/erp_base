@@ -144,3 +144,18 @@ export const deleteDamagedPart = async (part_id: number, factory_id: number) => 
 }
 
 
+export const updateDamagedPartAvg = async (
+  part_id: number,
+  factory_id: number,
+  new_avg_price: number
+): Promise<void> => {
+  const { error } = await supabase_client
+    .from("damaged_parts")
+    .update({ avg_price: new_avg_price })
+    .eq("part_id", part_id)
+    .eq("factory_id", factory_id);
+
+  if (error) {
+    toast.error(error.message);
+  }
+};

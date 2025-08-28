@@ -11,7 +11,7 @@ import { increaseMachinePartQty } from '@/services/MachinePartsService';
 import { OrderedPart } from '@/types';
 import toast from 'react-hot-toast';
 import React from 'react';
-import { fetchStoragePartQuantityByFactoryID, upsertStoragePart } from '@/services/StorageService';
+import { fetchStoragePartByFactoryAndPartID, upsertStoragePart } from '@/services/StorageService';
 
 interface ApproveTakingFromStorageProps {
   isDialogOpen: boolean;
@@ -36,9 +36,9 @@ const ApproveTakingFromStorageAction: React.FC<ApproveTakingFromStorageProps> = 
     
     try {
       
-        const storage_data = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,factory_id) 
-        if (storage_data && storage_data.length>0) {
-            const currentStorageQty = storage_data[0].qty 
+        const storage_data = await fetchStoragePartByFactoryAndPartID(orderedPartInfo.part_id,factory_id) 
+        if (storage_data) {
+            const currentStorageQty = storage_data.qty 
             if (currentStorageQty >= orderedPartInfo.qty) {
                 // Enough in storage
                 const new_storage_quantity = currentStorageQty - orderedPartInfo.qty;

@@ -8,14 +8,16 @@ export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
 export type ApplicationSettings = Tables<"app_settings">
 export type OrderWorkflow = Tables<"order_workflows">
-export type LoanTransfer = Tables<"loan_transfers">
-// export type MachinePart = Tables<"machine_parts">
+export type InstantAddStoragePart = Tables<"instant_add_storage_part">
+export type InstantAddDamagedPart = Tables<"instant_add_damaged_part">
+
 export type StoragePart = {
     id: number;
     qty: number;
     factory_id: number;
     part_id: number;
     parts: Part;
+    avg_price: number | null;
 };
 
 export type PartHistory = {

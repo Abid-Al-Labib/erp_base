@@ -25,7 +25,8 @@ export const fetchStorageParts = async ({
             qty,
             factory_id,
             part_id,
-            parts (*)
+            parts (*),
+            avg_price
         `, { count: 'exact' })
         .order("id", {ascending: true})
         .range(from, to);
@@ -55,20 +56,24 @@ export const fetchStorageParts = async ({
     };
 };
 
-export const fetchStoragePartQuantityByFactoryID = async (part_id: number, factory_id: number) => {
-    let { data, error } = await supabase_client
-    .from('storage_parts')
-    .select('*')
-    .eq('part_id',part_id)
-    .eq('factory_id',factory_id)
 
-    if (error){
-        toast.error(error.message)
-    }
+export const fetchStoragePartByFactoryAndPartID = async (part_id: number,factory_id: number): Promise<StoragePart | null> => {
+  const { data, error } = await supabase_client
+    .from("storage_parts")
+    .select("*")
+    .eq("part_id", part_id)
+    .eq("factory_id", factory_id)
+    .maybeSingle(); // returns null if no row
 
-    return data as unknown as StoragePart[]
+  if (error) {
+    toast.error(error.message);
+    return null;
+  }
 
-} 
+  return data as StoragePart | null;
+};
+
+
 
 export const upsertStoragePart = async (part_id: number, factory_id: number, quantity: number) =>{
     // Validate input parameters
@@ -228,4 +233,16 @@ export const deleteStoragePart = async (part_id: number, factory_id: number) => 
     }
 
     toast.success("Storage part deleted successfully");
+}
+
+export const updateStoragePartAvg = async (part_id: number, factory_id: number,  new_avg_price:number) => {
+    const { error } = await supabase_client
+    .from('storage_parts')
+    .update({ avg_price: new_avg_price })
+    .eq('part_id', part_id).eq('factory_id', factory_id)
+
+    if (error){
+        toast.error(error.message)
+    }
+        
 }

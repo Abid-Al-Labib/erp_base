@@ -22,7 +22,7 @@ import { Label } from "../ui/label";
 import ReactSelect from "react-select";
 import { Checkbox } from "../ui/checkbox";
 import { Textarea } from "../ui/textarea";
-import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService";
+import { fetchStoragePartByFactoryAndPartID } from "@/services/StorageService";
 
 interface OrderedPartsTableProp {
   mode:  "view" | "manage" | "invoice"
@@ -243,8 +243,8 @@ const handleAddPart = async () => {
   setLoadingAddPart(true);
   try {
 
-      const storage_data =  await fetchStoragePartQuantityByFactoryID(selectedPartId,order.factory_id)
-      if (order.order_type == "PFM" && storage_data.length>0 && storage_data[0].qty>0)
+      const storage_data =  await fetchStoragePartByFactoryAndPartID(selectedPartId,order.factory_id)
+      if (order.order_type == "PFM" && storage_data!==null && storage_data.qty>0)
       {
         //machine and there is part in storage so send true for in_storage param  
         insertOrderedParts(

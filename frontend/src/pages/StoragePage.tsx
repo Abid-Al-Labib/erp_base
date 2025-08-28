@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { fetchStorageParts, upsertStoragePart, increaseStoragePartQty } from "@/services/StorageService";
+import { fetchStorageParts, upsertStoragePart, increaseStoragePartQty, fetchStoragePartByFactoryAndPartID, updateStoragePartAvg } from "@/services/StorageService";
 import { fetchDamagedPartsByFactoryID, increaseDamagedPartQty } from "@/services/DamagedGoodsService";
 import { fetchFactories } from "@/services/FactoriesService";
 import { fetchAllParts, searchPartsByName } from "@/services/PartsService";
@@ -21,10 +21,16 @@ import toast from "react-hot-toast";
 import AsyncSelect from 'react-select/async';
 import StorageDetails from "@/components/customui/StorageDetails";
 import RunningOrders from "@/components/customui/RunningOrders";
+import { Textarea } from "@/components/ui/textarea";
+import { calculatePartAveragePrice } from "@/services/helper";
+import { insertInstantAddStoragePart } from "@/services/InstantAddStoragePartService";
+import { useAuth } from "@/context/AuthContext";
+import { insertInstantAddDamagedPart } from "@/services/InstantAddDamagedPartService";
 
 const ITEMS_PER_PAGE = 10;
 
 const StoragePage = () => {
+  const profile = useAuth().profile
   const [searchParams, setSearchParams] = useSearchParams();
   const [storageParts, setStorageParts] = useState<StoragePart[]>([]);
   const [damagedParts, setDamagedParts] = useState<StoragePart[]>([]);
@@ -38,10 +44,12 @@ const StoragePage = () => {
   );
   const [totalItems, setTotalItems] = useState(0);
 
-  // Add part to storage dialog state
+  // Instant add part to storage dialog state
   const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | undefined>();
-  const [quantity, setQuantity] = useState<string>("");
+  const [instantAddQuantity, setInstantAddQuantity] = useState<string>("");
+  const [instantAddAveragePrice, setInstantAddAveragePrice] = useState<string>("");
+  const [instantAddNote, setInstantAddNote] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
 
@@ -154,34 +162,73 @@ const StoragePage = () => {
     setSearchParams(params);
   };
 
-  const handleAddPartToStorage = async () => {
-    if (!selectedPart || !quantity || !selectedFactoryId) {
+  const  resetInstantAdd = async () => {
+      setSelectedPart(undefined);
+      setInstantAddQuantity("");
+      setInstantAddAveragePrice("");
+      setInstantAddNote("");
+      setIsAddPartDialogOpen(false);
+  }
+
+  const handleInstantAddPartToStorage = async () => {
+    if (!profile){
+      toast.error("Error: could not find profile info")
+      return;
+    }
+
+    if (!selectedPart || !instantAddQuantity || !selectedFactoryId) {
       toast.error("Please select a part and enter quantity");
       return;
     }
 
-    const quantityNum = Number(quantity);
+    if (!instantAddAveragePrice){
+      toast.error("Average price is required")
+    }
+
+    const quantityNum = Number(instantAddQuantity);
     if (quantityNum <= 0) {
       toast.error("Quantity must be greater than 0");
       return;
     }
 
+    const avgNum = Number(instantAddAveragePrice);
+    if (avgNum <= 0) {
+      toast.error("Average must be greater than 0");
+      return;
+    }
+
+
     setIsSubmitting(true);
     try {
-      if (activeTab === "storage") {
+      const storage_part_data = await fetchStoragePartByFactoryAndPartID(selectedPart.id,selectedFactoryId) 
+      let new_avg_price: number
+      if(storage_part_data)
+      {
+        if (storage_part_data.avg_price) {
+          // storage data exists and has average price
+          new_avg_price = calculatePartAveragePrice(storage_part_data.qty, storage_part_data.avg_price, quantityNum, avgNum)
+        } else {
+          // storage data exists but no averrage price
+          toast.error("The average for this item cannot be calculated since the current average cost is unavailable")
+          return;
+        }
+      }
+      else{
+        new_avg_price = calculatePartAveragePrice(0, 0, quantityNum, avgNum)
+      }
+
+      const instant_add = await insertInstantAddStoragePart(profile.id,avgNum,selectedFactoryId,selectedPart.id,quantityNum,instantAddNote);
+      if (instant_add){
         await increaseStoragePartQty(selectedPart.id, selectedFactoryId, quantityNum);
         toast.success("Part added to storage successfully");
-      } else {
-        await increaseDamagedPartQty(selectedFactoryId, selectedPart.id, quantityNum);
-        toast.success("Part added to damaged parts successfully");
+        await updateStoragePartAvg(selectedPart.id, selectedFactoryId,new_avg_price)
+        toast.success("Part average updated")
       }
-      
-      // Reset form
-      setSelectedPart(undefined);
-      setQuantity("");
-      setIsAddPartDialogOpen(false);
-      
-      // Reload current tab data
+      else{
+        toast.error("Failed to add part, storage was not updated")
+        return;
+      }
+      resetInstantAdd()
       refreshCurrentData();
     } catch (error) {
       console.error("Error adding part:", error);
@@ -190,6 +237,55 @@ const StoragePage = () => {
       setIsSubmitting(false);
     }
   };
+
+
+  const handleInstantAddPartToDamagedParts = async () => {
+  if (!profile) {
+    toast.error("Error: could not find profile info");
+    return;
+  }
+
+  if (!selectedPart || !instantAddQuantity || !selectedFactoryId) {
+    toast.error("Please select a part and enter quantity");
+    return;
+  }
+
+  const quantityNum = Number(instantAddQuantity);
+  if (Number.isNaN(quantityNum) || quantityNum <= 0) {
+    toast.error("Quantity must be greater than 0");
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    // create instant-add record for damaged parts
+    const instant_add = await insertInstantAddDamagedPart(
+      profile.id,
+      selectedFactoryId,
+      selectedPart.id,
+      quantityNum,
+      instantAddNote // optional
+    );
+
+    if (!instant_add) {
+      toast.error("Failed to add part, damaged parts were not updated");
+      return;
+    }
+
+    // increase damaged qty
+    await increaseDamagedPartQty(selectedFactoryId, selectedPart.id, quantityNum);
+    toast.success("Part added to damaged parts successfully");
+
+    // reset & refresh
+    resetInstantAdd();
+    refreshCurrentData();
+  } catch (error) {
+    console.error("Error adding part:", error);
+    toast.error("Failed to add part to damaged parts");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Create default options for AsyncSelect - sorted alphabetically
   const allPartOptions = allParts
@@ -335,6 +431,7 @@ const StoragePage = () => {
                       <TableHead>Part ID</TableHead>
                       <TableHead>Part Name</TableHead>
                       <TableHead>Quantity</TableHead>
+                      <TableHead>Average Price</TableHead>
                       <TableHead className="text-right">
                         <span className="sr-only">Actions</span>
                       </TableHead>
@@ -390,7 +487,13 @@ const StoragePage = () => {
       </div>
 
       {/* Add Part to Storage Dialog */}
-      <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+        <Dialog
+          open={isAddPartDialogOpen}
+          onOpenChange={(open) => {
+            setIsAddPartDialogOpen(open);
+            if (!open) resetInstantAdd(); // reset when closed by X or outside click
+          }}
+        >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
@@ -400,7 +503,7 @@ const StoragePage = () => {
               Add a part to the {activeTab === "storage" ? "storage" : "damaged parts"} of {factories.find(f => f.id === selectedFactoryId)?.name}
             </DialogDescription>
           </DialogHeader>
-          
+           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="part-select">Select Part</Label>
@@ -448,27 +551,61 @@ const StoragePage = () => {
                 id="quantity"
                 type="number"
                 placeholder="Enter quantity"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                value={instantAddQuantity}
+                onChange={(e) => setInstantAddQuantity(e.target.value)}
                 min="1"
               />
             </div>
+
+            {activeTab === "storage" && (
+              <div className="grid gap-2">
+                <Label htmlFor="average_price">
+                  Average Price Per Unit
+                  {selectedPart ? ` (${selectedPart.unit || "units"})` : ""}
+                </Label>
+                <Input
+                  id="average_price"
+                  type="number"
+                  placeholder="Enter average price for each unit"
+                  value={instantAddAveragePrice}
+                  onChange={(e) => setInstantAddAveragePrice(e.target.value)}
+                  min="1"
+                />
+              </div>
+            )}
+
+
+            <div className="grid gap-2">
+              <Label htmlFor="Note">
+                Note
+              </Label>
+              <Textarea
+                id="instant_add_note"
+                placeholder="Note"
+                value={instantAddNote}
+                onChange={(e) => setInstantAddNote(e.target.value)}
+              />
+            </div>
           </div>
-          
+
+
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setIsAddPartDialogOpen(false);
-                setSelectedPart(undefined);
-                setQuantity("");
-              }}
+              onClick={()=>resetInstantAdd()}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddPartToStorage}
-              disabled={isSubmitting || !selectedPart || !quantity}
+            <Button
+              onClick={activeTab === "storage"
+                ? handleInstantAddPartToStorage
+                : handleInstantAddPartToDamagedParts}
+              disabled={
+                isSubmitting ||
+                !selectedPart ||
+                !instantAddQuantity ||
+                (activeTab === "storage" && !instantAddAveragePrice) // only required for storage
+              }
             >
               {isSubmitting ? (
                 <>
@@ -479,6 +616,7 @@ const StoragePage = () => {
                 `Add to ${activeTab === "storage" ? "Storage" : "Damaged Parts"}`
               )}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

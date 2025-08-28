@@ -403,3 +403,15 @@ export function isFeatureSettingEnabled(
     app_settings?.some(s => s.name === setting_name && s.enabled === true) ?? false
   );
 }
+
+
+export function calculatePartAveragePrice(
+  current_qty: number,
+  current_avg_price: number, 
+  added_qty: number, 
+  added_avg_price: number): number 
+{
+
+  return (((current_qty * current_avg_price) + (added_qty * added_avg_price))/ (current_qty + added_qty))
+
+}
