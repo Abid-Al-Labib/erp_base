@@ -24,7 +24,7 @@ import { fetchAllMachines } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts, searchPartsByName, fetchPageParts } from "@/services/PartsService";
 import { Part, StoragePart } from "@/types"
-import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
+import { fetchStoragePartByFactoryAndPartID } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
 import MachineUnstabilityForm, { UnstableType } from "@/components/customui/MachineUnstabilityForm"
@@ -466,8 +466,8 @@ const CreateOrderPage = () => {
 
     // Helper function to check if part is in storage
     const checkPartInStorage = async (): Promise<boolean> => {        
-        const storage_data = await fetchStoragePartQuantityByFactoryID(partId, selectedFactoryId);
-        return storage_data.length > 0 && storage_data[0].qty > 0;
+        const storage_data = await fetchStoragePartByFactoryAndPartID(partId, selectedFactoryId);
+        return storage_data!==null && storage_data.qty > 0;
     };
 
     // ============================================================================

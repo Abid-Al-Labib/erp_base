@@ -11,7 +11,7 @@ import { getOrderedPartHistory } from "@/services/OrderedPartsService"
 import OrderedPartInfo from "../OrderedPartInfo"
 import { convertUtcToBDTime} from "@/services/helper"
 
-import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService"
+import { fetchStoragePartByFactoryAndPartID } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { Badge } from "../../ui/badge"
 import OrderedPartsActionMenu from "./OrderedPartsActionMenu"
@@ -41,9 +41,9 @@ export const Managerowtemporary:React.FC<ManagerowtemporaryProp> = ({index, orde
 
         // If the order type is "Machine", get current storage quantity
         if (order.order_type === "PFM") {
-        const storageData = await fetchStoragePartQuantityByFactoryID(orderedPartInfo.part_id,order.factory_id);
-        if (storageData && storageData.length > 0) {
-            setCurrentStorageQty(storageData[0].qty);
+        const storageData = await fetchStoragePartByFactoryAndPartID(orderedPartInfo.part_id,order.factory_id);
+        if (storageData) {
+            setCurrentStorageQty(storageData.qty);
         } else {
             console.log(`No storage data found for part_id ${orderedPartInfo.part_id} in factory_id ${order.factory_id}`);
         }

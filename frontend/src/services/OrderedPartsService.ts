@@ -275,7 +275,7 @@ export const updateSentDateByID = async (orderedpart_id: number, sentDate: Date)
     }
 }
 
-export const updateReceivedByFactoryDateByID = async (orderedpart_id: number, receivedDate: Date) => {
+export const updateReceivedByFactoryDateByID = async (orderedpart_id: number, receivedDate: Date | null) => {
     const { error } = await supabase_client.from('order_parts').update(
         { part_received_by_factory_date: receivedDate }
     ).eq('id', orderedpart_id)

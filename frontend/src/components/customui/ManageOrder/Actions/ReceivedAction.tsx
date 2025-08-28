@@ -7,6 +7,7 @@ import { increaseStoragePartQty } from "@/services/StorageService"
 import { OrderedPart } from "@/types"
 import { useState } from "react"
 import toast from "react-hot-toast"
+import { handlePFSReceivedAction } from "../Processing/CompletionProcesses"
 
 interface ReceivedActionProps {
   openThisActionDialog: boolean
@@ -63,13 +64,15 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
       try {
         await updateReceivedByFactoryDateByID(orderedPartInfo.id, dateReceived);
         toast.success("Part received by factory date set!");
-
         if (order_type === "PFS") {
-          await increaseStoragePartQty(
-            orderedPartInfo.part_id,
+          const recieved_handle_success = await handlePFSReceivedAction(
+            orderedPartInfo,
             factory_id,
-            orderedPartInfo.qty,
           );
+          if(!recieved_handle_success) {
+            await updateReceivedByFactoryDateByID(orderedPartInfo.id, null);
+            toast.error("Resetting received date as part transfer failed");
+          }
         }
 
         if (order_type === "PFM") {
@@ -79,6 +82,7 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
             orderedPartInfo.qty,
           );
         }
+        
       } catch (error) {
         toast.error("Error occurred, could not complete action.");
       }
