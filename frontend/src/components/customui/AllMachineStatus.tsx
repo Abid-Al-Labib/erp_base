@@ -40,48 +40,88 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection, lo
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
     const [machinePartsStatus, setMachinePartsStatus] = useState<Record<number, { hasDefective: boolean }>>({});
-    const [loading, setLoading] = useState(true);
+    const [loadingFactories, setLoadingFactories] = useState(true);
+    const [loadingSections, setLoadingSections] = useState(false);
+    const [loadingMachines, setLoadingMachines] = useState(false);
 
+    // Load factories on mount (lightweight)
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
+        const loadFactories = async () => {
+            setLoadingFactories(true);
             try {
                 const fetchedFactories = await fetchFactories();
-                const fetchedSections = await fetchAllFactorySections();
-                const { data: enrichedMachines } = await fetchAllMachinesEnriched();
-
                 setFactories(fetchedFactories);
-                setFactorySections(fetchedSections);
-                setMachines(enrichedMachines);
-
-                // Fetch machine parts status for each machine
-                const partsStatusPromises = enrichedMachines.map(async (machine) => {
-                    try {
-                        const parts = await fetchMachineParts(machine.id);
-                        const hasDefective = parts.some(part => (part.defective_qty ?? 0) > 0);
-                        return { machineId: machine.id, hasDefective };
-                    } catch (error) {
-                        console.error(`Error fetching parts for machine ${machine.id}:`, error);
-                        return { machineId: machine.id, hasDefective: false };
-                    }
-                });
-
-                const partsStatusResults = await Promise.all(partsStatusPromises);
-                const partsStatusMap = partsStatusResults.reduce((acc, result) => {
-                    acc[result.machineId] = { hasDefective: result.hasDefective };
-                    return acc;
-                }, {} as Record<number, { hasDefective: boolean }>);
-
-                setMachinePartsStatus(partsStatusMap);
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.error("Error loading factories:", error);
             } finally {
-                setLoading(false);
+                setLoadingFactories(false);
+            }
+        };
+        loadFactories();
+    }, []);
+
+    // Load sections when factory is selected
+    useEffect(() => {
+        if (!factoryId) {
+            setFactorySections([]);
+            setMachines([]);
+            setMachinePartsStatus({});
+            return;
+        }
+
+        const loadSections = async () => {
+            setLoadingSections(true);
+            try {
+                const fetchedSections = await fetchAllFactorySections();
+                const filteredSections = fetchedSections.filter(s => s.factory_id === factoryId);
+                setFactorySections(filteredSections);
+                
+                // Clear machines when factory changes
+                setMachines([]);
+                setMachinePartsStatus({});
+            } catch (error) {
+                console.error("Error loading sections:", error);
+            } finally {
+                setLoadingSections(false);
             }
         };
 
-        fetchData();
-    }, []);
+        loadSections();
+    }, [factoryId]);
+
+    // Load machines when factory is selected (for all sections within that factory)
+    useEffect(() => {
+        if (!factoryId) {
+            setMachines([]);
+            setMachinePartsStatus({});
+            return;
+        }
+
+        const loadMachines = async () => {
+            setLoadingMachines(true);
+            try {
+                const { data: enrichedMachines } = await fetchAllMachinesEnriched();
+                // Load machines for ALL sections within the selected factory
+                const filteredMachines = enrichedMachines.filter(m => {
+                    const section = factorySections.find(s => s.id === m.factory_section_id);
+                    return section && section.factory_id === factoryId;
+                });
+                setMachines(filteredMachines);
+                
+                // Clear machine parts status when factory changes
+                setMachinePartsStatus({});
+            } catch (error) {
+                console.error("Error loading machines:", error);
+            } finally {
+                setLoadingMachines(false);
+            }
+        };
+
+        // Only load machines after sections are loaded
+        if (factorySections.length > 0) {
+            loadMachines();
+        }
+    }, [factoryId, factorySections]);
 
     // If no factory is selected, show a message
     if (factoryId === undefined) {
@@ -99,15 +139,21 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection, lo
         );
     }
 
+
+
     // Filter machines based on factoryId and factorySectionId
     const filteredMachines = machines.filter(machine => {
+        // Always filter by factory
         if (factoryId !== undefined) {
             const section = factorySections.find(s => s.id === machine.factory_section_id);
             if (!section || section.factory_id !== factoryId) return false;
         }
+        
+        // If a specific section is selected, filter by that section
         if (factorySectionId !== undefined && machine.factory_section_id !== factorySectionId) {
             return false;
         }
+        
         return true;
     });
 
@@ -157,18 +203,28 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection, lo
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading ? (
-                            Array.from({ length: 4 }).map((_, idx) => (
-                                <TableRow key={idx}>
-                                    <TableCell><div className="h-5 w-16 bg-muted rounded" /></TableCell>
-                                    <TableCell><div className="h-5 w-40 bg-muted rounded" /></TableCell>
-                                    <TableCell><div className="h-5 w-16 bg-muted rounded" /></TableCell>
-                                    <TableCell><div className="h-5 w-24 bg-muted rounded" /></TableCell>
-                                    <TableCell><div className="h-5 w-28 bg-muted rounded" /></TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            Object.entries(groupedMachines).map(([key, group]) => {
+                                                                          {loadingFactories || loadingSections || loadingMachines ? (
+                             <TableRow>
+                                 <TableCell colSpan={5}>
+                                     <div className="flex justify-center items-center h-32 text-muted-foreground">
+                                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                         {loadingFactories ? "Loading factories..." :
+                                          loadingSections ? "Loading sections..." :
+                                          loadingMachines ? "Loading machines..." : "Loading..."}
+                                     </div>
+                                 </TableCell>
+                             </TableRow>
+                                                  ) : Object.keys(groupedMachines).length === 0 ? (
+                             <TableRow>
+                                 <TableCell colSpan={5}>
+                                     <div className="flex justify-center items-center h-32 text-muted-foreground">
+                                         {!factoryId ? "Please select a factory to view machine status" :
+                                          "No machines found for the selected factory"}
+                                     </div>
+                                 </TableCell>
+                             </TableRow>
+                         ) : (
+                             Object.entries(groupedMachines).map(([key, group]) => {
                                 const [factoryId, sectionId] = key.split('-').map(Number);
                                 const runningCount = group.machines.filter(m => m.is_running).length;
                                 const totalCount = group.machines.length;
