@@ -52,7 +52,6 @@ export const fetchOrders = async ({
             order_type,
             order_workflow_id,
             src_factory,
-            marked_inactive,
             order_workflows(*),
             departments(*),
             profiles(*),
@@ -160,15 +159,14 @@ export const fetchOrderByID = async (order_id:number) => {
             factory_section_id,
             order_type,
             order_workflow_id,
-            marked_inactive,
-            unstable_type,
             order_workflows(*),
             departments(*),
             profiles(*),
             statuses(*),
             factory_sections(*),
             factories(*),
-            machines(*)
+            machines(*),
+            src_factory
         `
     ).eq('id',order_id).single()
     if (error){
@@ -278,10 +276,7 @@ export const insertOrder = async (
     factory_section_id: number,
     machine_id: number,
     current_status_id: number,
-    order_type: string,
-    marked_inactive?: boolean,
-    unstable_type?: string | null,
-    src_factory?: number | null ) => {
+    order_type: string ) => {
 
 
 
@@ -296,9 +291,6 @@ export const insertOrder = async (
             "machine_id": machine_id,
             "current_status_id": current_status_id,
             "order_type": order_type,
-            "marked_inactive": marked_inactive,
-            "unstable_type": unstable_type,
-            "src_factory": src_factory,
             
         },
         ])
@@ -348,9 +340,7 @@ export const insertOrderStorageSTM = async (
     machine_id: number,
     current_status_id: number,
     order_type: string,
-    src_factory: number,
-    marked_inactive?: boolean,
-    unstable_type?: string | null,
+    src_factory: number
 ) => {
     const { data, error } = await supabase_client.from('orders').insert([
         {
@@ -364,8 +354,6 @@ export const insertOrderStorageSTM = async (
             "current_status_id": current_status_id,
             "order_type": order_type,
             "src_factory": src_factory,
-            "marked_inactive": marked_inactive,
-            "unstable_type": unstable_type,
         },
     ])
         .select()

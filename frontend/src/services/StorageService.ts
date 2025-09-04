@@ -49,8 +49,9 @@ export const fetchStorageParts = async ({
         console.error('Error fetching parts:', error.message);
         return { data: [], count: 0 };
     }
-
+    
     return { 
+        
       data: data as unknown as StoragePart[],
       count
     };

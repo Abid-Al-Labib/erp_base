@@ -114,40 +114,41 @@ const MachinePartsPage = () => {
 
     try {
       setMachineDetailsLoading(true);
+      setPartsLoading(true);
 
-      // Reset the machine parts and selected machine to blank or initial states
-      setMachineParts([]); // Clear machine parts
-      setSelectedMachine(undefined); // Reset the selected machine
-
-      // Fetch the machine details and handle null by converting to undefined
-      const machine = await fetchMachineById(selectedMachineId);
-      setSelectedMachine(machine ?? undefined); // Set the machine details
-      if(selectedMachine){
-        const fetchedParts = await fetchMachineParts(
+      // Fetch the machine details and parts in parallel
+      const [machine, fetchedParts] = await Promise.all([
+        fetchMachineById(selectedMachineId),
+        fetchMachineParts(
           selectedMachineId,
           filters.partIdQuery || undefined,
           filters.partNameQuery || undefined
-        );
+        )
+      ]);
 
-        const processedParts = fetchedParts.map((record: any) => ({
-          id: record.id,
-          machine_id: record.machine_id,
-          part_id: record.parts.id,
-          qty: record.qty,
-          req_qty: record.req_qty ?? -1,
-          defective_qty: record.defective_qty ?? 0,
-          parts: record.parts,
-          machines: record.machines,
-        }));
+      // Set the machine details
+      setSelectedMachine(machine ?? undefined);
 
-        setMachineParts(processedParts);
+      // Process and set the parts
+      const processedParts = fetchedParts.map((record: any) => ({
+        id: record.id,
+        machine_id: record.machine_id,
+        part_id: record.parts.id,
+        qty: record.qty,
+        req_qty: record.req_qty ?? -1,
+        defective_qty: record.defective_qty ?? 0,
+        parts: record.parts,
+        machines: record.machines,
+      }));
 
-      }
+      setMachineParts(processedParts);
 
     } catch (error) {
       toast.error("Failed to refresh components");
+      setMachineParts([]); // Clear parts on error
     } finally {
       setMachineDetailsLoading(false);
+      setPartsLoading(false);
     }
   }, [selectedMachineId, filters]);
 
@@ -223,19 +224,22 @@ const MachinePartsPage = () => {
         return;
       }
 
-      try {
-        const machine = await fetchMachineById(selectedMachineId);
-        if (machine) {
-          setSelectedMachine(machine);
+      // Only fetch if we don't already have the machine or if it's a different machine
+      if (!selectedMachine || selectedMachine.id !== selectedMachineId) {
+        try {
+          const machine = await fetchMachineById(selectedMachineId);
+          if (machine) {
+            setSelectedMachine(machine);
+          }
+        } catch (error) {
+          console.error("Error fetching machine:", error);
+          setSelectedMachine(undefined);
         }
-      } catch (error) {
-        console.error("Error fetching machine:", error);
-        setSelectedMachine(undefined);
       }
     };
 
     loadMachineData();
-  }, [selectedMachineId]);
+  }, [selectedMachineId, selectedMachine]);
 
   useEffect(() => {
     // Preload factories, sections, and machines on mount
@@ -283,7 +287,7 @@ const MachinePartsPage = () => {
 
   useEffect(() => {
     const loadParts = async () => {
-      if (selectedMachineId == undefined) {
+      if (selectedMachineId === undefined) {
         setMachineParts([]);
         setPartsLoading(false);
         return;
@@ -310,11 +314,14 @@ const MachinePartsPage = () => {
 
         setMachineParts(processedParts);
       } catch (error) {
+        console.error("Failed to fetch parts:", error);
         toast.error("Failed to fetch parts");
+        setMachineParts([]); // Only clear on error
       } finally {
         setPartsLoading(false);
       }
     };
+    
     loadParts();
   }, [selectedMachineId, filters]);
 
@@ -325,14 +332,12 @@ const MachinePartsPage = () => {
     setSelectedFactorySectionId(factorySectionId);
     setSelectedMachineId(machineId);
     updateUrlParams(factoryId, factorySectionId, machineId);
-    setMachineParts([]);
   };
 
   const handleSelectMachine = async (value: string) => {
     const machineId = value == "" ? undefined : Number(value);
     setSelectedMachineId(machineId);
     updateUrlParams(selectedFactoryId, selectedFactorySectionId, machineId);
-    setMachineParts([]);
   };
 
   return (
@@ -363,7 +368,6 @@ const MachinePartsPage = () => {
                         setSelectedFactoryId(factoryId);
                         setSelectedFactorySectionId(undefined);
                         setSelectedMachineId(undefined);
-                        setMachineParts([]);
                         // clear any dependent data
                         setSelectedMachine(undefined);
                         updateUrlParams(factoryId, undefined, undefined);
@@ -401,7 +405,6 @@ const MachinePartsPage = () => {
                           setOverviewLoading(sectionId ? "section" : null);
                           setSelectedFactorySectionId(sectionId);
                           setSelectedMachineId(undefined);
-                          setMachineParts([]);
                           // clear any dependent data
                           setSelectedMachine(undefined);
                           updateUrlParams(selectedFactoryId, sectionId, undefined);
@@ -465,7 +468,7 @@ const MachinePartsPage = () => {
                       setSelectedFactoryId(undefined);
                       setSelectedFactorySectionId(undefined);
                       setSelectedMachineId(undefined);
-                      setMachineParts([]);
+                      setSelectedMachine(undefined);
                       setSearchParams({}); // Clear all URL parameters
                     }}
                   >

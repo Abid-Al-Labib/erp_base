@@ -1,10 +1,10 @@
 import { Order, OrderedPart, StoragePart } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { Separator } from "../../ui/separator"
-import { Badge } from "../../ui/badge"
+
 import { useEffect, useState } from "react"
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService"
-import { Loader2, Package, Warehouse } from "lucide-react"
+import { Loader2, Warehouse } from "lucide-react"
 import { fetchStorageParts } from "@/services/StorageService"
 
 interface OrderStorageInfoProps {
@@ -81,19 +81,20 @@ const OrderStorageInfo: React.FC<OrderStorageInfoProps> = ({ order, mode }) => {
                             <li className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between">
                                     <span className="font-semibold text-muted-foreground">Ordered Parts:</span>
-                                    <span className="text-xs text-muted-foreground">Before → After</span>
+                                    <span className="text-xs text-muted-foreground">Before → After → Currently</span>
                                 </div>
                                 <div className="space-y-2 max-h-32 overflow-y-auto">
                                     {orderedParts.map((part, index) => {
                                         const storagePart = storageParts.find((sp) => sp.parts.id === part.parts.id);
-                                        const currentQty = storagePart ? storagePart.qty : 0;
-                                        const increasedQty = currentQty + part.qty;
+                                        const beforeQty = storagePart ? storagePart.qty : 0;
+                                        const afterQty = beforeQty + part.qty; // After parts are added to storage (PFS logic)
+                                        const currentQty = beforeQty; // Currently same as before until order is processed
 
                                         return (
-                                            <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                                                <span className="font-medium">{part.parts.name}</span>
-                                                <span className="text-muted-foreground">
-                                                    {currentQty} → {increasedQty} {part.parts.unit}
+                                            <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded gap-2">
+                                                <span className="font-medium flex-1">{part.parts.name}</span>
+                                                <span className="text-muted-foreground flex-shrink-0">
+                                                    {beforeQty} → {afterQty} → {currentQty} {part.parts.unit}
                                                 </span>
                                             </div>
                                         )

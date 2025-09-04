@@ -57,6 +57,53 @@ export type Database = {
         }
         Relationships: []
       }
+      assigned_team: {
+        Row: {
+          assigned_at: string | null
+          cost: number | null
+          created_at: string
+          description: string
+          id: number
+          name: string
+          notes: string | null
+          project_component_id: number
+          time_spent: number | null
+          time_unit: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          cost?: number | null
+          created_at?: string
+          description: string
+          id?: number
+          name: string
+          notes?: string | null
+          project_component_id: number
+          time_spent?: number | null
+          time_unit?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string
+          id?: number
+          name?: string
+          notes?: string | null
+          project_component_id?: number
+          time_spent?: number | null
+          time_unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assigned_team_project_component_id_fkey"
+            columns: ["project_component_id"]
+            isOneToOne: false
+            referencedRelation: "project_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       damaged_parts: {
         Row: {
           avg_price: number | null
@@ -562,13 +609,11 @@ export type Database = {
           factory_section_id: number | null
           id: number
           machine_id: number | null
-          marked_inactive: boolean | null
           order_note: string | null
           order_type: string | null
           order_workflow_id: number | null
           req_num: string | null
           src_factory: number | null
-          unstable_type: string | null
         }
         Insert: {
           created_at?: string
@@ -579,13 +624,11 @@ export type Database = {
           factory_section_id?: number | null
           id?: number
           machine_id?: number | null
-          marked_inactive?: boolean | null
           order_note?: string | null
           order_type?: string | null
           order_workflow_id?: number | null
           req_num?: string | null
           src_factory?: number | null
-          unstable_type?: string | null
         }
         Update: {
           created_at?: string
@@ -596,13 +639,11 @@ export type Database = {
           factory_section_id?: number | null
           id?: number
           machine_id?: number | null
-          marked_inactive?: boolean | null
           order_note?: string | null
           order_type?: string | null
           order_workflow_id?: number | null
           req_num?: string | null
           src_factory?: number | null
-          unstable_type?: string | null
         }
         Relationships: [
           {
@@ -730,6 +771,171 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_component_parts: {
+        Row: {
+          id: number
+          part_id: number
+          project_component_id: number
+          qty: number
+        }
+        Insert: {
+          id?: number
+          part_id: number
+          project_component_id: number
+          qty: number
+        }
+        Update: {
+          id?: number
+          part_id?: number
+          project_component_id?: number
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_component_parts_project_component_id_fkey"
+            columns: ["project_component_id"]
+            isOneToOne: false
+            referencedRelation: "project_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_parts_part_id_fkey1"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_components: {
+        Row: {
+          budget: number | null
+          created_at: string
+          deadline: number | null
+          description: string | null
+          end_date: string | null
+          id: number
+          name: string
+          project_id: number
+          start_date: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          deadline?: number | null
+          description?: string | null
+          end_date?: string | null
+          id?: number
+          name: string
+          project_id: number
+          start_date?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          deadline?: number | null
+          description?: string | null
+          end_date?: string | null
+          id?: number
+          name?: string
+          project_id?: number
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_components_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          created_at: string
+          description: string
+          id: number
+          is_completed: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: number
+          is_completed?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: number
+          is_completed?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          budget: number | null
+          created_at: string
+          deadline: string | null
+          description: string
+          end_date: string | null
+          factory_id: number
+          id: number
+          name: string
+          priority: string | null
+          start_date: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          deadline?: string | null
+          description: string
+          end_date?: string | null
+          factory_id: number
+          id?: number
+          name: string
+          priority?: string | null
+          start_date?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          end_date?: string | null
+          factory_id?: number
+          id?: number
+          name?: string
+          priority?: string | null
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       status_tracker: {
         Row: {
@@ -860,7 +1066,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      unstabling_effects: "NONE" | "DEFECTIVE" | "LESS"
+      unstabling_effects: "INACTIVE" | "DEFECTIVE" | "LESS"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -991,7 +1197,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      unstabling_effects: ["NONE", "DEFECTIVE", "LESS"],
+      unstabling_effects: ["INACTIVE", "DEFECTIVE", "LESS"],
     },
   },
 } as const
