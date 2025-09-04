@@ -871,10 +871,7 @@ export type Database = {
           name: string
           project_id: number
           start_date: string | null
-<<<<<<< HEAD
           status: Database["public"]["Enums"]["project_status"]
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
         }
         Insert: {
           budget?: number | null
@@ -886,10 +883,7 @@ export type Database = {
           name: string
           project_id: number
           start_date?: string | null
-<<<<<<< HEAD
           status?: Database["public"]["Enums"]["project_status"]
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
         }
         Update: {
           budget?: number | null
@@ -901,10 +895,7 @@ export type Database = {
           name?: string
           project_id?: number
           start_date?: string | null
-<<<<<<< HEAD
           status?: Database["public"]["Enums"]["project_status"]
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
         }
         Relationships: [
           {
@@ -922,10 +913,7 @@ export type Database = {
           description: string
           id: number
           is_completed: boolean
-<<<<<<< HEAD
           is_note: boolean
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
           name: string
         }
         Insert: {
@@ -933,10 +921,7 @@ export type Database = {
           description: string
           id?: number
           is_completed?: boolean
-<<<<<<< HEAD
           is_note: boolean
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
           name: string
         }
         Update: {
@@ -944,10 +929,7 @@ export type Database = {
           description?: string
           id?: number
           is_completed?: boolean
-<<<<<<< HEAD
           is_note?: boolean
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
           name?: string
         }
         Relationships: []
@@ -962,14 +944,9 @@ export type Database = {
           factory_id: number
           id: number
           name: string
-<<<<<<< HEAD
           priority: Database["public"]["Enums"]["project_priotity"]
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
-=======
-          priority: string | null
-          start_date: string | null
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
         }
         Insert: {
           budget?: number | null
@@ -980,14 +957,9 @@ export type Database = {
           factory_id: number
           id?: number
           name: string
-<<<<<<< HEAD
           priority?: Database["public"]["Enums"]["project_priotity"]
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
-=======
-          priority?: string | null
-          start_date?: string | null
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
         }
         Update: {
           budget?: number | null
@@ -998,14 +970,9 @@ export type Database = {
           factory_id?: number
           id?: number
           name?: string
-<<<<<<< HEAD
           priority?: Database["public"]["Enums"]["project_priotity"]
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
-=======
-          priority?: string | null
-          start_date?: string | null
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
         }
         Relationships: [
           {
@@ -1153,11 +1120,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-<<<<<<< HEAD
       project_priotity: "LOW" | "MEDIUM" | "HIGH"
       project_status: "PLANNING" | "STARTED" | "COMPLETED"
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
       unstabling_effects: "INACTIVE" | "DEFECTIVE" | "LESS"
     }
     CompositeTypes: {
@@ -1289,11 +1253,8 @@ export const Constants = {
   },
   public: {
     Enums: {
-<<<<<<< HEAD
       project_priotity: ["LOW", "MEDIUM", "HIGH"],
       project_status: ["PLANNING", "STARTED", "COMPLETED"],
-=======
->>>>>>> f8a7221e717268e1d7d4b0c08769fe5edf8d1d8f
       unstabling_effects: ["INACTIVE", "DEFECTIVE", "LESS"],
     },
   },
