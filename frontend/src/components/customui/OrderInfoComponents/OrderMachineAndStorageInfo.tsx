@@ -175,7 +175,7 @@ const OrderMachineAndStorageInfo: React.FC<OrderMachineAndStorageInfoProps> = ({
               <li className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-muted-foreground">Machine Parts:</span>
-                  <span className="text-xs text-muted-foreground">Before → After → Currently</span>
+                  <span className="text-xs text-muted-foreground">Currently → On Approval → On Completion</span>
                 </div>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {orderedParts.map((part, index) => {

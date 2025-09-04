@@ -38,6 +38,7 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                 return await handleSTMApproval(
                     orderedParts,
                     order.machine_id,
+                    order.factory_id,
                     order.src_factory!
                 );
 
@@ -140,6 +141,7 @@ export const handlePFMApproval = async (
 export const handleSTMApproval = async (
     orderedParts: OrderedPart[],
     machine_id: number,
+    factory_id: number,
     src_factory_id: number
 ): Promise<{ success: boolean; errors: string[] }> => {
     const errors: string[] = [];
