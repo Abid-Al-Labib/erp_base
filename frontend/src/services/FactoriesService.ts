@@ -227,3 +227,18 @@ export const editFactory = async (factoryId: number, newName: string, newAbbrevi
         return false;
     }
 };
+
+
+export const fetchFactoryNameAndAbbreviation = async (factoryId: number) => {
+    const { data, error } = await supabase_client
+        .from('factories')
+        .select('name, abbreviation')
+        .eq('id', factoryId)
+        .single();
+
+    if (error) {
+        console.error('Error fetching factory name and abbreviation:', error.message);
+        return null;
+    }
+    return data as unknown as { name: string, abbreviation: string };
+}

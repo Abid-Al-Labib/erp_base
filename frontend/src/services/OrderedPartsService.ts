@@ -27,6 +27,7 @@ export const fetchOrderedPartByPartID = async( part_id:number) => {
         approved_pending_order,
         approved_office_order,
         approved_budget,
+        unstable_type,
         orders(*),
         parts(*),
         qty_taken_from_storage
@@ -64,6 +65,7 @@ export const fetchOrderedPartsByOrderID = async (order_id: number)=> {
         approved_pending_order,
         approved_office_order,
         approved_budget,
+        unstable_type,
         orders(*),
         parts(*),
         qty_taken_from_storage
@@ -326,7 +328,8 @@ export const insertOrderedParts = async (
     is_sample_sent_to_office: boolean,
     note: string | null,
     in_storage: boolean,
-    approved_storage_withdrawal: boolean
+    approved_storage_withdrawal: boolean,
+    unstable_type?: 'INACTIVE' | 'DEFECTIVE' | 'LESS' | null
 ) => {
 
     const { data, error } = await supabase_client.from('order_parts').insert([{
@@ -336,7 +339,8 @@ export const insertOrderedParts = async (
         is_sample_sent_to_office,
         note,
         in_storage,
-        approved_storage_withdrawal
+        approved_storage_withdrawal,
+        unstable_type: unstable_type || 'INACTIVE'  // Default to 'INACTIVE' if not provided
     }])
     .select();
 

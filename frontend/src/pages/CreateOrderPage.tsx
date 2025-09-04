@@ -5,7 +5,6 @@ import { Textarea } from "../components/ui/textarea"
 import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
 
 import { CirclePlus, CircleX, Loader2, CircleCheck, X } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
@@ -27,13 +26,12 @@ import { Part, StoragePart } from "@/types"
 import { fetchStoragePartByFactoryAndPartID } from "@/services/StorageService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
-import MachineUnstabilityForm, { UnstableType } from "@/components/customui/MachineUnstabilityForm"
+
 import { 
     Department, 
     Factory, 
     FactorySection, 
     Machine,
-    MachinePart,
     InputOrder, 
     InputOrderedPart 
 } from "@/types"
@@ -123,10 +121,7 @@ const PFM_HELPERS = {
             tempOrderDetails.factory_section_id,
             tempOrderDetails.machine_id,
             1, // Current Status
-            tempOrderDetails.order_type,
-            tempOrderDetails.marked_inactive,
-            tempOrderDetails.unstable_type,
-            tempOrderDetails.src_factory,
+            tempOrderDetails.order_type
         );
     },
 
@@ -206,9 +201,7 @@ const STM_HELPERS = {
             tempOrderDetails.machine_id,
             1, // Current Status
             tempOrderDetails.order_type,
-            srcFactoryId,
-            tempOrderDetails.marked_inactive,
-            tempOrderDetails.unstable_type,
+            srcFactoryId
         );
     },
 
@@ -238,8 +231,6 @@ const CreateOrderPage = () => {
     const [srcFactoryId, setSrcFactoryId] = useState<number>(-1);
     const selectedSrcFactoryName = factories.find(factory => factory.id === srcFactoryId)?.name || "Select Source Factory";
 
-    
-    const [machineParts, setMachineParts] = useState<MachinePart[]>([]);
   
 
     const [orderType, setOrderType] = useState<string>();
@@ -248,27 +239,12 @@ const CreateOrderPage = () => {
 
     const [reqNum, setReqNum] = useState('')
     
-    // Machine instability state
-    const [markAsInactive, setMarkAsInactive] = useState<boolean>(true); // Default checked
-    const [showMachineUnstabilityDialog, setShowMachineUnstabilityDialog] = useState<boolean>(false);
-    const [unstableType, setUnstableType] = useState<UnstableType>('');
+    // Part-level unstable type state for PFM/STM orders
+    const [partUnstableType, setPartUnstableType] = useState<'INACTIVE' | 'DEFECTIVE' | 'LESS'>('INACTIVE');
 
     const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
 
-    // Handle opening machine unstability dialog
-    const handleOpenMachineUnstabilityDialog = () => {
-        setShowMachineUnstabilityDialog(true);
-    };
 
-    // Handle machine unstability selection
-    const handleMachineUnstabilitySelection = (type: UnstableType) => {
-        setUnstableType(type);
-        // Only set machine as not inactive if a valid unstable type is selected
-        if (type) {
-            setMarkAsInactive(false);
-        }
-        setShowMachineUnstabilityDialog(false);
-    };
 
 
 
@@ -370,10 +346,9 @@ const CreateOrderPage = () => {
 
     // Array to store all parts
 
-    const isAddPartFormComplete =
+        const isAddPartFormComplete = 
         partId !== -1 &&
         qty > 0 &&
-        // (orderType !== "Machine" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1)) &&
         isSampleSentToOffice !== null;
 
     const handleResetOrderParts = () => {
@@ -381,6 +356,7 @@ const CreateOrderPage = () => {
         setPartId(-1);
         setIsSampleSentToOffice(false);
         setNote('');
+        setPartUnstableType('INACTIVE');
         setSelectedPartOption(null);
     };
 
@@ -426,9 +402,6 @@ const CreateOrderPage = () => {
                 machine_name: selectedMachineName,
                 current_status_id: statusId,
                 order_type: orderType!,
-                marked_inactive: markAsInactive,
-                unstable_type: unstableType || null,
-                src_factory: undefined,
             };
             
 
@@ -461,7 +434,8 @@ const CreateOrderPage = () => {
         is_sample_sent_to_office: isSampleSentToOffice ?? false,
         note: note.trim() || null,
         in_storage: inStorage,
-        approved_storage_withdrawal: false
+        approved_storage_withdrawal: false,
+        unstable_type: (orderType === "PFM" || orderType === "STM") ? partUnstableType : 'INACTIVE'
     });
 
     // Helper function to check if part is in storage
@@ -547,9 +521,6 @@ const CreateOrderPage = () => {
         // Update tempOrderDetails with current state values before creating order
         const updatedOrderDetails = {
             ...tempOrderDetails,
-            marked_inactive: markAsInactive,
-            unstable_type: unstableType || null,
-            src_factory: undefined,
         };
         
         try {
@@ -573,7 +544,8 @@ const CreateOrderPage = () => {
                         part.is_sample_sent_to_office,
                         part.note || null,
                         part.in_storage,
-                        part.approved_storage_withdrawal
+                        part.approved_storage_withdrawal,
+                        part.unstable_type
                     );
                 } catch (error) {
                     console.error(`Failed to add part: ${part.part_id}`, error);
@@ -879,6 +851,8 @@ const CreateOrderPage = () => {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+
+
                                         <div>
                                             <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
                                             <Textarea
@@ -1056,6 +1030,8 @@ const CreateOrderPage = () => {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        
+                                        
                                         <div>
                                             <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
                                             <Textarea
@@ -1361,36 +1337,29 @@ const CreateOrderPage = () => {
                                                 </Label>
                                             </div>
 
-                                            {/* Mark as Inactive slider */}
-                                            {orderType === "PFM" && (
-                                                <div 
-                                                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                                                    onClick={handleOpenMachineUnstabilityDialog}
-                                                >
-                                                    <div className="space-y-1">
-                                                        <Label className="text-sm font-medium cursor-pointer">
-                                                            Mark Machine as Inactive
-                                                        </Label>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {markAsInactive ? 'Machine will be marked inactive' : 'Machine will continue running'}
-                                                        </p>
-                                                    </div>
-                                                    <Switch
-                                                        checked={markAsInactive}
-                                                        onCheckedChange={() => {}} // Disabled - handled by click on container
-                                                        className="pointer-events-none" // Prevent direct clicking
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {/* Show unstable type if machine is not marked as inactive */}
-                                            {orderType === "PFM" && !markAsInactive && unstableType && (
-                                                <div className="text-sm text-muted-foreground bg-orange-50 p-3 rounded-lg border border-orange-200">
-                                                    <span className="font-medium">Machine will continue running with:</span>
-                                                    <span className="ml-1 font-semibold text-orange-600">
-                                                        {unstableType === 'defective' ? 'Defective Parts' :
-                                                         unstableType === 'less' ? 'Fewer Parts' : unstableType}
-                                                    </span>
+                                            {/* Part Unstable Type Selection for PFM/STM Orders */}
+                                            {(orderType === "PFM" || orderType === "STM") && (
+                                                <div>
+                                                    <Label htmlFor="partUnstableType" className="text-sm font-medium">Part Status (Required)</Label>
+                                                    <Select onValueChange={(value) => setPartUnstableType(value as 'INACTIVE' | 'DEFECTIVE' | 'LESS')}>
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue placeholder="Select part status">
+                                                                {partUnstableType === 'INACTIVE' ? 'Machine Inactive' :
+                                                                 partUnstableType === 'DEFECTIVE' ? 'Defective Part' :
+                                                                 partUnstableType === 'LESS' ? 'Less Quantity Part' : 'Select part status'}
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="INACTIVE">Machine Inactive</SelectItem>
+                                                            <SelectItem value="DEFECTIVE">Defective Part</SelectItem>
+                                                            <SelectItem value="LESS">Less Quantity Part</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {partUnstableType === 'INACTIVE' ? 'Machine will be marked inactive after order completion' :
+                                                         partUnstableType === 'DEFECTIVE' ? 'Part will be marked as defective, machine stays active' :
+                                                         partUnstableType === 'LESS' ? 'Part will use less quantity, machine stays active' : 'Choose how this part affects the machine'}
+                                                    </p>
                                                 </div>
                                             )}
 
@@ -1491,6 +1460,7 @@ const CreateOrderPage = () => {
                                                 <TableHead className="w-[80px]">Qty</TableHead>
                                                 <TableHead className="w-[80px]">Sample</TableHead>
                                                 <TableHead className="w-[80px]">Storage</TableHead>
+                                                {(orderType === "PFM" || orderType === "STM") && <TableHead className="w-[100px]">Status</TableHead>}
                                                 <TableHead>Note</TableHead>
                                                 <TableHead className="w-[60px]"></TableHead>
                                             </TableRow>
@@ -1525,6 +1495,20 @@ const CreateOrderPage = () => {
                                                             {part.in_storage ? 'Yes' : 'No'}
                                                         </span>
                                                     </TableCell>
+                                                    {(orderType === "PFM" || orderType === "STM") && (
+                                                        <TableCell>
+                                                            <span className={`inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ${
+                                                                part.unstable_type === 'DEFECTIVE' ? 'bg-red-100 text-red-600' :
+                                                                part.unstable_type === 'LESS' ? 'bg-yellow-100 text-yellow-600' :
+                                                                part.unstable_type === 'INACTIVE' ? 'bg-orange-100 text-orange-600' :
+                                                                'bg-orange-100 text-orange-600'
+                                                            }`}>
+                                                                {part.unstable_type === 'DEFECTIVE' ? 'Defective' :
+                                                                 part.unstable_type === 'LESS' ? 'Less' :
+                                                                 part.unstable_type === 'INACTIVE' ? 'Inactive' : 'Inactive'}
+                                                            </span>
+                                                        </TableCell>
+                                                    )}
                                                     <TableCell className="max-w-[100px] truncate text-xs">
                                                         {part.note || '-'}
                                                     </TableCell>
@@ -1570,20 +1554,7 @@ const CreateOrderPage = () => {
 
 
 
-            {/* Machine Instability Form Dialog */}
-            <MachineUnstabilityForm
-                isOpen={showMachineUnstabilityDialog}
-                onOpenChange={setShowMachineUnstabilityDialog}
-                unstableType={unstableType}
-                onUnstableTypeChange={handleMachineUnstabilitySelection}
-                onMarkInactiveInstead={() => {
-                    setMarkAsInactive(true);
-                    setUnstableType('');
-                    setShowMachineUnstabilityDialog(false);
-                }}
-                title="How will you keep the machine running?"
-                description="Since you're not marking the machine as inactive, please specify how it will continue operating."
-            />
+           
 
         </>
     );

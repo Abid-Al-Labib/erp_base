@@ -1,13 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
-import { increaseMachinePartQty } from "@/services/MachinePartsService"
 import { updateReceivedByFactoryDateByID } from "@/services/OrderedPartsService"
-import { increaseStoragePartQty } from "@/services/StorageService"
 import { OrderedPart } from "@/types"
 import { useState } from "react"
 import toast from "react-hot-toast"
-import { handlePFSReceivedAction } from "../Processing/CompletionProcesses"
+import { handlePFSReceivedAction, handlePFMReceivedAction } from "../Processing/CompletionProcesses"
 
 interface ReceivedActionProps {
   openThisActionDialog: boolean
@@ -76,12 +74,17 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
         }
 
         if (order_type === "PFM") {
-          await increaseMachinePartQty(
+          const received_handle_success = await handlePFMReceivedAction(
+            orderedPartInfo,
             machine_id,
-            orderedPartInfo.part_id,
-            orderedPartInfo.qty,
+            factory_id,
           );
+          if (!received_handle_success) {
+            await updateReceivedByFactoryDateByID(orderedPartInfo.id, null);
+            toast.error("Resetting received date as part transfer failed");
+          }
         }
+        
         
       } catch (error) {
         toast.error("Error occurred, could not complete action.");

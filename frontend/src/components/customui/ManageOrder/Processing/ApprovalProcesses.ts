@@ -1,7 +1,7 @@
 import { increaseDamagedPartQty } from '@/services/DamagedGoodsService';
 import { reduceMachinePartQty, addDefectiveQuantity, increaseMachinePartQty } from '@/services/MachinePartsService';
 import { setMachineIsRunningById } from '@/services/MachineServices';
-import { increaseStoragePartQty, reduceStoragePartQty } from '@/services/StorageService';
+import { reduceStoragePartQty } from '@/services/StorageService';
 import { fetchOrderedPartsByOrderID } from '@/services/OrderedPartsService';
 
 import { Order, OrderedPart } from '@/types';
@@ -28,9 +28,7 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                 return await handlePFMApproval(
                     orderedParts,
                     order.machine_id,
-                    order.factory_id,
-                    order.marked_inactive ?? true,
-                    order.unstable_type
+                    order.factory_id
                 );
 
             case "PFS":
@@ -40,8 +38,8 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                 return await handleSTMApproval(
                     orderedParts,
                     order.machine_id,
-                    order.src_factory || order.factory_id,
-                    order.marked_inactive ?? false
+                    order.factory_id,
+                    order.src_factory!
                 );
 
 
@@ -57,54 +55,51 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
 
 /**
  * Handles the PFM (Purchase for Machine) approval process for multiple parts (BATCH VERSION - NOW DEFAULT)
- * Based on marked_inactive and unstable_type, performs different actions
+ * Based on individual part unstable_type, performs different actions
+ * If any part has INACTIVE unstable_type, the machine will be marked inactive
  */
 export const handlePFMApproval = async (
     orderedParts: OrderedPart[],
     machine_id: number,
-    factory_id: number,
-    marked_inactive: boolean,
-    unstable_type?: string | null
+    factory_id: number
 ): Promise<{ success: boolean; errors: string[] }> => {
     const errors: string[] = [];
 
     
     try {
-        if (marked_inactive) {
-            // Standard PFM process: set machine inactive and process all parts
+        // Check if any part is marked as INACTIVE - if so, set machine inactive
+        const hasInactiveParts = orderedParts.some(part => part.unstable_type === 'INACTIVE');
+        
+        if (hasInactiveParts) {
+            // Set machine inactive when any part is marked as INACTIVE
             await setMachineIsRunningById(machine_id, false);
-            for (const part of orderedParts) {
-                await reduceMachinePartQty(machine_id, part.part_id, part.qty);
-                await increaseDamagedPartQty(factory_id, part.part_id, part.qty);
-            }
-        } else {
-            // Machine continues running - handle based on unstable_type
-            switch (unstable_type) {
-                case 'defective':
-                    // Use defective parts: increase defective parts qty and reduce machine parts qty
-                    for (const part of orderedParts) {
-                        await addDefectiveQuantity(machine_id, part.part_id, part.qty);
-                        await reduceMachinePartQty(machine_id, part.part_id, part.qty);
-                    }
-                    break;
-                
-                case 'less':
-                    // Use fewer parts: decrease machine parts and increase damaged parts
-                    for (const part of orderedParts) {
-                        await reduceMachinePartQty(machine_id, part.part_id, part.qty);
-                        await increaseDamagedPartQty(factory_id, part.part_id, part.qty);
-                    }
-                    break;
-                
+        }
 
+        // Process each part based on its unstable_type
+        for (const part of orderedParts) {
+            switch (part.unstable_type) {
+                case 'INACTIVE':
+                    // Standard PFM process for inactive parts: reduce machine parts and increase damaged parts
+                    await reduceMachinePartQty(machine_id, part.part_id, part.qty);
+                    await increaseDamagedPartQty(factory_id, part.part_id, part.qty);
+                    break;
+                
+                case 'DEFECTIVE':
+                    // Use defective parts: increase defective parts qty and reduce machine parts qty
+                    await addDefectiveQuantity(machine_id, part.part_id, part.qty);
+                    await reduceMachinePartQty(machine_id, part.part_id, part.qty);
+                    break;
+                
+                case 'LESS':
+                    // Use fewer parts: decrease machine parts and increase damaged parts
+                    await reduceMachinePartQty(machine_id, part.part_id, part.qty);
+                    await increaseDamagedPartQty(factory_id, part.part_id, part.qty);
+                    break;
                 
                 default:
-                    // Fallback to standard process if unstable_type is not recognized
-                    for (const part of orderedParts) {
-                        await reduceMachinePartQty(machine_id, part.part_id, part.qty);
-                        await increaseDamagedPartQty(factory_id, part.part_id, part.qty);
-                    }
-                    await setMachineIsRunningById(machine_id, false);
+                    // Fallback for null or unexpected values: treat as INACTIVE
+                    await reduceMachinePartQty(machine_id, part.part_id, part.qty);
+                    await increaseDamagedPartQty(factory_id, part.part_id, part.qty);
                     break;
             }
         }
@@ -140,25 +135,55 @@ export const handlePFMApproval = async (
 /**
  * Handles the STM (Storage to Machine) approval process
  * Transfers parts from storage to machine and handles machine status
+ * Now supports unstable types similar to PFM orders
+ * If any part has INACTIVE unstable_type, the machine will be marked inactive
  */
 export const handleSTMApproval = async (
     orderedParts: OrderedPart[],
     machine_id: number,
-    src_factory_id: number,
-    marked_inactive: boolean
+    factory_id: number,
+    src_factory_id: number
 ): Promise<{ success: boolean; errors: string[] }> => {
     const errors: string[] = [];
 
     try {
-        // Handle machine status based on marked_inactive
-        if (marked_inactive) {
+        // Check if any part is marked as INACTIVE - if so, set machine inactive
+        const hasInactiveParts = orderedParts.some(part => part.unstable_type === 'INACTIVE');
+        
+        if (hasInactiveParts) {
+            // Set machine inactive when any part is marked as INACTIVE
             await setMachineIsRunningById(machine_id, false);
         }
 
-        // Transfer parts from storage to machine
+        // Process each part based on its unstable_type
         for (const part of orderedParts) {
+            // Always reduce from storage first
             await reduceStoragePartQty(part.part_id, src_factory_id, part.qty);
-            await increaseMachinePartQty(machine_id, part.part_id, part.qty);
+            
+            switch (part.unstable_type) {
+                case 'INACTIVE':
+                    // Standard STM process for inactive parts: transfer parts normally
+                    await increaseMachinePartQty(machine_id, part.part_id, part.qty);
+                    break;
+                
+                case 'DEFECTIVE':
+                    // Add as defective parts and increase machine parts (defective parts are tracked separately)
+                    await addDefectiveQuantity(machine_id, part.part_id, part.qty);
+                    await increaseMachinePartQty(machine_id, part.part_id, part.qty);
+                    break;
+                
+                case 'LESS':
+                    // Use fewer parts: don't add full quantity to machine, send difference to damaged goods
+                    // For STM, we could implement a different logic, but following PFM pattern
+                    await increaseMachinePartQty(machine_id, part.part_id, part.qty);
+                    // Note: For STM LESS, we might want to track this differently than PFM
+                    break;
+                
+                default:
+                    // Fallback for null or unexpected values: treat as INACTIVE
+                    await increaseMachinePartQty(machine_id, part.part_id, part.qty);
+                    break;
+            }
         }
 
         return { success: true, errors };

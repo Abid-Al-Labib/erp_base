@@ -75,6 +75,7 @@ export type OrderedPart = {
     approved_pending_order: boolean
     approved_office_order: boolean
     approved_budget: boolean
+    unstable_type: 'INACTIVE' | 'DEFECTIVE' | 'LESS' | null,  // Part-level unstable type
     orders : Order,
     parts: Part,
     qty_taken_from_storage: number
@@ -101,8 +102,6 @@ export type Order = {
     order_workflows: OrderWorkflow,
     src_factory: number | null,
     src_machine: number | null,
-    marked_inactive: boolean | null,
-    unstable_type: string | null
 };
 
 export type StatusTracker = {
@@ -143,8 +142,6 @@ export interface InputOrder {
     machine_name: string,
     current_status_id: number,
     order_type: string,
-    marked_inactive?: boolean, // For machine orders (PFM, STM, MTS)
-    unstable_type?: string | null, // How to keep machine running when not marked inactive
     src_factory?: number | null, // Source factory for transfers and borrowing from storage
     src_machine?: number | null, // Source machine for transfers and borrowing from machine
 }
@@ -164,6 +161,7 @@ export interface InputOrderedPart {
     note?: string | null;
     in_storage: boolean;
     approved_storage_withdrawal: boolean;
+    unstable_type?: 'INACTIVE' | 'DEFECTIVE' | 'LESS';  // Part-level unstable type, defaults to 'INACTIVE'
 }
 
 export interface StatusTrackerItemProp {
