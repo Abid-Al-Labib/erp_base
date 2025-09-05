@@ -21,6 +21,7 @@ import ExpenseLensPage from './pages/ExpenseLensPart';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NoProfilePage from './pages/NoProfilePage';
 import DisabledPage from './pages/DisabledPage';
+import ProjectPage from './pages/ProjectPage';
 
 const App: React.FC = () => {
   return (
@@ -139,6 +140,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <MachinePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/project"
+            element={
+              <PrivateRoute allowedRoles={['admin']}>
+                <ProjectPage />
               </PrivateRoute>
             }
           />

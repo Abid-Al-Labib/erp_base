@@ -860,11 +860,41 @@ export type Database = {
           },
         ]
       }
+      project_component_tasks: {
+        Row: {
+          created_at: string
+          description: string
+          id: number
+          is_completed: boolean
+          is_note: boolean
+          name: string
+          project_component_id: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: number
+          is_completed?: boolean
+          is_note: boolean
+          name: string
+          project_component_id: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: number
+          is_completed?: boolean
+          is_note?: boolean
+          name?: string
+          project_component_id?: number
+        }
+        Relationships: []
+      }
       project_components: {
         Row: {
           budget: number | null
           created_at: string
-          deadline: number | null
+          deadline: string | null
           description: string | null
           end_date: string | null
           id: number
@@ -876,7 +906,7 @@ export type Database = {
         Insert: {
           budget?: number | null
           created_at?: string
-          deadline?: number | null
+          deadline?: string | null
           description?: string | null
           end_date?: string | null
           id?: number
@@ -888,7 +918,7 @@ export type Database = {
         Update: {
           budget?: number | null
           created_at?: string
-          deadline?: number | null
+          deadline?: string | null
           description?: string | null
           end_date?: string | null
           id?: number
@@ -906,33 +936,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      project_tasks: {
-        Row: {
-          created_at: string
-          description: string
-          id: number
-          is_completed: boolean
-          is_note: boolean
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          id?: number
-          is_completed?: boolean
-          is_note: boolean
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: number
-          is_completed?: boolean
-          is_note?: boolean
-          name?: string
-        }
-        Relationships: []
       }
       projects: {
         Row: {
