@@ -422,6 +422,51 @@ export type Database = {
           },
         ]
       }
+      miscellaneous_project_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          project_component_id: number | null
+          project_id: number | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: number
+          name: string
+          project_component_id?: number | null
+          project_id?: number | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string
+          project_component_id?: number | null
+          project_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "miscellaneous_project_costs_project_component_id_fkey"
+            columns: ["project_component_id"]
+            isOneToOne: false
+            referencedRelation: "project_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "miscellaneous_project_costs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_parts: {
         Row: {
           approved_budget: boolean
@@ -815,39 +860,72 @@ export type Database = {
           },
         ]
       }
+      project_component_tasks: {
+        Row: {
+          created_at: string
+          description: string
+          id: number
+          is_completed: boolean
+          is_note: boolean
+          name: string
+          project_component_id: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: number
+          is_completed?: boolean
+          is_note: boolean
+          name: string
+          project_component_id: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: number
+          is_completed?: boolean
+          is_note?: boolean
+          name?: string
+          project_component_id?: number
+        }
+        Relationships: []
+      }
       project_components: {
         Row: {
           budget: number | null
           created_at: string
-          deadline: number | null
+          deadline: string | null
           description: string | null
           end_date: string | null
           id: number
           name: string
           project_id: number
           start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
         }
         Insert: {
           budget?: number | null
           created_at?: string
-          deadline?: number | null
+          deadline?: string | null
           description?: string | null
           end_date?: string | null
           id?: number
           name: string
           project_id: number
           start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
         }
         Update: {
           budget?: number | null
           created_at?: string
-          deadline?: number | null
+          deadline?: string | null
           description?: string | null
           end_date?: string | null
           id?: number
           name?: string
           project_id?: number
           start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
         }
         Relationships: [
           {
@@ -859,30 +937,6 @@ export type Database = {
           },
         ]
       }
-      project_tasks: {
-        Row: {
-          created_at: string
-          description: string
-          id: number
-          is_completed: boolean
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          id?: number
-          is_completed?: boolean
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: number
-          is_completed?: boolean
-          name?: string
-        }
-        Relationships: []
-      }
       projects: {
         Row: {
           budget: number | null
@@ -893,8 +947,9 @@ export type Database = {
           factory_id: number
           id: number
           name: string
-          priority: string | null
+          priority: Database["public"]["Enums"]["project_priotity"]
           start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
         }
         Insert: {
           budget?: number | null
@@ -905,8 +960,9 @@ export type Database = {
           factory_id: number
           id?: number
           name: string
-          priority?: string | null
+          priority?: Database["public"]["Enums"]["project_priotity"]
           start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
         }
         Update: {
           budget?: number | null
@@ -917,8 +973,9 @@ export type Database = {
           factory_id?: number
           id?: number
           name?: string
-          priority?: string | null
+          priority?: Database["public"]["Enums"]["project_priotity"]
           start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
         }
         Relationships: [
           {
@@ -1066,6 +1123,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      project_priotity: "LOW" | "MEDIUM" | "HIGH"
+      project_status: "PLANNING" | "STARTED" | "COMPLETED"
       unstabling_effects: "INACTIVE" | "DEFECTIVE" | "LESS"
     }
     CompositeTypes: {
@@ -1197,6 +1256,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      project_priotity: ["LOW", "MEDIUM", "HIGH"],
+      project_status: ["PLANNING", "STARTED", "COMPLETED"],
       unstabling_effects: ["INACTIVE", "DEFECTIVE", "LESS"],
     },
   },

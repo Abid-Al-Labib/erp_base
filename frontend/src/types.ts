@@ -10,6 +10,8 @@ export type ApplicationSettings = Tables<"app_settings">
 export type OrderWorkflow = Tables<"order_workflows">
 export type InstantAddStoragePart = Tables<"instant_add_storage_part">
 export type InstantAddDamagedPart = Tables<"instant_add_damaged_part">
+export type MiscProjectCost = Tables<"miscellaneous_project_costs">
+export type ProjectComponentTask = Tables<"project_component_tasks">
 
 export type StoragePart = {
     id: number;
@@ -36,6 +38,7 @@ export type Machine = {
     factory_sections?: FactorySection
 }
 
+
 export type MachinePart = {
     id: number;
     machine_id: number;
@@ -46,6 +49,45 @@ export type MachinePart = {
     parts: Part
     machines: Machine
 }
+
+export type Project = {
+    budget: number | null;
+    created_at: string;
+    deadline: string | null;
+    description: string;
+    end_date: string | null;
+    factory_id: number;
+    id: number;
+    name: string;
+    priority: "LOW" | "MEDIUM" | "HIGH";
+    start_date: string | null;
+    status: "PLANNING" | "STARTED" | "COMPLETED";
+    factory: Factory
+}
+
+export type ProjectComponent = {
+    budget: number | null;
+    created_at: string;
+    deadline: string | null;
+    description: string | null;
+    end_date: string | null;
+    id: number;
+    name: string;
+    project_id: number;
+    start_date: string | null;
+    status: "PLANNING" | "STARTED" | "COMPLETED";
+    project: Project
+}
+
+export type ProjectComponentPart = {
+    id: number;
+    part_id: number;
+    project_component_id: number;
+    qty: number;
+    part: Part;
+    project_component: ProjectComponent
+}
+
 
 export type FactorySection = {
     id: number,

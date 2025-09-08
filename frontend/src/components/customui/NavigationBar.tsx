@@ -58,12 +58,12 @@ const NavigationBar = () => {
           Machine
         </Link>
         <Link
-          to="/projects"
+          to="/project"
           className={`transition-colors hover:text-foreground ${
-            isActive("/projects") ? "font-bold" : "text-foreground"
+            isActive("/project") ? "font-bold" : "text-foreground"
           }`}
         >
-          Projects
+          Project
         </Link>
         <Link
           to="/management"
@@ -126,12 +126,12 @@ const NavigationBar = () => {
               Machine
             </Link>
             <Link
-              to="/projects"
-              className={`hover:text-foreground ${
-                isActive("/projects") ? "font-bold" : "text-foreground"
+              to="/project"
+              className={`transition-colors hover:text-foreground ${
+                isActive("/project") ? "font-bold" : "text-foreground"
               }`}
             >
-              Projects
+              Project
             </Link>
             <Link
               to="/management"
