@@ -10,11 +10,10 @@ import {
   Folder, 
   FolderOpen, 
   Settings, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle,
   Package,
-  ListTodo
+  ListTodo,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { fetchFactories } from "@/services/FactoriesService";
 import { Factory } from "@/types";
@@ -37,6 +36,12 @@ interface ProjectComponent {
   progress: number;
   parts: ProjectPart[];
   todos: TodoItem[];
+  budget: number;
+  totalCost: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  startDate: string;
+  endDate?: string;
+  deadline: string;
 }
 
 interface Project {
@@ -47,8 +52,13 @@ interface Project {
   status: 'planning' | 'active' | 'completed' | 'cancelled';
   startDate: string;
   endDate?: string;
+  deadline: string;
   progress: number;
   components: ProjectComponent[];
+  budget: number;
+  totalCost: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  timeElapsed: number; // in days
 }
 
 interface TodoItem {
@@ -71,7 +81,12 @@ const mockProjects: Project[] = [
     status: 'active',
     startDate: '2024-01-15',
     endDate: '2024-06-30',
+    deadline: '2024-07-15',
     progress: 65,
+    budget: 250000,
+    totalCost: 162500,
+    priority: 'high',
+    timeElapsed: 45,
     components: [
       {
         id: 1,
@@ -79,6 +94,12 @@ const mockProjects: Project[] = [
         description: "Install new conveyor belts and control systems",
         status: 'in_progress',
         progress: 80,
+        budget: 75000,
+        totalCost: 60000,
+        priority: 'high',
+        startDate: '2024-01-20',
+        endDate: '2024-03-15',
+        deadline: '2024-03-20',
         parts: [
           { id: 1, name: "Conveyor Belt", description: "Heavy duty belt", quantity: 50, unit: "meters", status: 'available' },
           { id: 2, name: "Motor Controller", description: "Variable speed controller", quantity: 3, unit: "units", status: 'ordered' },
@@ -97,6 +118,12 @@ const mockProjects: Project[] = [
         description: "Implement safety barriers and emergency stops",
         status: 'not_started',
         progress: 0,
+        budget: 45000,
+        totalCost: 5000,
+        priority: 'medium',
+        startDate: '2024-03-01',
+        endDate: '2024-04-30',
+        deadline: '2024-05-15',
         parts: [
           { id: 4, name: "Safety Barriers", description: "Light curtains", quantity: 6, unit: "units", status: 'ordered' },
           { id: 5, name: "Emergency Stop Buttons", description: "Red mushroom buttons", quantity: 8, unit: "units", status: 'available' }
@@ -116,7 +143,13 @@ const mockProjects: Project[] = [
     factoryId: 1,
     status: 'planning',
     startDate: '2024-03-01',
+    endDate: '2024-08-15',
+    deadline: '2024-09-01',
     progress: 15,
+    budget: 180000,
+    totalCost: 27000,
+    priority: 'medium',
+    timeElapsed: 12,
     components: [
       {
         id: 3,
@@ -124,6 +157,12 @@ const mockProjects: Project[] = [
         description: "Automated visual inspection cameras",
         status: 'not_started',
         progress: 0,
+        budget: 120000,
+        totalCost: 18000,
+        priority: 'medium',
+        startDate: '2024-03-15',
+        endDate: '2024-07-01',
+        deadline: '2024-07-15',
         parts: [
           { id: 6, name: "Industrial Camera", description: "High resolution camera", quantity: 4, unit: "units", status: 'delayed' },
           { id: 7, name: "Lighting System", description: "LED ring lights", quantity: 4, unit: "units", status: 'available' }
@@ -153,6 +192,8 @@ const ProjectsPage: React.FC = () => {
     const componentParam = searchParams.get('component');
     return componentParam ? Number(componentParam) : undefined;
   });
+  const [isProjectInfoExpanded, setIsProjectInfoExpanded] = useState(true);
+  const [isComponentInfoExpanded, setIsComponentInfoExpanded] = useState(false);
 
   // Filter projects by selected factory
   const filteredProjects = useMemo(() => {
@@ -233,6 +274,22 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(selectedFactoryId, selectedProjectId, componentId);
   };
 
+  // Handle project info toggle
+  const toggleProjectInfo = () => {
+    setIsProjectInfoExpanded(!isProjectInfoExpanded);
+    if (!isProjectInfoExpanded) {
+      setIsComponentInfoExpanded(false);
+    }
+  };
+
+  // Handle component info toggle
+  const toggleComponentInfo = () => {
+    setIsComponentInfoExpanded(!isComponentInfoExpanded);
+    if (!isComponentInfoExpanded) {
+      setIsProjectInfoExpanded(false);
+    }
+  };
+
   // Get status color for projects
   const getProjectStatusColor = (status: Project['status']) => {
     switch (status) {
@@ -244,27 +301,6 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
-  // Get status color for components
-  const getComponentStatusColor = (status: ProjectComponent['status']) => {
-    switch (status) {
-      case 'not_started': return 'bg-gray-100 text-gray-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'on_hold': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get status icon for components
-  const getComponentStatusIcon = (status: ProjectComponent['status']) => {
-    switch (status) {
-      case 'not_started': return <Clock className="h-4 w-4" />;
-      case 'in_progress': return <Settings className="h-4 w-4 animate-spin" />;
-      case 'completed': return <CheckCircle className="h-4 w-4" />;
-      case 'on_hold': return <AlertCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
-  };
 
   // Get priority color for todos
   const getTodoPriorityColor = (priority: TodoItem['priority']) => {
@@ -276,27 +312,48 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
+  // Get project priority color
+  const getProjectPriorityColor = (priority: Project['priority']) => {
+    switch (priority) {
+      case 'critical': return 'bg-red-100 text-red-800';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   return (
     <>
       <NavigationBar />
-      <div className="flex w-full flex-col h-screen">
+      <div className="flex w-full flex-col">
         <main className="flex-1 p-4 sm:px-6 sm:py-4 overflow-hidden">
-          <div className="flex flex-col lg:flex-row gap-4 h-full">
+          <div className="flex flex-col lg:flex-row gap-4" style={{ height: 'calc(100vh - 100px)' }}>
             
-            {/* Left Panel - Factory, Projects and Components */}
+            {/* Left Panel - Unified Project Navigator */}
             <div className="flex-none min-w-80 max-w-96 w-full lg:w-1/4 h-full">
               <Card className="h-full flex flex-col">
-                <CardHeader className="flex-shrink-0">
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Folder className="h-5 w-5" />
-                    Projects
+                    Project Navigator
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1 overflow-y-auto">
                   
-                  {/* Factory Selection */}
-                  <div>
-                    <Label className="mb-2">Select Factory</Label>
+                   {/* Factory Selection */}
+                   <div>
+                     <Label className="mb-2 text-base font-medium">Factory</Label>
                     <Select
                       value={selectedFactoryId?.toString() || ""}
                       onValueChange={handleFactorySelect}
@@ -314,118 +371,314 @@ const ProjectsPage: React.FC = () => {
                     </Select>
                   </div>
 
-                  {/* Projects List */}
+                  {/* Project Section */}
                   {selectedFactoryId && (
                     <div>
-                      <Label className="mb-2">Projects</Label>
-                      <div className="space-y-2 flex-1 overflow-y-auto">
-                        {filteredProjects.length === 0 ? (
-                          <div className="text-sm text-muted-foreground text-center py-4">
-                            No projects found for this factory
-                          </div>
-                        ) : (
-                          filteredProjects.map((project) => (
-                            <div key={project.id} className={`${
-                              selectedProjectId === project.id 
-                                ? 'mb-8 p-4 border-2 border-primary/30 rounded-xl' 
-                                : 'mb-3'
-                            }`}>
-                              {/* Project Header */}
-                              <div
-                                className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                                  selectedProjectId === project.id 
-                                    ? 'bg-white border-primary shadow-md border-2' 
-                                    : 'bg-white hover:bg-gray-50 border-gray-200'
-                                }`}
-                                onClick={() => handleProjectSelect(project.id)}
-                              >
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-center gap-3">
-                                    {selectedProjectId === project.id ? 
-                                      <FolderOpen className="h-5 w-5 text-primary" /> : 
-                                      <Folder className="h-4 w-4 text-muted-foreground" />
-                                    }
-                                    <h4 className={`font-semibold ${
-                                      selectedProjectId === project.id 
-                                        ? 'text-primary text-base' 
-                                        : 'text-sm'
-                                    }`}>
-                                      {project.name}
-                                    </h4>
-                                  </div>
-                                  <Badge className={`text-xs ${getProjectStatusColor(project.status)}`}>
-                                    {project.status}
-                                  </Badge>
+                       <div className="flex items-center justify-between mb-3">
+                         <h2 className="text-xl font-bold text-gray-900">Project</h2>
+                        <div className="flex items-center gap-1">
+                          <button className="text-muted-foreground hover:text-blue-500 transition-colors p-1" title="Add project">
+                            +
+                          </button>
+                        </div>
+                       </div>
+                      
+                      {selectedProjectId ? (
+                        // Show selected project information
+                        <div className="space-y-3">
+                          {filteredProjects
+                            .filter(project => project.id === selectedProjectId)
+                            .map((project) => (
+                              <div key={project.id} className="space-y-3">
+                                {/* Project Header */}
+                                <div>
+                                   <div className="flex items-center gap-2 mb-2">
+                                     <button
+                                       onClick={toggleProjectInfo}
+                                       className="text-primary hover:text-primary/80 transition-colors"
+                                     >
+                                       {isProjectInfoExpanded ? (
+                                         <ChevronDown className="h-4 w-4" />
+                                       ) : (
+                                         <ChevronRight className="h-4 w-4" />
+                                       )}
+                                     </button>
+                                     <h3 
+                                       className="font-semibold text-lg text-primary flex-1 cursor-pointer hover:text-primary/80 transition-colors"
+                                       onClick={toggleProjectInfo}
+                                     >
+                                       {project.name}
+                                     </h3>
+                                     <div className="flex items-center gap-1">
+                                       <button className="text-muted-foreground hover:text-gray-700 transition-colors p-1" title="More options">
+                                         ⋯
+                                       </button>
+                                       <button
+                                         onClick={() => {
+                                           setSelectedProjectId(undefined);
+                                           setSelectedComponentId(undefined);
+                                           updateUrlParams(selectedFactoryId);
+                                         }}
+                                         className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                                         title="Back to project selection"
+                                       >
+                                         ✕
+                                       </button>
+                                     </div>
+                                   </div>
+                                  <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
                                 </div>
-                                
-                                {/* Show description and progress for non-selected projects */}
-                                {selectedProjectId !== project.id && (
-                                  <>
-                                    <p className="text-xs text-muted-foreground mb-3 opacity-75">{project.description}</p>
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-muted-foreground">Progress</span>
-                                      <span className="font-medium">{project.progress}%</span>
+
+                                {/* Project Details */}
+                                {isProjectInfoExpanded && (
+                                <div className="space-y-3">
+                                  {/* Budget and Cost */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Budget</span>
+                                      <div className="font-semibold text-green-600">{formatCurrency(project.budget)}</div>
                                     </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div>
+                                      <span className="text-muted-foreground block">Total Cost</span>
+                                      <div className="font-semibold text-blue-600">{formatCurrency(project.totalCost)}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Dates */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Start Date</span>
+                                      <div className="font-medium">{project.startDate}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground block">End Date</span>
+                                      <div className="font-medium">{project.endDate || 'TBD'}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Deadline and Priority */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Deadline</span>
+                                      <div className="font-medium text-red-600">{project.deadline}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground block">Priority</span>
+                                      <Badge className={`text-sm ${getProjectPriorityColor(project.priority)}`}>
+                                        {project.priority}
+                                      </Badge>
+                                    </div>
+                                  </div>
+
+                                  {/* Status and Time */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Status</span>
+                                      <Badge className={`text-sm ${getProjectStatusColor(project.status)}`}>
+                                        {project.status}
+                                      </Badge>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground block">Time Elapsed</span>
+                                      <div className="font-medium">{project.timeElapsed} days</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Components Progress */}
+                                  <div>
+                                    <div className="flex items-center justify-between text-sm mb-1">
+                                      <span className="text-muted-foreground">Components Completed</span>
+                                      <span className="font-medium text-primary">
+                                        {project.components.filter(c => c.status === 'completed').length}/{project.components.length}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
                                       <div 
-                                        className="bg-primary h-1.5 rounded-full transition-all duration-300" 
-                                        style={{ width: `${project.progress}%` }}
+                                        className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                        style={{ width: `${(project.components.filter(c => c.status === 'completed').length / project.components.length) * 100}%` }}
                                       ></div>
                                     </div>
-                                  </>
-                                )}
-                                
-                                {/* Show simplified view for selected project */}
-                                {selectedProjectId === project.id && (
-                                  <div className="text-xs text-primary/70 font-medium">
-                                    {project.components.length} components • {project.progress}% complete
                                   </div>
+                                </div>
                                 )}
                               </div>
-
-                              {/* Project Components - Show when project is selected */}
-                              {selectedProjectId === project.id && (
-                                <div className="mt-6 ml-2 space-y-3">
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <div className="h-px bg-primary/30 flex-1"></div>
-                                    <Label className="text-xs text-primary font-semibold uppercase tracking-wide">Components</Label>
-                                    <div className="h-px bg-primary/30 flex-1"></div>
-                                  </div>
-                                  {project.components.map((component) => (
-                                    <div
-                                      key={component.id}
-                                      className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
-                                        selectedComponentId === component.id 
-                                          ? 'bg-white border-primary shadow-sm border-2' 
-                                          : 'bg-white hover:bg-gray-50 border-gray-200'
-                                      }`}
-                                      onClick={() => handleComponentSelect(component.id)}
-                                    >
-                                      <div className="flex items-start justify-between mb-2">
-                                        <h5 className={`font-medium text-sm ${
-                                          selectedComponentId === component.id ? 'text-primary' : ''
-                                        }`}>
-                                          {component.name}
-                                        </h5>
-                                        <div className="flex items-center gap-1">
-                                          {getComponentStatusIcon(component.status)}
-                                          <Badge className={`text-xs ${getComponentStatusColor(component.status)}`}>
-                                            {component.status.replace('_', ' ')}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <span>{component.parts.length} parts</span>
-                                        <span>{component.todos.length} todos</span>
-                                      </div>
-                                    </div>
-                                  ))}
+                            ))
+                          }
+                        </div>
+                      ) : (
+                        // Show project selection cards
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {filteredProjects.length === 0 ? (
+                            // Show skeleton cards when no projects
+                            <>
+                              {[1, 2, 3].map((i) => (
+                                <div key={i} className="p-3 border rounded-lg bg-gray-50 animate-pulse">
+                                  <div className="h-4 bg-gray-300 rounded w-2/3 mb-2"></div>
+                                  <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                                  <div className="h-3 bg-gray-300 rounded w-3/4"></div>
                                 </div>
-                              )}
-                            </div>
-                          ))
-                        )}
+                              ))}
+                            </>
+                          ) : (
+                            // Show all projects for selection
+                            filteredProjects.map((project) => (
+                              <div 
+                                key={project.id} 
+                                className="p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:bg-gray-50 border-gray-200"
+                                onClick={() => handleProjectSelect(project.id)}
+                              >
+                               <h4 className="font-medium text-base mb-2">
+                                 {project.name}
+                               </h4>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {project.description}
+                              </p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Project Selection Skeleton when no factory selected */}
+                  {!selectedFactoryId && (
+                     <div>
+                       <Label className="mb-2 text-base font-medium">Project</Label>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="p-3 border rounded-lg bg-gray-50 animate-pulse">
+                            <div className="h-4 bg-gray-300 rounded w-2/3 mb-2"></div>
+                            <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                            <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                          </div>
+                        ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Component Section */}
+                  {selectedProject && (
+                    <div className="border-t pt-4">
+                       <div className="flex items-center justify-between mb-3">
+                         <h2 className="text-xl font-bold text-gray-900">Component</h2>
+                        <div className="flex items-center gap-1">
+                          <button className="text-muted-foreground hover:text-blue-500 transition-colors p-1" title="Add component">
+                            +
+                          </button>
+                        </div>
+                       </div>
+
+                      {selectedComponentId ? (
+                        // Show selected component information
+                        <div className="space-y-3">
+                          {selectedProject.components
+                            .filter(component => component.id === selectedComponentId)
+                            .map((component) => (
+                              <div key={component.id} className="space-y-3">
+                                {/* Component Header */}
+                                <div>
+                                   <div className="flex items-center gap-2 mb-2">
+                                     <button
+                                       onClick={toggleComponentInfo}
+                                       className="text-primary hover:text-primary/80 transition-colors"
+                                     >
+                                       {isComponentInfoExpanded ? (
+                                         <ChevronDown className="h-4 w-4" />
+                                       ) : (
+                                         <ChevronRight className="h-4 w-4" />
+                                       )}
+                                     </button>
+                                     <h3 
+                                       className="font-semibold text-lg text-primary flex-1 cursor-pointer hover:text-primary/80 transition-colors"
+                                       onClick={toggleComponentInfo}
+                                     >
+                                       {component.name}
+                                     </h3>
+                                     <div className="flex items-center gap-1">
+                                       <button className="text-muted-foreground hover:text-gray-700 transition-colors p-1" title="More options">
+                                         ⋯
+                                       </button>
+                                       <button
+                                         onClick={() => {
+                                           setSelectedComponentId(undefined);
+                                           updateUrlParams(selectedFactoryId, selectedProjectId);
+                                         }}
+                                         className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                                         title="Back to component selection"
+                                       >
+                                         ✕
+                                       </button>
+                                     </div>
+                                   </div>
+                                  <p className="text-sm text-muted-foreground leading-relaxed">{component.description}</p>
+                                </div>
+
+                                {/* Component Details */}
+                                {isComponentInfoExpanded && (
+                                <div className="space-y-3">
+                                  {/* Budget and Cost */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Budget</span>
+                                      <div className="font-semibold text-green-600">{formatCurrency(component.budget)}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground block">Total Cost</span>
+                                      <div className="font-semibold text-blue-600">{formatCurrency(component.totalCost)}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Dates */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Start Date</span>
+                                      <div className="font-medium">{component.startDate}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground block">End Date</span>
+                                      <div className="font-medium">{component.endDate || 'TBD'}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Deadline and Priority */}
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground block">Deadline</span>
+                                      <div className="font-medium text-red-600">{component.deadline}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground block">Priority</span>
+                                      <Badge className={`text-sm ${getProjectPriorityColor(component.priority)}`}>
+                                        {component.priority}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                                )}
+                              </div>
+                            ))
+                          }
+                        </div>
+                      ) : (
+                        // Show component selection cards
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {selectedProject.components.map((component) => (
+                            <div
+                              key={component.id}
+                              className="p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:bg-gray-50 border-gray-200"
+                              onClick={() => handleComponentSelect(component.id)}
+                            >
+                               <h4 className="font-medium text-base mb-2">
+                                 {component.name}
+                               </h4>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {component.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -452,12 +705,12 @@ const ProjectsPage: React.FC = () => {
                           <div key={part.id} className="flex items-center justify-between p-3 border rounded-lg">
                             <div className="flex-1">
                               <h4 className="font-medium text-sm">{part.name}</h4>
-                              <p className="text-xs text-muted-foreground">{part.description}</p>
+                              <p className="text-sm text-muted-foreground">{part.description}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">{part.quantity} {part.unit}</span>
                               <Badge 
-                                className={`text-xs ${
+                                className={`text-sm ${
                                   part.status === 'available' ? 'bg-green-100 text-green-800' :
                                   part.status === 'ordered' ? 'bg-blue-100 text-blue-800' :
                                   'bg-red-100 text-red-800'
@@ -482,7 +735,7 @@ const ProjectsPage: React.FC = () => {
                           <ListTodo className="h-5 w-5" />
                           Todo List
                         </CardTitle>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-sm text-muted-foreground">
                           {selectedComponent.todos.filter(t => t.completed).length} / {selectedComponent.todos.length} completed
                         </div>
                       </div>
@@ -500,14 +753,14 @@ const ProjectsPage: React.FC = () => {
                                 <h4 className={`font-medium text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>
                                   {todo.title}
                                 </h4>
-                                <Badge className={`text-xs ${getTodoPriorityColor(todo.priority)}`}>
+                                <Badge className={`text-sm ${getTodoPriorityColor(todo.priority)}`}>
                                   {todo.priority}
                                 </Badge>
                               </div>
                               {todo.description && (
-                                <p className="text-xs text-muted-foreground mt-1">{todo.description}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{todo.description}</p>
                               )}
-                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                 {todo.dueDate && <span>Due: {todo.dueDate}</span>}
                                 {todo.assignedTo && <span>Assigned: {todo.assignedTo}</span>}
                               </div>
@@ -533,22 +786,22 @@ const ProjectsPage: React.FC = () => {
               </div>
             )}
 
-            {selectedFactoryId && !selectedComponent && (
+            {selectedFactoryId && !selectedProject && (
               <div className="flex-1 h-full flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
-                  {!selectedProject ? (
-                    <>
-                      <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2">Select a Project</h3>
-                      <p className="text-sm">Choose a project to view its components</p>
-                    </>
-                  ) : (
-                    <>
-                      <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2">Select a Component</h3>
-                      <p className="text-sm">Choose a project component to view its parts and todos</p>
-                    </>
-                  )}
+                  <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">Select a Project</h3>
+                  <p className="text-sm">Choose a project to view its components</p>
+                </div>
+              </div>
+            )}
+
+            {selectedProject && !selectedComponent && (
+              <div className="flex-1 h-full flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">Select a Component</h3>
+                  <p className="text-sm">Choose a project component to view its parts and todos</p>
                 </div>
               </div>
             )}
