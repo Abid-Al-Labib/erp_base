@@ -12,6 +12,7 @@ import ViewPartPage from './pages/ViewPartPage';
 import AddPartPage from './pages/AddPartPage';
 import StoragePage from './pages/StoragePage';
 import MachinePage from './pages/MachinePage';
+import ProjectsPage from './pages/ProjectsPage';
 import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/customui/routing/PrivateRouting'; // Import PrivateRoute component
@@ -21,7 +22,6 @@ import ExpenseLensPage from './pages/ExpenseLensPart';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NoProfilePage from './pages/NoProfilePage';
 import DisabledPage from './pages/DisabledPage';
-import ProjectPage from './pages/ProjectPage';
 
 const App: React.FC = () => {
   return (
@@ -147,7 +147,7 @@ const App: React.FC = () => {
             path="/project"
             element={
               <PrivateRoute allowedRoles={['admin']}>
-                <ProjectPage />
+                <ProjectsPage />
               </PrivateRoute>
             }
           />
