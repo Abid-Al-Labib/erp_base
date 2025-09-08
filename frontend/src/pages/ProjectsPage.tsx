@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { fetchFactories } from "@/services/FactoriesService";
 import { Factory } from "@/types";
+import ProjectComponentTasks from "@/components/customui/ProjectComponents/ProjectComponentTasks";
 
 // Mock types for the project structure
 interface ProjectPart {
@@ -726,50 +727,11 @@ const ProjectsPage: React.FC = () => {
                   </Card>
                 </div>
 
-                {/* Todo List - Always Open */}
+                {/* Tasks panel */}
                 <div className="flex-1 h-full">
-                  <Card className="h-full flex flex-col">
-                    <CardHeader className="flex-shrink-0">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <ListTodo className="h-5 w-5" />
-                          Todo List
-                        </CardTitle>
-                        <div className="text-sm text-muted-foreground">
-                          {selectedComponent.todos.filter(t => t.completed).length} / {selectedComponent.todos.length} completed
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto">
-                      <div className="space-y-3">
-                        {selectedComponent.todos.map((todo) => (
-                          <div key={todo.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                            <Checkbox 
-                              checked={todo.completed}
-                              className="mt-0.5"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between">
-                                <h4 className={`font-medium text-sm ${todo.completed ? 'line-through text-muted-foreground' : ''}`}>
-                                  {todo.title}
-                                </h4>
-                                <Badge className={`text-sm ${getTodoPriorityColor(todo.priority)}`}>
-                                  {todo.priority}
-                                </Badge>
-                              </div>
-                              {todo.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{todo.description}</p>
-                              )}
-                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                {todo.dueDate && <span>Due: {todo.dueDate}</span>}
-                                {todo.assignedTo && <span>Assigned: {todo.assignedTo}</span>}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {selectedComponent && (
+                    <ProjectComponentTasks ProjectComponentId={selectedComponent.id} />
+                  )}
                 </div>
 
               </div>

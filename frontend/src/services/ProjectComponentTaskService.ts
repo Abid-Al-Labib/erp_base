@@ -43,7 +43,7 @@ export const fetchProjectComponentNotes = async (
 };
 
 // Fetch only todos (not notes)
-export const fetchProjectComponentTodos = async (
+export const fetchProjectComponentTodoTasks = async (
   componentId: number
 ) => {
   const { data, error } = await supabase_client

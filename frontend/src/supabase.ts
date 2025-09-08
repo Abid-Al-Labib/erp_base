@@ -869,6 +869,7 @@ export type Database = {
           is_note: boolean
           name: string
           project_component_id: number
+          task_priority: Database["public"]["Enums"]["project_priotity"] | null
         }
         Insert: {
           created_at?: string
@@ -878,6 +879,7 @@ export type Database = {
           is_note: boolean
           name: string
           project_component_id: number
+          task_priority?: Database["public"]["Enums"]["project_priotity"] | null
         }
         Update: {
           created_at?: string
@@ -887,6 +889,7 @@ export type Database = {
           is_note?: boolean
           name?: string
           project_component_id?: number
+          task_priority?: Database["public"]["Enums"]["project_priotity"] | null
         }
         Relationships: []
       }
