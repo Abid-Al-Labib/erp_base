@@ -58,6 +58,14 @@ const NavigationBar = () => {
           Machine
         </Link>
         <Link
+          to="/projects"
+          className={`transition-colors hover:text-foreground ${
+            isActive("/projects") ? "font-bold" : "text-foreground"
+          }`}
+        >
+          Projects
+        </Link>
+        <Link
           to="/management"
           className={`transition-colors whitespace-nowrap hover:text-foreground ${
             isActive("/management") ? "font-bold" : "text-foreground"
@@ -116,6 +124,14 @@ const NavigationBar = () => {
               }`}
             >
               Machine
+            </Link>
+            <Link
+              to="/projects"
+              className={`hover:text-foreground ${
+                isActive("/projects") ? "font-bold" : "text-foreground"
+              }`}
+            >
+              Projects
             </Link>
             <Link
               to="/management"

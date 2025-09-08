@@ -12,6 +12,7 @@ import ViewPartPage from './pages/ViewPartPage';
 import AddPartPage from './pages/AddPartPage';
 import StoragePage from './pages/StoragePage';
 import MachinePage from './pages/MachinePage';
+import ProjectsPage from './pages/ProjectsPage';
 import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/customui/routing/PrivateRouting'; // Import PrivateRoute component
@@ -139,6 +140,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <MachinePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <PrivateRoute>
+                <ProjectsPage />
               </PrivateRoute>
             }
           />
