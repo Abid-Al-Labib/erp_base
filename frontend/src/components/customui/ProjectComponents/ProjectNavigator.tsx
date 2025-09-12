@@ -4,19 +4,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Folder, ChevronDown, ChevronRight } from "lucide-react";
-import { Factory } from "@/types";
+import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import ComponentNavigator from "./ComponentNavigator";
+import CreateProject from "./CreateProject";
 
 // Import types for navigation only
 interface ProjectComponent {
   id: number;
   name: string;
   description: string;
-  status: 'not_started' | 'in_progress' | 'completed' | 'on_hold';
+  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
   progress: number;
   budget: number;
   totalCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
   startDate: string;
   endDate?: string;
   deadline: string;
@@ -27,7 +27,7 @@ interface Project {
   name: string;
   description: string;
   factoryId: number;
-  status: 'planning' | 'active' | 'completed' | 'cancelled';
+  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
   startDate: string;
   endDate?: string;
   deadline: string;
@@ -35,7 +35,7 @@ interface Project {
   components: ProjectComponent[];
   budget: number;
   totalCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
   timeElapsed: number;
 }
 
@@ -55,6 +55,8 @@ interface ProjectNavigatorProps {
   onComponentDeselect: () => void;
   onToggleProjectInfo: () => void;
   onToggleComponentInfo: () => void;
+  onProjectCreated?: (project: ProjectType) => void;
+  onComponentCreated?: (component: ProjectComponentType) => void;
 }
 
 const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
@@ -73,14 +75,16 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   onComponentDeselect,
   onToggleProjectInfo,
   onToggleComponentInfo,
+  onProjectCreated,
+  onComponentCreated,
 }) => {
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = React.useState(false);
   // Get status color for projects
   const getProjectStatusColor = (status: Project['status']) => {
     switch (status) {
-      case 'planning': return 'bg-blue-100 text-blue-800';
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'PLANNING': return 'bg-blue-100 text-blue-800';
+      case 'STARTED': return 'bg-green-100 text-green-800';
+      case 'COMPLETED': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -88,10 +92,9 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   // Get project priority color
   const getProjectPriorityColor = (priority: Project['priority']) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-gray-100 text-gray-800';
+      case 'HIGH': return 'bg-red-100 text-red-800';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+      case 'LOW': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -143,7 +146,12 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-bold text-gray-900">Project</h2>
                 <div className="flex items-center gap-1">
-                  <button className="text-muted-foreground hover:text-blue-500 transition-colors p-1" title="Add project">
+                  <button 
+                    onClick={() => setIsCreateProjectOpen(true)}
+                    className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
+                    title="Add project"
+                    disabled={!selectedFactoryId}
+                  >
                     +
                   </button>
                 </div>
@@ -250,15 +258,15 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             <div>
                               <div className="flex items-center justify-between text-sm mb-1">
                                 <span className="text-muted-foreground">Components Completed</span>
-                                <span className="font-medium text-primary">
-                                  {project.components.filter(c => c.status === 'completed').length}/{project.components.length}
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-primary h-2 rounded-full transition-all duration-300" 
-                                  style={{ width: `${(project.components.filter(c => c.status === 'completed').length / project.components.length) * 100}%` }}
-                                ></div>
+                                      <span className="font-medium text-primary">
+                                        {project.components.filter(c => c.status === 'COMPLETED').length}/{project.components.length}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div 
+                                        className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                        style={{ width: `${(project.components.filter(c => c.status === 'COMPLETED').length / project.components.length) * 100}%` }}
+                                      ></div>
                               </div>
                             </div>
                           </div>
@@ -269,7 +277,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                 </div>
               ) : (
                 // Show project selection cards
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
                   {filteredProjects.length === 0 ? (
                     // Show skeleton cards when no projects
                     <>
@@ -307,7 +315,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
           {!selectedFactoryId && (
             <div>
               <Label className="mb-2 text-base font-medium">Project</Label>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="p-3 border rounded-lg bg-gray-50 animate-pulse">
                     <div className="h-4 bg-gray-300 rounded w-2/3 mb-2"></div>
@@ -319,18 +327,31 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             </div>
           )}
 
-          {/* Component Navigator */}
-          <ComponentNavigator
-            selectedProject={selectedProject}
-            selectedComponentId={selectedComponentId}
-            isComponentInfoExpanded={isComponentInfoExpanded}
-            onComponentSelect={onComponentSelect}
-            onComponentDeselect={onComponentDeselect}
-            onToggleComponentInfo={onToggleComponentInfo}
-          />
+          {/* Component Navigator - Only show when project is selected */}
+          {selectedProject && (
+            <ComponentNavigator
+              selectedProject={selectedProject}
+              selectedComponentId={selectedComponentId}
+              isComponentInfoExpanded={isComponentInfoExpanded}
+              onComponentSelect={onComponentSelect}
+              onComponentDeselect={onComponentDeselect}
+              onToggleComponentInfo={onToggleComponentInfo}
+              onComponentCreated={onComponentCreated}
+            />
+          )}
 
         </CardContent>
       </Card>
+
+      {/* Create Project Modal */}
+      {selectedFactoryId && (
+        <CreateProject
+          isOpen={isCreateProjectOpen}
+          onClose={() => setIsCreateProjectOpen(false)}
+          factoryId={selectedFactoryId}
+          onProjectCreated={onProjectCreated}
+        />
+      )}
     </div>
   );
 };

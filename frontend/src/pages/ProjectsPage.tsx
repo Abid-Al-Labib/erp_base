@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { 
   Folder, 
@@ -10,172 +11,18 @@ import {
   Package
 } from "lucide-react";
 import { fetchFactories } from "@/services/FactoriesService";
-import { Factory } from "@/types";
+import { fetchProjects } from "@/services/ProjectsService";
+import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService";
+import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import ProjectComponentTasks from "@/components/customui/ProjectComponents/ProjectComponentTasks";
 import ProjectNavigator from "@/components/customui/ProjectComponents/ProjectNavigator";
 
-// Mock types for the project structure
-interface ProjectPart {
-  id: number;
-  name: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  status: 'available' | 'ordered' | 'delayed';
-}
-
-interface ProjectComponent {
-  id: number;
-  name: string;
-  description: string;
-  status: 'not_started' | 'in_progress' | 'completed' | 'on_hold';
-  progress: number;
-  parts: ProjectPart[];
-  todos: TodoItem[];
-  budget: number;
-  totalCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  startDate: string;
-  endDate?: string;
-  deadline: string;
-}
-
-interface Project {
-  id: number;
-  name: string;
-  description: string;
-  factoryId: number;
-  status: 'planning' | 'active' | 'completed' | 'cancelled';
-  startDate: string;
-  endDate?: string;
-  deadline: string;
-  progress: number;
-  components: ProjectComponent[];
-  budget: number;
-  totalCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  timeElapsed: number; // in days
-}
-
-interface TodoItem {
-  id: number;
-  title: string;
-  description?: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  dueDate?: string;
-  assignedTo?: string;
-}
-
-// Mock data
-const mockProjects: Project[] = [
-  {
-    id: 1,
-    name: "Production Line Upgrade",
-    description: "Upgrading the main production line with new automated machinery",
-    factoryId: 1,
-    status: 'active',
-    startDate: '2024-01-15',
-    endDate: '2024-06-30',
-    deadline: '2024-07-15',
-    progress: 65,
-    budget: 250000,
-    totalCost: 162500,
-    priority: 'high',
-    timeElapsed: 45,
-    components: [
-      {
-        id: 1,
-        name: "Conveyor System Installation",
-        description: "Install new conveyor belts and control systems",
-        status: 'in_progress',
-        progress: 80,
-        budget: 75000,
-        totalCost: 60000,
-        priority: 'high',
-        startDate: '2024-01-20',
-        endDate: '2024-03-15',
-        deadline: '2024-03-20',
-        parts: [
-          { id: 1, name: "Conveyor Belt", description: "Heavy duty belt", quantity: 50, unit: "meters", status: 'available' },
-          { id: 2, name: "Motor Controller", description: "Variable speed controller", quantity: 3, unit: "units", status: 'ordered' },
-          { id: 3, name: "Sensors", description: "Proximity sensors", quantity: 12, unit: "units", status: 'available' }
-        ],
-        todos: [
-          { id: 1, title: "Install main conveyor frame", completed: true, priority: 'high', dueDate: '2024-02-15' },
-          { id: 2, title: "Connect electrical systems", completed: false, priority: 'high', dueDate: '2024-02-20' },
-          { id: 3, title: "Test conveyor movement", completed: false, priority: 'medium', dueDate: '2024-02-25' },
-          { id: 4, title: "Calibrate speed controls", completed: false, priority: 'low', dueDate: '2024-03-01' }
-        ]
-      },
-      {
-        id: 2,
-        name: "Safety Systems Integration",
-        description: "Implement safety barriers and emergency stops",
-        status: 'not_started',
-        progress: 0,
-        budget: 45000,
-        totalCost: 5000,
-        priority: 'medium',
-        startDate: '2024-03-01',
-        endDate: '2024-04-30',
-        deadline: '2024-05-15',
-        parts: [
-          { id: 4, name: "Safety Barriers", description: "Light curtains", quantity: 6, unit: "units", status: 'ordered' },
-          { id: 5, name: "Emergency Stop Buttons", description: "Red mushroom buttons", quantity: 8, unit: "units", status: 'available' }
-        ],
-        todos: [
-          { id: 5, title: "Design safety layout", completed: false, priority: 'high', dueDate: '2024-03-01' },
-          { id: 6, title: "Install safety barriers", completed: false, priority: 'high', dueDate: '2024-03-15' },
-          { id: 7, title: "Test emergency stops", completed: false, priority: 'medium', dueDate: '2024-03-20' }
-        ]
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: "Quality Control Enhancement",
-    description: "Implementing advanced quality control systems",
-    factoryId: 1,
-    status: 'planning',
-    startDate: '2024-03-01',
-    endDate: '2024-08-15',
-    deadline: '2024-09-01',
-    progress: 15,
-    budget: 180000,
-    totalCost: 27000,
-    priority: 'medium',
-    timeElapsed: 12,
-    components: [
-      {
-        id: 3,
-        name: "Vision Inspection System",
-        description: "Automated visual inspection cameras",
-        status: 'not_started',
-        progress: 0,
-        budget: 120000,
-        totalCost: 18000,
-        priority: 'medium',
-        startDate: '2024-03-15',
-        endDate: '2024-07-01',
-        deadline: '2024-07-15',
-        parts: [
-          { id: 6, name: "Industrial Camera", description: "High resolution camera", quantity: 4, unit: "units", status: 'delayed' },
-          { id: 7, name: "Lighting System", description: "LED ring lights", quantity: 4, unit: "units", status: 'available' }
-        ],
-        todos: [
-          { id: 8, title: "Research camera specifications", completed: true, priority: 'medium', dueDate: '2024-02-15' },
-          { id: 9, title: "Order inspection cameras", completed: false, priority: 'high', dueDate: '2024-02-28' },
-          { id: 10, title: "Design mounting system", completed: false, priority: 'medium', dueDate: '2024-03-10' }
-        ]
-      }
-    ]
-  }
-];
 
 const ProjectsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [factories, setFactories] = useState<Factory[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [components, setComponents] = useState<ProjectComponentType[]>([]);
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(() => {
     const factoryParam = searchParams.get('factory');
     return factoryParam ? Number(factoryParam) : undefined;
@@ -194,8 +41,8 @@ const ProjectsPage: React.FC = () => {
   // Filter projects by selected factory
   const filteredProjects = useMemo(() => {
     if (!selectedFactoryId) return [];
-    return mockProjects.filter(project => project.factoryId === selectedFactoryId);
-  }, [selectedFactoryId]);
+    return projects.filter(project => project.factory_id === selectedFactoryId);
+  }, [projects, selectedFactoryId]);
 
   // Get selected project
   const selectedProject = useMemo(() => {
@@ -204,9 +51,71 @@ const ProjectsPage: React.FC = () => {
 
   // Get selected component
   const selectedComponent = useMemo(() => {
+    return components.find(component => component.id === selectedComponentId);
+  }, [components, selectedComponentId]);
+
+  // Transform projects for navigation component (add components and computed fields)
+  const transformedProjects = useMemo(() => {
+    return filteredProjects.map(project => ({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      factoryId: project.factory_id,
+      startDate: project.start_date || '',
+      endDate: project.end_date || '',
+      deadline: project.deadline || '',
+      status: project.status,
+      priority: project.priority,
+      budget: project.budget || 0,
+      components: selectedProjectId === project.id ? components.map(comp => ({
+        id: comp.id,
+        name: comp.name,
+        description: comp.description || '',
+        startDate: comp.start_date || '',
+        endDate: comp.end_date || '',
+        deadline: comp.deadline || '',
+        status: comp.status,
+        progress: 0,
+        budget: comp.budget || 0,
+        totalCost: comp.budget || 0,
+      })) : [],
+      progress: 0, // Will be computed based on components
+      totalCost: 0, // Will be computed based on components
+      timeElapsed: 0, // Will be computed based on dates
+    }));
+  }, [filteredProjects, components, selectedProjectId]);
+
+  // Transform selected project for navigation
+  const transformedSelectedProject = useMemo(() => {
     if (!selectedProject) return undefined;
-    return selectedProject.components.find(component => component.id === selectedComponentId);
-  }, [selectedProject, selectedComponentId]);
+    return {
+      id: selectedProject.id,
+      name: selectedProject.name,
+      description: selectedProject.description,
+      factoryId: selectedProject.factory_id,
+      startDate: selectedProject.start_date || '',
+      endDate: selectedProject.end_date || '',
+      deadline: selectedProject.deadline || '',
+      status: selectedProject.status,
+      priority: selectedProject.priority,
+      budget: selectedProject.budget || 0,
+      components: components.map(comp => ({
+        id: comp.id,
+        name: comp.name,
+        description: comp.description || '',
+        startDate: comp.start_date || '',
+        endDate: comp.end_date || '',
+        deadline: comp.deadline || '',
+        status: comp.status,
+        progress: 0,
+        budget: comp.budget || 0,
+        totalCost: comp.budget || 0,
+      })),
+      progress: 0, // Will be computed
+      totalCost: 0, // Will be computed  
+      timeElapsed: 0, // Will be computed
+    };
+  }, [selectedProject, components]);
 
   // Load factories on component mount
   useEffect(() => {
@@ -220,6 +129,42 @@ const ProjectsPage: React.FC = () => {
     };
     loadFactories();
   }, []);
+
+  // Load projects when factory is selected
+  useEffect(() => {
+    const loadProjects = async () => {
+      if (!selectedFactoryId) {
+        setProjects([]);
+        return;
+      }
+
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+      }
+    };
+    loadProjects();
+  }, [selectedFactoryId]);
+
+  // Load components when project is selected
+  useEffect(() => {
+    const loadComponents = async () => {
+      if (!selectedProjectId) {
+        setComponents([]);
+        return;
+      }
+
+      try {
+        const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
+        setComponents(componentsData || []);
+      } catch (error) {
+        console.error("Failed to fetch components:", error);
+      }
+    };
+    loadComponents();
+  }, [selectedProjectId]);
 
   // Update URL parameters when selections change
   const updateUrlParams = (factory?: number, project?: number, component?: number) => {
@@ -283,6 +228,36 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(selectedFactoryId, selectedProjectId);
   };
 
+  // Handle project creation
+  const handleProjectCreated = async (project: ProjectType) => {
+    // Refresh projects list and automatically select the new project
+    if (selectedFactoryId) {
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to refresh projects:", error);
+      }
+    }
+    setSelectedProjectId(project.id);
+    updateUrlParams(selectedFactoryId, project.id);
+  };
+
+  // Handle component creation
+  const handleComponentCreated = async (component: ProjectComponentType) => {
+    // Refresh components list and automatically select the new component
+    if (selectedProjectId) {
+      try {
+        const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
+        setComponents(componentsData || []);
+      } catch (error) {
+        console.error("Failed to refresh components:", error);
+      }
+    }
+    setSelectedComponentId(component.id);
+    updateUrlParams(selectedFactoryId, selectedProjectId, component.id);
+  };
+
   // Handle project info toggle
   const toggleProjectInfo = () => {
     setIsProjectInfoExpanded(!isProjectInfoExpanded);
@@ -313,8 +288,8 @@ const ProjectsPage: React.FC = () => {
               selectedFactoryId={selectedFactoryId}
               selectedProjectId={selectedProjectId}
               selectedComponentId={selectedComponentId}
-              filteredProjects={filteredProjects}
-              selectedProject={selectedProject}
+              filteredProjects={transformedProjects}
+              selectedProject={transformedSelectedProject}
               isProjectInfoExpanded={isProjectInfoExpanded}
               isComponentInfoExpanded={isComponentInfoExpanded}
               onFactorySelect={handleFactorySelect}
@@ -324,43 +299,65 @@ const ProjectsPage: React.FC = () => {
               onComponentDeselect={handleComponentDeselect}
               onToggleProjectInfo={toggleProjectInfo}
               onToggleComponentInfo={toggleComponentInfo}
+              onProjectCreated={handleProjectCreated}
+              onComponentCreated={handleComponentCreated}
             />
 
             {/* Right Panel - Component Details and Todo List */}
             {selectedComponent && (
               <div className="flex-1 flex flex-col lg:flex-row gap-4 h-full">
                 
-                {/* Component Parts */}
+                {/* Component Details */}
                 <div className="flex-1 h-full">
                   <Card className="h-full flex flex-col">
                     <CardHeader className="flex-shrink-0">
                       <CardTitle className="flex items-center gap-2">
                         <Package className="h-5 w-5" />
-                        Component Parts
+                        Component Details
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-y-auto">
-                      <div className="space-y-3">
-                        {selectedComponent.parts.map((part) => (
-                          <div key={part.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm">{part.name}</h4>
-                              <p className="text-sm text-muted-foreground">{part.description}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{part.quantity} {part.unit}</span>
-                              <Badge 
-                                className={`text-sm ${
-                                  part.status === 'available' ? 'bg-green-100 text-green-800' :
-                                  part.status === 'ordered' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}
-                              >
-                                {part.status}
-                              </Badge>
-                            </div>
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="font-semibold text-lg">{selectedComponent.name}</h3>
+                          <p className="text-sm text-muted-foreground">{selectedComponent.description}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="font-medium">Status</Label>
+                            <Badge className={`text-sm mt-1 ${
+                              selectedComponent.status === 'PLANNING' ? 'bg-blue-100 text-blue-800' :
+                              selectedComponent.status === 'STARTED' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedComponent.status}
+                            </Badge>
                           </div>
-                        ))}
+                          
+                          {selectedComponent.budget && (
+                            <div>
+                              <Label className="font-medium">Budget</Label>
+                              <p className="text-sm">${selectedComponent.budget.toLocaleString()}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {selectedComponent.start_date && (
+                            <div>
+                              <Label className="font-medium">Start Date</Label>
+                              <p className="text-sm">{selectedComponent.start_date}</p>
+                            </div>
+                          )}
+                          
+                          {selectedComponent.deadline && (
+                            <div>
+                              <Label className="font-medium">Deadline</Label>
+                              <p className="text-sm">{selectedComponent.deadline}</p>
+                            </div>
+                          )}
+                          </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -368,9 +365,7 @@ const ProjectsPage: React.FC = () => {
 
                 {/* Tasks panel */}
                 <div className="flex-1 h-full">
-                  {selectedComponent && (
                     <ProjectComponentTasks ProjectComponentId={selectedComponent.id} />
-                  )}
                 </div>
 
               </div>

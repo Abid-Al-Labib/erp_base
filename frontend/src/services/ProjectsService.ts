@@ -105,18 +105,20 @@ export const fetchAllProjectNames = async (factoryId?: number) => {
 
 
 export const addProject = async (projectData: Partial<Project>) => {
-  const { error } = await supabase_client
+  const { data, error } = await supabase_client
     .from("projects")
-    .insert([projectData]);
+    .insert([projectData])
+    .select()
+    .single();
 
   if (error) {
     console.error("Error adding project:", error.message);
     toast.error("Failed to add project");
-    return false;
+    return null;
   }
 
   toast.success("Project added successfully");
-  return true;
+  return data as Project;
 };
 
 

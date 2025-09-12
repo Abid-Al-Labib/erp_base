@@ -40,18 +40,20 @@ export const fetchProjectComponentById = async (componentId: number) => {
 export const addProjectComponent = async (
   componentData: Partial<ProjectComponent>
 ) => {
-  const { error } = await supabase_client
+  const { data, error } = await supabase_client
     .from("project_components")
-    .insert([componentData]);
+    .insert([componentData])
+    .select()
+    .single();
 
   if (error) {
     console.error("Error adding component:", error.message);
     toast.error("Failed to add component");
-    return false;
+    return null;
   }
 
   toast.success("Component added successfully");
-  return true;
+  return data as ProjectComponent;
 };
 
 // Update a component by ID

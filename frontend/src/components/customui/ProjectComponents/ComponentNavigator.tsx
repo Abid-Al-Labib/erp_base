@@ -1,17 +1,17 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { ProjectComponent as ProjectComponentType } from "@/types";
+import CreateProjectComponent from "./CreateProjectComponent";
 
 // Import types for navigation only
 interface ProjectComponent {
   id: number;
   name: string;
   description: string;
-  status: 'not_started' | 'in_progress' | 'completed' | 'on_hold';
+  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
   progress: number;
   budget: number;
   totalCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
   startDate: string;
   endDate?: string;
   deadline: string;
@@ -22,7 +22,7 @@ interface Project {
   name: string;
   description: string;
   factoryId: number;
-  status: 'planning' | 'active' | 'completed' | 'cancelled';
+  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
   startDate: string;
   endDate?: string;
   deadline: string;
@@ -30,7 +30,7 @@ interface Project {
   components: ProjectComponent[];
   budget: number;
   totalCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
   timeElapsed: number;
 }
 
@@ -41,6 +41,7 @@ interface ComponentNavigatorProps {
   onComponentSelect: (componentId: number) => void;
   onComponentDeselect: () => void;
   onToggleComponentInfo: () => void;
+  onComponentCreated?: (component: ProjectComponentType) => void;
 }
 
 const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
@@ -50,22 +51,14 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   onComponentSelect,
   onComponentDeselect,
   onToggleComponentInfo,
+  onComponentCreated,
 }) => {
+  const [isCreateComponentOpen, setIsCreateComponentOpen] = React.useState(false);
   // Get selected component
   const selectedComponent = selectedProject?.components.find(
     component => component.id === selectedComponentId
   );
 
-  // Get project priority color
-  const getProjectPriorityColor = (priority: ProjectComponent['priority']) => {
-    switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -84,9 +77,15 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   return (
     <div className="border-t pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-gray-900">Component</h2>
+        <h2 className="text-xl font-bold text-gray-900">
+          Components ({selectedProject.components.length})
+        </h2>
         <div className="flex items-center gap-1">
-          <button className="text-muted-foreground hover:text-blue-500 transition-colors p-1" title="Add component">
+          <button 
+            onClick={() => setIsCreateComponentOpen(true)}
+            className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
+            title="Add component"
+          >
             +
           </button>
         </div>
@@ -159,19 +158,11 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                     </div>
                   </div>
 
-                  {/* Deadline and Priority */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {/* Deadline */}
                     <div>
                       <span className="text-muted-foreground block">Deadline</span>
                       <div className="font-medium text-red-600">{selectedComponent.deadline}</div>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground block">Priority</span>
-                      <Badge className={`text-sm ${getProjectPriorityColor(selectedComponent.priority)}`}>
-                        {selectedComponent.priority}
-                      </Badge>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -196,6 +187,14 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
           ))}
         </div>
       )}
+
+      {/* Create Component Modal */}
+      <CreateProjectComponent
+        isOpen={isCreateComponentOpen}
+        onClose={() => setIsCreateComponentOpen(false)}
+        projectId={selectedProject.id}
+        onComponentCreated={onComponentCreated}
+      />
     </div>
   );
 };
