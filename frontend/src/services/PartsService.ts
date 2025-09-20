@@ -128,3 +128,15 @@ export const fetchPartsByIDs = async (part_ids: number[])=> {
     }
     return data as Part[]
 }
+
+export const fetchPartsForDropDown = async()=> {
+    const {data,error} = await supabase_client
+    .from('parts')
+    .select("id,name")
+
+    if (error) {
+        toast.error(error.message)
+        return null
+    }
+    return data
+}

@@ -22,6 +22,8 @@ import ExpenseLensPage from './pages/ExpenseLensPart';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NoProfilePage from './pages/NoProfilePage';
 import DisabledPage from './pages/DisabledPage';
+import BusinessLens from './pages/BusinessLensPage';
+import BusinessLensWizard from './pages/BusinessLensWizardPage';
 
 const App: React.FC = () => {
   return (
@@ -148,6 +150,22 @@ const App: React.FC = () => {
             element={
               <PrivateRoute allowedRoles={['admin']}>
                 <ProjectsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/businessLens"
+            element={
+              <PrivateRoute allowedRoles={['admin']}>
+                <BusinessLens />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/businessLens/:templateId"
+            element={
+              <PrivateRoute allowedRoles={['admin']}>
+                <BusinessLensWizard />
               </PrivateRoute>
             }
           />
