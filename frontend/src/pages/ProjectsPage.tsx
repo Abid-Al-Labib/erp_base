@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import NavigationBar from "@/components/customui/NavigationBar";
-import { 
-  Folder, 
-  FolderOpen, 
-  Settings, 
+import {
+  Folder,
+  FolderOpen,
+  Settings,
   Package
 } from "lucide-react";
 import { fetchFactories } from "@/services/FactoriesService";
@@ -15,8 +15,9 @@ import { fetchProjects } from "@/services/ProjectsService";
 import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService";
 import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import ProjectComponentTasks from "@/components/customui/ProjectComponents/ProjectComponentTasks";
+// NOTE: if your file is named ProjectComponentMiscCosts.tsx, change this import to .../ProjectComponentMiscCosts
+import ProjectComponentMiscCosts from "@/components/customui/ProjectComponents/ProjectComponentMiscCost";
 import ProjectNavigator from "@/components/customui/ProjectComponents/ProjectNavigator";
-
 
 const ProjectsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -54,7 +55,7 @@ const ProjectsPage: React.FC = () => {
     return components.find(component => component.id === selectedComponentId);
   }, [components, selectedComponentId]);
 
-  // Transform projects for navigation component (add components and computed fields)
+  // Transform projects for navigation component
   const transformedProjects = useMemo(() => {
     return filteredProjects.map(project => ({
       id: project.id,
@@ -79,9 +80,9 @@ const ProjectsPage: React.FC = () => {
         budget: comp.budget || 0,
         totalCost: comp.budget || 0,
       })) : [],
-      progress: 0, // Will be computed based on components
-      totalCost: 0, // Will be computed based on components
-      timeElapsed: 0, // Will be computed based on dates
+      progress: 0,
+      totalCost: 0,
+      timeElapsed: 0,
     }));
   }, [filteredProjects, components, selectedProjectId]);
 
@@ -111,9 +112,9 @@ const ProjectsPage: React.FC = () => {
         budget: comp.budget || 0,
         totalCost: comp.budget || 0,
       })),
-      progress: 0, // Will be computed
-      totalCost: 0, // Will be computed  
-      timeElapsed: 0, // Will be computed
+      progress: 0,
+      totalCost: 0,
+      timeElapsed: 0,
     };
   }, [selectedProject, components]);
 
@@ -170,30 +171,29 @@ const ProjectsPage: React.FC = () => {
   const updateUrlParams = (factory?: number, project?: number, component?: number) => {
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev);
-      
+
       if (factory !== undefined) {
         newParams.set('factory', factory.toString());
       } else {
         newParams.delete('factory');
       }
-      
+
       if (project !== undefined) {
         newParams.set('project', project.toString());
       } else {
         newParams.delete('project');
       }
-      
+
       if (component !== undefined) {
         newParams.set('component', component.toString());
       } else {
         newParams.delete('component');
       }
-      
+
       return newParams;
     });
   };
 
-  // Handle factory selection
   const handleFactorySelect = (factoryId: string) => {
     const id = Number(factoryId);
     setSelectedFactoryId(id);
@@ -202,35 +202,29 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(id);
   };
 
-  // Handle project selection
   const handleProjectSelect = (projectId: number) => {
     setSelectedProjectId(projectId);
     setSelectedComponentId(undefined);
     updateUrlParams(selectedFactoryId, projectId);
   };
 
-  // Handle component selection
   const handleComponentSelect = (componentId: number) => {
     setSelectedComponentId(componentId);
     updateUrlParams(selectedFactoryId, selectedProjectId, componentId);
   };
 
-  // Handle project deselection
   const handleProjectDeselect = () => {
     setSelectedProjectId(undefined);
     setSelectedComponentId(undefined);
     updateUrlParams(selectedFactoryId);
   };
 
-  // Handle component deselection
   const handleComponentDeselect = () => {
     setSelectedComponentId(undefined);
     updateUrlParams(selectedFactoryId, selectedProjectId);
   };
 
-  // Handle project creation
   const handleProjectCreated = async (project: ProjectType) => {
-    // Refresh projects list and automatically select the new project
     if (selectedFactoryId) {
       try {
         const { data: projectsData } = await fetchProjects(selectedFactoryId);
@@ -243,9 +237,7 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(selectedFactoryId, project.id);
   };
 
-  // Handle component creation
   const handleComponentCreated = async (component: ProjectComponentType) => {
-    // Refresh components list and automatically select the new component
     if (selectedProjectId) {
       try {
         const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
@@ -258,7 +250,6 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(selectedFactoryId, selectedProjectId, component.id);
   };
 
-  // Handle project info toggle
   const toggleProjectInfo = () => {
     setIsProjectInfoExpanded(!isProjectInfoExpanded);
     if (!isProjectInfoExpanded) {
@@ -266,7 +257,6 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
-  // Handle component info toggle
   const toggleComponentInfo = () => {
     setIsComponentInfoExpanded(!isComponentInfoExpanded);
     if (!isComponentInfoExpanded) {
@@ -274,14 +264,12 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
-
   return (
     <>
       <NavigationBar />
       <div className="flex w-full flex-col">
         <main className="flex-1 p-4 sm:px-6 sm:py-4 overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-4" style={{ height: 'calc(100vh - 100px)' }}>
-            
             {/* Left Panel - Project Navigator */}
             <ProjectNavigator
               factories={factories}
@@ -305,8 +293,7 @@ const ProjectsPage: React.FC = () => {
 
             {/* Right Panel - Component Details and Todo List */}
             {selectedComponent && (
-              <div className="flex-1 flex flex-col lg:flex-row gap-4 h-full">
-                
+              <div className="flex-1 flex flex-col lg:flex-row gap-4 h-full min-h-0">
                 {/* Component Details */}
                 <div className="flex-1 h-full">
                   <Card className="h-full flex flex-col">
@@ -322,7 +309,7 @@ const ProjectsPage: React.FC = () => {
                           <h3 className="font-semibold text-lg">{selectedComponent.name}</h3>
                           <p className="text-sm text-muted-foreground">{selectedComponent.description}</p>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label className="font-medium">Status</Label>
@@ -334,7 +321,7 @@ const ProjectsPage: React.FC = () => {
                               {selectedComponent.status}
                             </Badge>
                           </div>
-                          
+
                           {selectedComponent.budget && (
                             <div>
                               <Label className="font-medium">Budget</Label>
@@ -350,28 +337,38 @@ const ProjectsPage: React.FC = () => {
                               <p className="text-sm">{selectedComponent.start_date}</p>
                             </div>
                           )}
-                          
+
                           {selectedComponent.deadline && (
                             <div>
                               <Label className="font-medium">Deadline</Label>
                               <p className="text-sm">{selectedComponent.deadline}</p>
                             </div>
                           )}
-                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Tasks panel */}
-                <div className="flex-1 h-full">
+                {/* Right side: Tasks + Misc Costs (equal height 50/50) */}
+                <div className="flex-1 h-full flex flex-col gap-4 overflow-hidden min-h-0">
+                  {/* Tasks (top half) */}
+                  <div className="flex-1 basis-1/2 min-h-0 overflow-hidden">
                     <ProjectComponentTasks ProjectComponentId={selectedComponent.id} />
-                </div>
+                  </div>
 
+                  {/* Misc Costs (bottom half) */}
+                  <div className="flex-1 basis-1/2 min-h-0 overflow-hidden">
+                    <ProjectComponentMiscCosts
+                      projectId={selectedProjectId as number}
+                      projectComponentId={selectedComponent.id}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Empty State */}
+            {/* Empty States */}
             {!selectedFactoryId && (
               <div className="flex-1 h-full flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
@@ -401,7 +398,6 @@ const ProjectsPage: React.FC = () => {
                 </div>
               </div>
             )}
-
           </div>
         </main>
       </div>

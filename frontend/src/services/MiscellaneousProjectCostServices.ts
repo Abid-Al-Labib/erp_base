@@ -8,7 +8,7 @@ export const fetchMiscProjectCosts = async (
   componentId?: number,
   name?: string
 ) => {
-  let query = supabase_client.from("misc_project_costs").select("*");
+  let query = supabase_client.from("miscellaneous_project_costs").select("*");
 
   if (projectId !== undefined) {
     query = query.eq("project_id", projectId);
@@ -36,7 +36,7 @@ export const fetchMiscProjectCosts = async (
 // Fetch by ID
 export const fetchMiscProjectCostById = async (id: number) => {
   const { data, error } = await supabase_client
-    .from("misc_project_costs")
+    .from("miscellaneous_project_costs")
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -55,7 +55,7 @@ export const addMiscProjectCost = async (
   costData: Partial<MiscProjectCost>
 ) => {
   const { error } = await supabase_client
-    .from("misc_project_costs")
+    .from("miscellaneous_project_costs")
     .insert([costData]);
 
   if (error) {
@@ -74,7 +74,7 @@ export const updateMiscProjectCost = async (
   updateData: Partial<MiscProjectCost>
 ) => {
   const { error } = await supabase_client
-    .from("misc_project_costs")
+    .from("miscellaneous_project_costs")
     .update(updateData)
     .eq("id", id);
 
@@ -91,7 +91,7 @@ export const updateMiscProjectCost = async (
 // Delete cost
 export const deleteMiscProjectCost = async (id: number) => {
   const { error } = await supabase_client
-    .from("misc_project_costs")
+    .from("miscellaneous_project_costs")
     .delete()
     .eq("id", id);
 
