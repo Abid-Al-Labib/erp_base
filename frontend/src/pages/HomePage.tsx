@@ -7,11 +7,16 @@ import { fetchMetricMostFrequentOrderedParts, fetchMetricMostFrequentOrderedPart
 import { fetchManagableOrders, fetchMetricActiveOrders, fetchMetricsHighMaintenanceFactorySections, fetchMetricsHighMaintenanceFactorySectionsCurrentMonth } from "@/services/OrdersService";
 import { FactorySection, Part } from "@/types";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MachineStatusRadialChart from "@/components/customui/MachineStatusRadialChart";
 import OrderStatusRadialChart from "@/components/customui/OrderStatusRadialChart";
+import { showExpenseLensPart } from "@/services/ButtonVisibilityHelper";
+import { LucideGlasses } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ExpenseLensDisplayCard from "@/components/customui/ExpenseLensDisplayCard";
 const HomePage = () => {
   const profile = useAuth().profile
+  const navigate = useNavigate();
   const [loadingMetricRunningMachines, setLoadingMetricRunningMachines] = useState<boolean>(false)
   const [loadingMetricNotRunningMachines, setLoadingMetricNotRunningMachines] = useState<boolean>(false)
   const [loadingMetricManagableOrders, setLoadingMetricManagableOrders] = useState<boolean>(false)
@@ -206,12 +211,8 @@ const HomePage = () => {
         
          {/* Chart Section - Most Frequent Parts */}
          <div className="w-full flex flex-row justify-center gap-4" id="bottom-chart-wrapper">
-          
-          <div className="w-1/2" id="machine-status-chart-inner">
-              <MachineStatusRadialChart
-              running={numberOfMachinesRunning ?? 0}
-              notRunning={numberOfMachinesNotRunning ?? 0}
-            />
+          <div className="w-1/2" id="expenselens">
+              <ExpenseLensDisplayCard/>
           </div>
           <div className="w-1/2" id="machine-status-chart-inner">
               <MachineStatusRadialChart

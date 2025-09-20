@@ -498,3 +498,26 @@ export const calculateTotalCost = (orderPartList:OrderedPart[]) => {
 
     return total > 0 ? `BDT ${total}` : "-";
 };
+
+export const fetchOrderedPartsForBusinessLensByOrderIds = async (
+  orderIds: number[]
+) => {
+  if (!orderIds || orderIds.length === 0) return [];
+  const { data, error } = await supabase_client
+    .from("order_parts")
+    .select("order_id, qty, unit_cost, part_purchased_date")
+    .in("order_id", orderIds)
+    .not("part_purchased_date", "is", null)
+
+  if (error) {
+    toast.error(error.message);
+    return [];
+  }
+
+  return data as Array<{
+    order_id: number;
+    qty: number | null;
+    unit_cost: number | null;
+    part_purchased_date: string | null;
+  }>;
+};

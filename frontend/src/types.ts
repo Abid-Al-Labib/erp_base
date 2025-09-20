@@ -213,3 +213,18 @@ export interface StatusTrackerItemProp {
   complete: boolean;
 }
 
+export type OrdersTypeCount = {
+  code: string;   
+  label: string; 
+  total: number;
+};
+
+
+
+// --- EXPENSE PROFILING (PURCHASE ORDERS ONLY: PFM, PFP, PFS) ---
+
+export type ExpenseTotalRow = { total: number };
+export type ExpenseByFactory = { factory_id: number | null; label: string; total: number };
+export type ExpenseBySection = { section_id: number | null; label: string; total: number };
+
+
