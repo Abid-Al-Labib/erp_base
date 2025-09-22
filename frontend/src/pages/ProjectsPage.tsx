@@ -250,6 +250,38 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(selectedFactoryId, selectedProjectId, component.id);
   };
 
+  const handleProjectUpdated = async () => {
+    if (selectedFactoryId) {
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to refresh projects:", error);
+      }
+    }
+  };
+
+  const handleComponentUpdated = async () => {
+    // Refresh both projects and components data
+    if (selectedFactoryId) {
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to refresh projects:", error);
+      }
+    }
+    
+    if (selectedProjectId) {
+      try {
+        const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
+        setComponents(componentsData || []);
+      } catch (error) {
+        console.error("Failed to refresh components:", error);
+      }
+    }
+  };
+
   const toggleProjectInfo = () => {
     setIsProjectInfoExpanded(!isProjectInfoExpanded);
     if (!isProjectInfoExpanded) {
@@ -289,6 +321,8 @@ const ProjectsPage: React.FC = () => {
               onToggleComponentInfo={toggleComponentInfo}
               onProjectCreated={handleProjectCreated}
               onComponentCreated={handleComponentCreated}
+              onProjectUpdated={handleProjectUpdated}
+              onComponentUpdated={handleComponentUpdated}
             />
 
             {/* Right Panel - Component Details and Todo List */}
