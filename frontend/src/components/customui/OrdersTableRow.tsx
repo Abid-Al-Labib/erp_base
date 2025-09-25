@@ -110,8 +110,24 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
           setOrderDisplayText(`${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`);
         }
         // Storage Order (PFS) or fallback
-        else {
+        else if (order.order_type === "PFS") {
           setOrderDisplayText(`${order.factories.abbreviation} - Storage`);
+        }
+        else if (order.order_type === "PFP") {
+          // Project order
+          if (order.project_id) {
+            setOrderDisplayText(`${order.factories.abbreviation} - Project: ${order.factories.abbreviation}`);
+          } else {
+            setOrderDisplayText(`${order.factories.abbreviation} - Project`);
+          }
+        }
+        else if (order.order_type === "STP") {
+          // Project + Storage order
+          if (order.src_factory) {
+            setOrderDisplayText(`${order.factories.abbreviation} - Storage to Project: ${order.factories.abbreviation} - Storage`);
+          } else {
+            setOrderDisplayText(`${order.factories.abbreviation} - Project - Storage`);
+          }
         }
       } catch (error) {
         console.error("Error processing order display:", error);
@@ -164,7 +180,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
                 <span> {order.req_num} </span>
               </li>    
               <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Order for Machine/Storage</span>
+                <span className="font-semibold text-muted-foreground">Order Type</span>
                 <span>{orderDisplayText}</span>
               </li>              
               <li className="flex items-center justify-between">

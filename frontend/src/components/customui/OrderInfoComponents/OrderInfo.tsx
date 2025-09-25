@@ -2,6 +2,10 @@ import { Order } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { Separator } from "../../ui/separator"
 import { convertUtcToBDTime } from "@/services/helper"
+import { useEffect, useState } from "react"
+import { fetchProjectById } from "@/services/ProjectsService"
+import { fetchProjectComponentById } from "@/services/ProjectComponentService"
+import { fetchFactoryNameAndAbbreviation } from "@/services/FactoriesService"
 
 interface OrderInfoProp {
     order: Order
@@ -11,6 +15,11 @@ interface OrderInfoProp {
 
 
 const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
+  const [project, setProject] = useState<any>(null);
+  const [projectComponent, setProjectComponent] = useState<any>(null);
+  const [sourceFactoryName, setSourceFactoryName] = useState<string>('');
+
+
   return (
         <Card
         className="sm:col-span-2 h-full flex flex-col w-full" x-chunk="dashboard-05-chunk-0"
@@ -50,6 +59,7 @@ const OrderInfo: React.FC<OrderInfoProp> = ({order,mode}) => {
                 <span className="font-semibold text-muted-foreground">Current Status</span>
                 <span>{order.statuses.name}</span>
             </li>
+            
             </ul>
         <Separator className="my-2" />
         <span className="font-semibold text-muted-foreground">Note</span>

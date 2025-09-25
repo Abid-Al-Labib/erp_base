@@ -15,6 +15,8 @@ import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService";
 import OrderMachineInfo from "@/components/customui/OrderInfoComponents/OrderMachineInfo";
 import OrderStorageInfo from "@/components/customui/OrderInfoComponents/OrderStorageInfo";
 import OrderMachineAndStorageInfo from "@/components/customui/OrderInfoComponents/OrderMachineAndStorageInfo";
+import OrderProjectInfo from "@/components/customui/OrderInfoComponents/OrderProjectInfo";
+import OrderProjectStorageInfo from "@/components/customui/OrderInfoComponents/OrderProjectStorageInfo";
 
 const ViewOrderPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -137,6 +139,25 @@ const ViewOrderPage = () => {
                 />
               </div>
             )}
+
+            {order.order_type === 'PFP' && (
+              <div className="h-[45vh]">
+                <OrderProjectInfo
+                  order={order}
+                  mode="view"
+                />
+              </div>
+            )}
+
+            {order.order_type === 'STP' && (
+              <div className="h-[45vh]">
+                <OrderProjectStorageInfo
+                  order={order}
+                  mode="view"
+                />
+              </div>
+            )}
+            
           </div>
 
           <div className="w-full sm:w-1/6 h-[45vh]">

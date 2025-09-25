@@ -191,7 +191,17 @@ const OrderedPartsActionMenu: React.FC<OrderedPartsActionMenuProps> = ({
               <Button variant="outline" className="border-purple-600" onClick={() => setIsReceivedDialogOpen(true)}>
                 Set Received Date
               </Button>
-              <ReceivedAction openThisActionDialog={isReceivedDialogOpen} setOpenThisActionDialog={setIsReceivedDialogOpen} setActionMenuOpen={setIsOpen} orderedPartInfo={orderedPartInfo} order_type={order.order_type} factory_id={order.factory_id} machine_id={order.machine_id} />
+              <ReceivedAction 
+                openThisActionDialog={isReceivedDialogOpen}
+                setOpenThisActionDialog={setIsReceivedDialogOpen}
+                setActionMenuOpen={setIsOpen}
+                orderedPartInfo={orderedPartInfo}
+                order_type={order.order_type}
+                factory_id={order.factory_id}
+                machine_id={order.machine_id}
+                project_component_id={order.project_component_id ?? undefined}
+                src_factory_id={order.src_factory ?? undefined}
+              />
             </>
           )}
           {showMrrButton(order.statuses.name, orderedPartInfo.mrr_number) && (

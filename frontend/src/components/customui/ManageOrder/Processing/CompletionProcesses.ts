@@ -3,6 +3,7 @@ import { fetchStoragePartByFactoryAndPartID, increaseStoragePartQty, updateStora
 import { increaseMachinePartQty, reduceDefectiveQuantity } from "@/services/MachinePartsService";
 import { increaseDamagedPartQty } from "@/services/DamagedGoodsService";
 import { OrderedPart } from "@/types";
+import { upsertProjectComponentPart } from "@/services/ProjectComponentPartsService";
 import toast from "react-hot-toast";
 
 export const handlePFSReceivedAction = async (
@@ -89,4 +90,39 @@ export const handlePFMReceivedAction = async (
 //         return false;
 //     }
 // }
+/**
+ * PFP completion: add purchased parts to project component on completion
+ */
+export const handlePFPReceivedAction = async (
+  orderedPart: OrderedPart,
+  project_component_id: number,
+): Promise<boolean> => {
+  try {
+    if (!project_component_id) return false;
+    await upsertProjectComponentPart(orderedPart.part_id, project_component_id, orderedPart.qty);
+    return true;
+  } catch (error) {
+    toast.error("Failed to complete PFP part transfer");
+    return false;
+  }
+}
+
+/**
+ * STP completion: reduce from source storage and add to project component
+ */
+export const handleSTPReceivedAction = async (
+  orderedPart: OrderedPart,
+  project_component_id: number,
+  src_factory_id: number,
+): Promise<boolean> => {
+  try {
+    if (!project_component_id || !src_factory_id) return false;
+    // Storage was already reduced at approval; just upsert into project component
+    await upsertProjectComponentPart(orderedPart.part_id, project_component_id, orderedPart.qty);
+    return true;
+  } catch (error) {
+    toast.error("Failed to complete STP part transfer");
+    return false;
+  }
+}
     

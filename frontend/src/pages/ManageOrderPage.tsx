@@ -3,6 +3,8 @@ import OrderInfo from "@/components/customui/OrderInfoComponents/OrderInfo";
 import OrderMachineInfo from "@/components/customui/OrderInfoComponents/OrderMachineInfo";
 import OrderStorageInfo from "@/components/customui/OrderInfoComponents/OrderStorageInfo";
 import OrderMachineAndStorageInfo from "@/components/customui/OrderInfoComponents/OrderMachineAndStorageInfo";
+import OrderProjectInfo from "@/components/customui/OrderInfoComponents/OrderProjectInfo";
+import OrderProjectStorageInfo from "@/components/customui/OrderInfoComponents/OrderProjectStorageInfo";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Order, Part } from "@/types";
@@ -158,6 +160,25 @@ const ManageOrderPage = () => {
                 />
               </div>
             )}
+
+            {order.order_type === 'PFP' && (
+              <div className="h-[45vh]">
+                <OrderProjectInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+
+            {order.order_type === 'STP' && (
+              <div className="h-[45vh]">
+                <OrderProjectStorageInfo
+                  order={order}
+                  mode="manage"
+                />
+              </div>
+            )}
+
           </div>
 
           <div className="w-full sm:w-1/6 h-[45vh]">

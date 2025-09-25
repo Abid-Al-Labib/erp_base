@@ -42,6 +42,15 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
                     order.src_factory!
                 );
 
+            case "PFP":
+                // Move insertion to completion stage; no-op at approval
+                return { success: true, errors: [] };
+
+            case "STP":
+                return await handleSTPApproval(
+                    orderedParts,
+                    order.src_factory!
+                );
 
             default:
                 console.log(`Unknown order type: ${order.order_type}`);
@@ -52,6 +61,31 @@ export const handleOrderApproval = async (order: Order): Promise<{ success: bool
         return { success: false, errors: [`Order approval error: ${error}`] };
     }
 };
+/**
+ * Handles the STP (Storage to Project) approval process
+ * Reduces parts from source storage. Insertion into project happens on completion.
+ */
+const handleSTPApproval = async (
+    orderedParts: OrderedPart[],
+    srcFactoryId: number,
+): Promise<{ success: boolean; errors: string[] }> => {
+    try {
+        const errors: string[] = [];
+        for (const part of orderedParts) {
+            try {
+                await reduceStoragePartQty(part.part_id, srcFactoryId, part.qty);
+            } catch (error) {
+                console.error(`Error reducing storage for part ${part.part_id}:`, error);
+                errors.push(`Failed to reduce storage for part ${part.part_id}`);
+            }
+        }
+        return { success: errors.length === 0, errors };
+    } catch (error) {
+        console.error("Error in STP approval processing:", error);
+        return { success: false, errors: [`STP processing error: ${error}`] };
+    }
+};
+
 
 /**
  * Handles the PFM (Purchase for Machine) approval process for multiple parts (BATCH VERSION - NOW DEFAULT)
@@ -141,7 +175,7 @@ export const handlePFMApproval = async (
 export const handleSTMApproval = async (
     orderedParts: OrderedPart[],
     machine_id: number,
-    factory_id: number,
+    _factory_id: number,
     src_factory_id: number
 ): Promise<{ success: boolean; errors: string[] }> => {
     const errors: string[] = [];
@@ -192,5 +226,17 @@ export const handleSTMApproval = async (
         return { success: false, errors: [`STM processing error: ${error}`] };
     }
 };
+
+/**
+ * Handles the PFP (Purchase for Project) approval process
+ * Adds parts to the project component parts table
+ */
+// Removed; PFP no longer does work at approval
+
+/**
+ * Handles the STP (Storage to Project) approval process
+ * Transfers parts from storage to project component parts table
+ */
+// Removed; STP approval handled inline above
 
 

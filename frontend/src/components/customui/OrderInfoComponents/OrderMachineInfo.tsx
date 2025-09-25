@@ -1,11 +1,10 @@
-import { MachinePart, Order, OrderedPart } from "@/types"
+import { Order, OrderedPart } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { Separator } from "../../ui/separator"
 import { Badge } from "../../ui/badge"
 import { useEffect, useState } from "react"
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService"
 import { Loader2, Cog, CheckCircle, XCircle } from "lucide-react"
-import { fetchMachineParts } from "@/services/MachinePartsService"
 
 interface OrderMachineInfoProps {
     order: Order
@@ -15,9 +14,6 @@ interface OrderMachineInfoProps {
 const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
     const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([])
     const [loading, setLoading] = useState(true)
-    const [machineParts, setMachineParts] = useState<MachinePart[]>([])
-
-    // Only show 
 
     useEffect(() => {
         const loadOrderedParts = async () => {
@@ -31,17 +27,8 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                 setLoading(false)
             }
         }
-        const loadMachineParts = async () => {
-            try {
-                const parts = await fetchMachineParts(order.machines!.id)
-                setMachineParts(parts || [])
-            } catch (error) {
-                console.error("Failed to fetch machine parts:", error)
-            }
-        }
 
         loadOrderedParts()
-        loadMachineParts()
     }, [order.id])
 
 
@@ -118,19 +105,12 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                         {/* Ordered Parts List */}
                         {orderedParts.length > 0 && (
                             <li className="flex flex-col gap-2">
-                                                                    <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-muted-foreground">Ordered Parts:</span>
-                                        <span className="text-xs text-muted-foreground">Currently → On Approval → On Completion</span>
-                                    </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-muted-foreground">Ordered Parts:</span>
+                                    <span className="text-xs text-muted-foreground">{orderedParts.length} part(s)</span>
+                                </div>
                                 <div className="space-y-2 max-h-32 overflow-y-auto">
                                     {orderedParts.map((part, index) => {
-                                        const machinePart = machineParts.find((mp) => mp.parts.id === part.parts.id);
-
-                                        // If machinePart exists, calculate quantities
-                                                                                    const beforeQty = machinePart ? machinePart.qty : 0;
-                                            const afterQty = beforeQty - part.qty; // After order processing (final state)
-                                            const currentQty = beforeQty; // Currently same as before until order is processed
-                                        
                                         // Get unstable type display
                                         const getUnstableTypeBadge = (unstableType: string | null) => {
                                             const status = unstableType || 'INACTIVE';
@@ -160,7 +140,7 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                                             </div>
                                             
                                             <span className="text-muted-foreground flex-shrink-0">
-                                                {beforeQty} → {afterQty} → {currentQty} {part.parts.unit}
+                                                {part.qty} {part.parts.unit}
                                             </span>
                                           </div>
                                         );
@@ -168,33 +148,6 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                                 </div>
                             </li>
                         )}
-
-                        {/* Extra Machine Parts Section (Collapsed) */}
-                        <li className="flex flex-col gap-2">
-                            <details className="group">
-                                <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
-                                    <span>Other Machine Parts</span>
-                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">+</span>
-                                </summary>
-                                <div className="mt-2 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
-                                    <div className="text-xs text-muted-foreground mb-2">
-                                        Other Machine Parts currently in the machine
-                                    </div>
-                                    <div className="space-y-1">
-                                        {machineParts
-                                            .filter((part) => 
-                                                !orderedParts.some((ordered) => ordered.parts.id === part.parts.id)
-                                            )
-                                            .map((part) => (
-                                                <div key={part.id} className="flex items-center justify-between text-xs">
-                                                <span className="text-xs">{part.parts.name}</span>
-                                                <span className="text-muted-foreground">{part.qty} {part.parts.unit}</span>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            </details>
-                        </li>
                     </ul>
                 )}
             </CardContent>

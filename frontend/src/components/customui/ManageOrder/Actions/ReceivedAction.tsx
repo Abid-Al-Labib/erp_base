@@ -5,7 +5,7 @@ import { updateReceivedByFactoryDateByID } from "@/services/OrderedPartsService"
 import { OrderedPart } from "@/types"
 import { useState } from "react"
 import toast from "react-hot-toast"
-import { handlePFSReceivedAction, handlePFMReceivedAction } from "../Processing/CompletionProcesses"
+import { handlePFSReceivedAction, handlePFMReceivedAction, handlePFPReceivedAction, handleSTPReceivedAction } from "../Processing/CompletionProcesses"
 
 interface ReceivedActionProps {
   openThisActionDialog: boolean
@@ -15,6 +15,8 @@ interface ReceivedActionProps {
   order_type: string
   factory_id: number
   machine_id: number
+  project_component_id?: number
+  src_factory_id?: number
 }
 
 const ReceivedAction: React.FC<ReceivedActionProps> = ({
@@ -24,7 +26,9 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
   orderedPartInfo,
   order_type,
   factory_id,
-  machine_id
+  machine_id,
+  project_component_id,
+  src_factory_id
 }) => {
   const [dateReceived, setDateReceived] = useState<Date | undefined>(
     orderedPartInfo.part_received_by_factory_date
@@ -78,6 +82,29 @@ const ReceivedAction: React.FC<ReceivedActionProps> = ({
             orderedPartInfo,
             machine_id,
             factory_id,
+          );
+          if (!received_handle_success) {
+            await updateReceivedByFactoryDateByID(orderedPartInfo.id, null);
+            toast.error("Resetting received date as part transfer failed");
+          }
+        }
+
+        if (order_type === "PFP" && project_component_id) {
+          const received_handle_success = await handlePFPReceivedAction(
+            orderedPartInfo,
+            project_component_id,
+          );
+          if (!received_handle_success) {
+            await updateReceivedByFactoryDateByID(orderedPartInfo.id, null);
+            toast.error("Resetting received date as part transfer failed");
+          }
+        }
+
+        if (order_type === "STP" && project_component_id && src_factory_id) {
+          const received_handle_success = await handleSTPReceivedAction(
+            orderedPartInfo,
+            project_component_id,
+            src_factory_id,
           );
           if (!received_handle_success) {
             await updateReceivedByFactoryDateByID(orderedPartInfo.id, null);

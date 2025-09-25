@@ -33,13 +33,9 @@ const CreateProject: React.FC<CreateProjectProps> = ({
   const [projectData, setProjectData] = useState({
     name: "",
     description: "",
-    budget: "",
     priority: "MEDIUM" as "LOW" | "MEDIUM" | "HIGH",
-    status: "PLANNING" as "PLANNING" | "STARTED" | "COMPLETED",
   });
   
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
   const [deadline, setDeadline] = useState<Date>();
   const [components, setComponents] = useState<ProjectComponent[]>([]);
   const [isCreateComponentOpen, setIsCreateComponentOpen] = useState(false);
@@ -48,12 +44,8 @@ const CreateProject: React.FC<CreateProjectProps> = ({
     setProjectData({
       name: "",
       description: "",
-      budget: "",
       priority: "MEDIUM",
-      status: "PLANNING",
     });
-    setStartDate(undefined);
-    setEndDate(undefined);
     setDeadline(undefined);
     setComponents([]);
   };
@@ -74,6 +66,23 @@ const CreateProject: React.FC<CreateProjectProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!projectData.name.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    
+    if (!projectData.description.trim()) {
+      toast.error('Project description is required');
+      return;
+    }
+    
+    if (!deadline) {
+      toast.error('Project deadline is required');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -81,12 +90,9 @@ const CreateProject: React.FC<CreateProjectProps> = ({
       const projectPayload: Partial<Project> = {
         name: projectData.name,
         description: projectData.description,
-        budget: projectData.budget ? parseFloat(projectData.budget) : null,
-        start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
-        end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
         deadline: deadline ? format(deadline, 'yyyy-MM-dd') : null,
         priority: projectData.priority,
-        status: projectData.status,
+        status: "PLANNING", // Always create projects in Planning stage
         factory_id: factoryId,
       };
 
@@ -150,128 +156,19 @@ const CreateProject: React.FC<CreateProjectProps> = ({
 
                 {/* Description */}
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description *</Label>
                   <Textarea
                     id="description"
                     value={projectData.description}
                     onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
                     rows={2}
+                    required
                   />
                 </div>
 
-                {/* Priority and Status */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select
-                      value={projectData.priority}
-                      onValueChange={(value: "LOW" | "MEDIUM" | "HIGH") => 
-                        setProjectData({ ...projectData, priority: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="LOW">Low</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={projectData.status}
-                      onValueChange={(value: "PLANNING" | "STARTED" | "COMPLETED") => 
-                        setProjectData({ ...projectData, status: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PLANNING">Planning</SelectItem>
-                        <SelectItem value="STARTED">Started</SelectItem>
-                        <SelectItem value="COMPLETED">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Budget */}
-                <div>
-                  <Label htmlFor="budget">Budget</Label>
-                  <Input
-                    id="budget"
-                    type="number"
-                    step="0.01"
-                    value={projectData.budget}
-                    onChange={(e) => setProjectData({ ...projectData, budget: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-4">
-                {/* Start Date */}
-                <div>
-                  <Label>Start Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !startDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* End Date */}
-                <div>
-                  <Label>End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !endDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
                 {/* Deadline */}
                 <div>
-                  <Label>Deadline</Label>
+                  <Label>Deadline *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -280,6 +177,7 @@ const CreateProject: React.FC<CreateProjectProps> = ({
                           "w-full justify-start text-left font-normal",
                           !deadline && "text-muted-foreground"
                         )}
+                        type="button"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {deadline ? format(deadline, "PPP") : "Pick a date"}
@@ -296,8 +194,31 @@ const CreateProject: React.FC<CreateProjectProps> = ({
                   </Popover>
                 </div>
 
+                {/* Priority */}
+                <div>
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select
+                    value={projectData.priority}
+                    onValueChange={(value: "LOW" | "MEDIUM" | "HIGH") => 
+                      setProjectData({ ...projectData, priority: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">Low</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HIGH">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
                 {/* Components Section */}
-                <div className="space-y-3 border-t pt-3">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-base font-medium">Components ({components.length})</Label>
                     <Button 
@@ -310,23 +231,30 @@ const CreateProject: React.FC<CreateProjectProps> = ({
                     </Button>
                   </div>
 
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {components.map((component) => (
-                      <div key={component.id} className="flex items-center justify-between p-2 border rounded">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{component.name}</p>
-                          <p className="text-xs text-muted-foreground">{component.status}</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeComponent(component.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                  <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3">
+                    {components.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">
+                        <p className="text-sm">No components added yet</p>
+                        <p className="text-xs">Click "Add Component" to get started</p>
                       </div>
-                    ))}
+                    ) : (
+                      components.map((component) => (
+                        <div key={component.id} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{component.name}</p>
+                            <p className="text-xs text-muted-foreground">{component.status}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeComponent(component.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
