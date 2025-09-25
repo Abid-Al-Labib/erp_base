@@ -298,22 +298,20 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
           {/* Project Section */}
           {selectedFactoryId && (
             <div>
-              {/* Show Project title and add button when there are projects or a project is selected */}
-              {(filteredProjects.length > 0 || selectedProjectId) && (
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-bold text-gray-900">Project</h2>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => setIsCreateProjectOpen(true)}
-                      className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
-                      title="Add project"
-                      disabled={!selectedFactoryId}
-                    >
-                      +
-                    </button>
-                  </div>
+              {/* Project title and add button - always show */}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-gray-900">Project</h2>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setIsCreateProjectOpen(true)}
+                    className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
+                    title="Add project"
+                    disabled={!selectedFactoryId}
+                  >
+                    +
+                  </button>
                 </div>
-              )}
+              </div>
               
               {selectedProjectId ? (
                 // Show selected project information
@@ -556,16 +554,25 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                 // Show project selection cards
                 <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
                   {filteredProjects.length === 0 ? (
-                    // Show skeleton cards when no projects
-                    <>
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="p-3 border rounded-lg bg-gray-50 animate-pulse">
-                          <div className="h-4 bg-gray-300 rounded w-2/3 mb-2"></div>
-                          <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                          <div className="h-3 bg-gray-300 rounded w-3/4"></div>
-                        </div>
-                      ))}
-                    </>
+                    // Show create new project message when no projects
+                    <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50">
+                      <div className="text-gray-500 mb-2">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">No projects yet</h3>
+                      <p className="text-sm text-gray-500 mb-4">Get started by creating your first project</p>
+                      <button 
+                        onClick={() => setIsCreateProjectOpen(true)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create New Project
+                      </button>
+                    </div>
                   ) : (
                     // Show all projects for selection
                     filteredProjects.map((project) => (

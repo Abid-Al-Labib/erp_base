@@ -66,6 +66,23 @@ const CreateProject: React.FC<CreateProjectProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!projectData.name.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    
+    if (!projectData.description.trim()) {
+      toast.error('Project description is required');
+      return;
+    }
+    
+    if (!deadline) {
+      toast.error('Project deadline is required');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -139,18 +156,19 @@ const CreateProject: React.FC<CreateProjectProps> = ({
 
                 {/* Description */}
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description *</Label>
                   <Textarea
                     id="description"
                     value={projectData.description}
                     onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
                     rows={2}
+                    required
                   />
                 </div>
 
                 {/* Deadline */}
                 <div>
-                  <Label>Deadline</Label>
+                  <Label>Deadline *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -159,6 +177,7 @@ const CreateProject: React.FC<CreateProjectProps> = ({
                           "w-full justify-start text-left font-normal",
                           !deadline && "text-muted-foreground"
                         )}
+                        type="button"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {deadline ? format(deadline, "PPP") : "Pick a date"}
