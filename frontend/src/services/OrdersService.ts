@@ -8,7 +8,7 @@ import { getOrderTypeLastStatusMap } from "./OrderWorkflowService.ts";
 
 const ORDER_TYPE_LABELS: Record<string, string> = {
   PFM: "Purchase for Machine",
-  PFP: "Purchase for Project Component",
+  PFP: "Purchase for Project",
   PFS: "Purchase for Storage",
   STM: "Storage to Machine Transfer",
   STP: "Storage to Project Transfer",
@@ -169,6 +169,8 @@ export const fetchOrderByID = async (order_id: number) => {
         factory_id,
         machine_id,
         factory_section_id,
+        project_id,
+        project_component_id,
         order_type,
         order_workflow_id,
         order_workflows(*),
@@ -372,6 +374,78 @@ export const insertOrderStorageSTM = async (
   return { data: data as Order[], error };
 };
 
+export const insertOrderPFP = async (
+  req_num: string,
+  order_note: string,
+  created_by_user_id: number,
+  department_id: number,
+  factory_id: number,
+  current_status_id: number,
+  order_type: string,
+  project_id: number,
+  project_component_id: number
+) => {
+  const { data, error } = await supabase_client
+    .from("orders")
+    .insert([
+      {
+        req_num,
+        order_note,
+        created_by_user_id,
+        department_id,
+        factory_id,
+        factory_section_id: null,
+        machine_id: null,
+        current_status_id,
+        order_type,
+        project_id,
+        project_component_id,
+      },
+    ])
+    .select();
+  if (error) {
+    toast.error("Failed to create order: " + error.message);
+  }
+  return { data: data as Order[], error };
+};
+
+export const insertOrderSTP = async (
+  req_num: string,
+  order_note: string,
+  created_by_user_id: number,
+  department_id: number,
+  factory_id: number,
+  current_status_id: number,
+  order_type: string,
+  project_id: number,
+  project_component_id: number,
+  src_factory: number
+) => {
+  const { data, error } = await supabase_client
+    .from("orders")
+    .insert([
+      {
+        req_num,
+        order_note,
+        created_by_user_id,
+        department_id,
+        factory_id,
+        factory_section_id: null,
+        machine_id: null,
+        current_status_id,
+        order_type,
+        project_id,
+        project_component_id,
+        src_factory,
+      },
+    ])
+    .select();
+  if (error) {
+    toast.error("Failed to create order: " + error.message);
+  }
+  return { data: data as Order[], error };
+};
+
 export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
   const { data, error } = await supabase_client
     .from("orders")
@@ -467,6 +541,56 @@ export const fetchRunningOrdersByFactoryId = async (factory_id: number) => {
 
   return activeOrders as unknown as Order[];
 };
+
+export const fetchRunningOrdersByProjectComponentId = async (project_component_id: number) => {
+  const { data, error } = await supabase_client
+    .from("orders")
+    .select(
+      `
+      id,
+      req_num,
+      created_at,
+      order_note,
+      created_by_user_id,
+      department_id,
+      current_status_id,
+      factory_id,
+      src_factory,
+      project_id,
+      project_component_id,
+      order_type,
+      order_workflows(*),
+      departments(*),
+      profiles(*),
+      statuses(*),
+      factory_sections(*),
+      factories(*),
+      machines(*)
+      `
+    )
+    .eq("project_component_id", project_component_id)
+    .in("order_type", ["PFP", "STP"]);
+
+  if (error) {
+    toast.error(error.message);
+    return [] as unknown as Order[];
+  }
+
+  const orders = (data || []) as Array<any>;
+  if (orders.length === 0) {
+    return orders as unknown as Order[];
+  }
+
+  const typeLastMap = await getOrderTypeLastStatusMap();
+  const activeOrders = orders.filter((o: any) => {
+    const lastId = (typeLastMap as any)[o.order_type];
+    if (typeof lastId !== "number") return true;
+    return o.current_status_id !== lastId;
+  });
+
+  return activeOrders as unknown as Order[];
+};
+
 
 export const fetchMetricActiveOrders = async () => {
   const { count, error } = await supabase_client

@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Order, OrderedPart, MachinePart, StoragePart } from "@/types";
+import { Order, OrderedPart } from "@/types";
 import { fetchOrderedPartsByOrderID } from "@/services/OrderedPartsService";
-import { fetchMachineParts } from "@/services/MachinePartsService";
-import { fetchStorageParts } from "@/services/StorageService";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { fetchFactoryNameAndAbbreviation } from '@/services/FactoriesService';
 
@@ -17,9 +15,6 @@ interface OrderMachineAndStorageInfoProps {
 const OrderMachineAndStorageInfo: React.FC<OrderMachineAndStorageInfoProps> = ({ order }) => {
   const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loading, setLoading] = useState(true);
-  const [machineParts, setMachineParts] = useState<MachinePart[]>([]);
-  const [storageParts, setStorageParts] = useState<StoragePart[]>([]);
-  const [sourceFactoryName, setSourceFactoryName] = useState('');
   const [sourceFactoryAbbreviation, setSourceFactoryAbbreviation] = useState('');
 
   useEffect(() => {
@@ -27,7 +22,6 @@ const OrderMachineAndStorageInfo: React.FC<OrderMachineAndStorageInfoProps> = ({
       if (order.src_factory) {
         try {
           const sourceFactory = await fetchFactoryNameAndAbbreviation(order.src_factory);
-          setSourceFactoryName(sourceFactory?.name || '');
           setSourceFactoryAbbreviation(sourceFactory?.abbreviation || '');
         } catch (error) {
           console.error("Failed to fetch source factory:", error);
@@ -38,27 +32,20 @@ const OrderMachineAndStorageInfo: React.FC<OrderMachineAndStorageInfoProps> = ({
   }, [order.src_factory]);
 
   useEffect(() => {
-    const loadAllData = async () => {
+    const loadOrderedParts = async () => {
       try {
         setLoading(true);
-        const [parts, machinePartsData, storagePartsData] = await Promise.all([
-          fetchOrderedPartsByOrderID(order.id),
-          order.machine_id ? fetchMachineParts(order.machine_id) : Promise.resolve([]),
-          order.src_factory ? fetchStorageParts({ factoryId: order.src_factory }) : Promise.resolve({ data: [], count: 0 })
-        ]);
-        
+        const parts = await fetchOrderedPartsByOrderID(order.id);
         setOrderedParts(parts || []);
-        setMachineParts(machinePartsData || []);
-        setStorageParts(storagePartsData.data || []);
       } catch (error) {
-        console.error("Failed to fetch data:", error);
+        console.error("Failed to fetch ordered parts:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadAllData();
-  }, [order.id, order.machine_id, order.src_factory]);
+    loadOrderedParts();
+  }, [order.id]);
 
   if (order.order_type !== 'STM') {
     return null;
@@ -124,83 +111,32 @@ const OrderMachineAndStorageInfo: React.FC<OrderMachineAndStorageInfoProps> = ({
 
             <Separator className="my-2" />
 
-            {/* Storage Parts Section - Parts being taken FROM storage */}
+            {/* Ordered Parts List */}
             {orderedParts.length > 0 && (
               <li className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-muted-foreground">Storage Parts (Outgoing):</span>
-                  <span className="text-xs text-muted-foreground">Before → After</span>
-                </div>
-                                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                   {orderedParts.map((part, index) => {
-                     const storagePart = storageParts.find((sp) => sp.part_id === part.parts.id);
-                     const beforeQty = storagePart ? storagePart.qty : 0;
-                     const afterQty = beforeQty - part.qty; // After parts are taken out
-
-                     // Debug logging (remove after fixing)
-                     if (index === 0) {
-                       console.log('Debug storage info:', {
-                         orderSrcFactory: order.src_factory,
-                         storagePartsCount: storageParts.length,
-                         storageParts: storageParts,
-                         partId: part.parts.id,
-                         foundStoragePart: storagePart
-                       });
-                     }
-
-                     return (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded gap-2"
-                      >
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="font-medium">{part.parts.name}</span>
-                          
-                        </div>
-                        
-                        <span className="text-muted-foreground flex-shrink-0">
-                          {beforeQty} → {afterQty} {part.parts.unit}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </li>
-            )}
-
-            <Separator className="my-2" />
-
-            {/* Machine Parts Section - Damaged parts being replaced */}
-            {orderedParts.length > 0 && (
-              <li className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-muted-foreground">Machine Parts:</span>
-                  <span className="text-xs text-muted-foreground">Currently → On Approval → On Completion</span>
+                  <span className="font-semibold text-muted-foreground">Ordered Parts:</span>
+                  <span className="text-xs text-muted-foreground">{orderedParts.length} part(s)</span>
                 </div>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {orderedParts.map((part, index) => {
-                                         const machinePart = machineParts.find((mp) => mp.parts.id === part.parts.id);
-                    const beforeQty = machinePart ? machinePart.qty : 0;
-                    const afterQty = beforeQty - part.qty; // After damaged parts are removed 
-                    const currentQty = beforeQty; // Currently same as before until order is processed
-
-                                         // Get unstable type display
-                     const getUnstableTypeBadge = (unstableType: string | null) => {
-                       const status = unstableType || 'INACTIVE';
-                       const statusText = status === 'DEFECTIVE' ? 'Defective' : 
-                                         status === 'LESS' ? 'Less' : 
-                                         status === 'INACTIVE' ? 'Inactive' : 'Inactive';
-                       const colorClass = status === 'DEFECTIVE' ? 'bg-red-100 text-red-600' :
-                                         status === 'LESS' ? 'bg-yellow-100 text-yellow-600' :
-                                         status === 'INACTIVE' ? 'bg-orange-100 text-orange-600' :
-                                         'bg-orange-100 text-orange-600';
-                       
-                       return (
-                         <Badge variant="outline" className={`text-xs px-1 py-0 ${colorClass}`}>
-                           {statusText}
-                         </Badge>
-                       );
-                     };
+                    // Get unstable type display
+                    const getUnstableTypeBadge = (unstableType: string | null) => {
+                      const status = unstableType || 'INACTIVE';
+                      const statusText = status === 'DEFECTIVE' ? 'Defective' : 
+                                        status === 'LESS' ? 'Less' : 
+                                        status === 'INACTIVE' ? 'Inactive' : 'Inactive';
+                      const colorClass = status === 'DEFECTIVE' ? 'bg-red-100 text-red-600' :
+                                        status === 'LESS' ? 'bg-yellow-100 text-yellow-600' :
+                                        status === 'INACTIVE' ? 'bg-orange-100 text-orange-600' :
+                                        'bg-orange-100 text-orange-600';
+                      
+                      return (
+                        <Badge variant="outline" className={`text-xs px-1 py-0 ${colorClass}`}>
+                          {statusText}
+                        </Badge>
+                      );
+                    };
 
                     return (
                       <div
@@ -213,7 +149,7 @@ const OrderMachineAndStorageInfo: React.FC<OrderMachineAndStorageInfoProps> = ({
                         </div>
                         
                         <span className="text-muted-foreground flex-shrink-0">
-                          {beforeQty} → {afterQty} → {currentQty} {part.parts.unit}
+                          {part.qty} {part.parts.unit}
                         </span>
                       </div>
                     );

@@ -657,6 +657,8 @@ export type Database = {
           order_note: string | null
           order_type: string | null
           order_workflow_id: number | null
+          project_component_id: number | null
+          project_id: number | null
           req_num: string | null
           src_factory: number | null
         }
@@ -672,6 +674,8 @@ export type Database = {
           order_note?: string | null
           order_type?: string | null
           order_workflow_id?: number | null
+          project_component_id?: number | null
+          project_id?: number | null
           req_num?: string | null
           src_factory?: number | null
         }
@@ -687,6 +691,8 @@ export type Database = {
           order_note?: string | null
           order_type?: string | null
           order_workflow_id?: number | null
+          project_component_id?: number | null
+          project_id?: number | null
           req_num?: string | null
           src_factory?: number | null
         }
@@ -760,6 +766,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "order_workflows"
             referencedColumns: ["type"]
+          },
+          {
+            foreignKeyName: "orders_project_component_id_fkey"
+            columns: ["project_component_id"]
+            isOneToOne: false
+            referencedRelation: "project_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -838,24 +858,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "project_component_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_component_parts_project_component_id_fkey"
             columns: ["project_component_id"]
             isOneToOne: false
             referencedRelation: "project_components"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_parts_part_id_fkey"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_parts_part_id_fkey1"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
             referencedColumns: ["id"]
           },
         ]

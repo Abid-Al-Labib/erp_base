@@ -298,19 +298,22 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
           {/* Project Section */}
           {selectedFactoryId && (
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-gray-900">Project</h2>
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => setIsCreateProjectOpen(true)}
-                    className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
-                    title="Add project"
-                    disabled={!selectedFactoryId}
-                  >
-                    +
-                  </button>
+              {/* Show Project title and add button when there are projects or a project is selected */}
+              {(filteredProjects.length > 0 || selectedProjectId) && (
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-bold text-gray-900">Project</h2>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setIsCreateProjectOpen(true)}
+                      className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
+                      title="Add project"
+                      disabled={!selectedFactoryId}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
               
               {selectedProjectId ? (
                 // Show selected project information
@@ -585,21 +588,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             </div>
           )}
 
-          {/* Project Selection Skeleton when no factory selected */}
-          {!selectedFactoryId && (
-            <div>
-              <Label className="mb-2 text-base font-medium">Project</Label>
-              <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-3 border rounded-lg bg-gray-50 animate-pulse">
-                    <div className="h-4 bg-gray-300 rounded w-2/3 mb-2"></div>
-                    <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                    <div className="h-3 bg-gray-300 rounded w-3/4"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Component Navigator - Only show when project is selected */}
           {selectedProject && (

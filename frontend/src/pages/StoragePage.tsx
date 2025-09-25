@@ -43,6 +43,17 @@ const StoragePage = () => {
     searchParams.get("factory") ? Number(searchParams.get("factory")) : undefined
   );
   const [totalItems, setTotalItems] = useState(0);
+  const [totalValue, setTotalValue] = useState<number>(0);
+
+  // Calculate total value from storage parts
+  const calculateTotalValue = (parts: StoragePart[]) => {
+    const total = parts.reduce((sum, part) => {
+      const avgPrice = part.avg_price || 0;
+      const qty = part.qty || 0;
+      return sum + (avgPrice * qty);
+    }, 0);
+    setTotalValue(total);
+  };
 
   // Instant add part to storage dialog state
   const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
@@ -116,6 +127,7 @@ const StoragePage = () => {
           setStorageParts(data);
           console.log("Storage parts loaded:", data);
           setTotalItems(count || 0);
+          calculateTotalValue(data);
         } catch (error) {
           console.error("Error loading storage parts:", error);
         } finally {
@@ -318,6 +330,7 @@ const StoragePage = () => {
         });
         setStorageParts(data);
         setTotalItems(count || 0);
+        calculateTotalValue(data);
       } catch (error) {
         console.error("Error reloading storage parts:", error);
       } finally {
@@ -382,7 +395,11 @@ const StoragePage = () => {
             </div>
 
             {/* Storage Details */}
-            <StorageDetails factoryName={factories.find(f => f.id === selectedFactoryId)?.name} totalItems={totalItems} />
+            <StorageDetails 
+              factoryName={factories.find(f => f.id === selectedFactoryId)?.name} 
+              totalItems={totalItems} 
+              totalValue={activeTab === "storage" ? totalValue : undefined}
+            />
 
             {/* Running Orders for storage (by factory) */}
             <RunningOrders factory={factories.find(f => f.id === selectedFactoryId)} />

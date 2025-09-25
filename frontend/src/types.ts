@@ -84,8 +84,7 @@ export type ProjectComponentPart = {
     part_id: number;
     project_component_id: number;
     qty: number;
-    part: Part;
-    project_component: ProjectComponent
+    parts: Part
 }
 
 
@@ -144,6 +143,8 @@ export type Order = {
     order_workflows: OrderWorkflow,
     src_factory: number | null,
     src_machine: number | null,
+    project_id: number | null,
+    project_component_id: number | null,
 };
 
 export type StatusTracker = {
@@ -186,6 +187,8 @@ export interface InputOrder {
     order_type: string,
     src_factory?: number | null, // Source factory for transfers and borrowing from storage
     src_machine?: number | null, // Source machine for transfers and borrowing from machine
+    project_id?: number | null, // Project ID for PFP and STP orders
+    project_component_id?: number | null, // Project component ID for PFP and STP orders
 }
 
 export interface InputOrderedPart {

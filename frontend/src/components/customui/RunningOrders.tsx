@@ -4,20 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import toast from "react-hot-toast";
-import { Factory, Machine, Order } from "@/types";
-import { fetchRunningOrdersByMachineId, fetchRunningOrdersByFactoryId } from "@/services/OrdersService";
+import { Factory, Machine, Order, ProjectComponent } from "@/types";
+import { fetchRunningOrdersByMachineId, fetchRunningOrdersByFactoryId, fetchRunningOrdersByProjectComponentId } from "@/services/OrdersService";
 import { setMachineIsRunningById } from "@/services/MachineServices";
 
 type RunningOrdersProps = {
   machine?: Machine | undefined;
   factory?: Factory | undefined;
+  projectComponent?: ProjectComponent | undefined;
 };
 
-const RunningOrders = ({ machine, factory }: RunningOrdersProps) => {
+const RunningOrders = ({ machine, factory, projectComponent }: RunningOrdersProps) => {
   const [runningOrders, setRunningOrders] = useState<Order[]>([]);
-  const mode: 'machine' | 'factory' | 'none' = machine?.id ? 'machine' : factory?.id ? 'factory' : 'none';
+  const mode: 'machine' | 'factory' | 'projectComponent' | 'none' = machine?.id ? 'machine' : factory?.id ? 'factory' : projectComponent?.id ? 'projectComponent' : 'none';
   const selectedMachineId = mode === 'machine' ? machine!.id : undefined;
   const selectedFactoryId = mode === 'factory' ? factory!.id : undefined;
+  const selectedProjectComponentId = mode === 'projectComponent' ? projectComponent!.id : undefined;
 
   useEffect(() => {
     const load = async () => {
@@ -46,10 +48,20 @@ const RunningOrders = ({ machine, factory }: RunningOrdersProps) => {
         return;
       }
 
+      if (mode === 'projectComponent' && selectedProjectComponentId) {
+        try {
+          const orders = await fetchRunningOrdersByProjectComponentId(selectedProjectComponentId);
+          setRunningOrders(orders);
+        } catch {
+          setRunningOrders([]);
+        }
+        return;
+      }
+
       setRunningOrders([]);
     };
     load();
-  }, [mode, selectedMachineId, selectedFactoryId, machine?.is_running]);
+  }, [mode, selectedMachineId, selectedFactoryId, selectedProjectComponentId, machine?.is_running]);
 
   return (
     <div className="flex-1">
@@ -73,7 +85,7 @@ const RunningOrders = ({ machine, factory }: RunningOrdersProps) => {
               <TableBody>
                 <TableRow>
                   <TableCell colSpan={5} className="text-center h-[250px] text-muted-foreground">
-                    {mode === 'none' ? "Select a machine or factory to view orders" : mode === 'machine' ? "No running orders for this machine" : "No running orders for this storage"}
+                    {mode === 'none' ? "Select a machine, factory, or project component to view orders" : mode === 'machine' ? "No running orders for this machine" : mode === 'factory' ? "No running orders for this storage" : "No running orders for this project component"}
                   </TableCell>
                 </TableRow>
               </TableBody>

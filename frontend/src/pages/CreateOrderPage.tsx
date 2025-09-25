@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 
 import { CirclePlus, CircleX, Loader2, CircleCheck, X } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
-import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM } from "@/services/OrdersService";
+import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage, insertOrderStorageSTM, insertOrderPFP, insertOrderSTP } from "@/services/OrdersService";
 import { fetchStorageParts } from "@/services/StorageService";
 
 import toast from 'react-hot-toast'
@@ -22,8 +22,10 @@ import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/servic
 import { fetchAllMachines } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts, searchPartsByName, fetchPageParts } from "@/services/PartsService";
-import { Part, StoragePart } from "@/types"
+import { Part, StoragePart, Project, ProjectComponent } from "@/types"
 import { fetchStoragePartByFactoryAndPartID } from "@/services/StorageService"
+import { fetchProjects } from "@/services/ProjectsService"
+import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService"
 import { useAuth } from "@/context/AuthContext"
 import { Input } from "@/components/ui/input"
 
@@ -44,7 +46,7 @@ import { isFeatureSettingEnabled } from "@/services/helper"
 // ORDER TYPE CONFIGURATIONS AND HELPERS
 // ============================================================================
 
-type OrderType = "PFM" | "PFS" | "STM";
+type OrderType = "PFM" | "PFS" | "STM" | "PFP" | "STP";
 
 interface OrderTypeConfig {
     name: string;
@@ -53,6 +55,8 @@ interface OrderTypeConfig {
     requiresMachine: boolean;
     requiresSourceFactory: boolean;
     requiresSourceMachine: boolean;
+    requiresProject: boolean;
+    requiresProjectComponent: boolean;
     supportsInactiveMarking: boolean;
     isImplemented: boolean;
 }
@@ -65,6 +69,8 @@ const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
         requiresMachine: true,
         requiresSourceFactory: false,
         requiresSourceMachine: false,
+        requiresProject: false,
+        requiresProjectComponent: false,
         supportsInactiveMarking: true,
         isImplemented: true,
     },
@@ -75,6 +81,8 @@ const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
         requiresMachine: false,
         requiresSourceFactory: false,
         requiresSourceMachine: false,
+        requiresProject: false,
+        requiresProjectComponent: false,
         supportsInactiveMarking: false,
         isImplemented: true,
     },
@@ -85,10 +93,35 @@ const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
         requiresMachine: true,
         requiresSourceFactory: true,
         requiresSourceMachine: false,
+        requiresProject: false,
+        requiresProjectComponent: false,
         supportsInactiveMarking: true,
         isImplemented: true,
     },
-   
+    PFP: {
+        name: "PFP",
+        displayName: "4 - Purchase for Project",
+        requiresFactorySection: false,
+        requiresMachine: false,
+        requiresSourceFactory: false,
+        requiresSourceMachine: false,
+        requiresProject: true,
+        requiresProjectComponent: true,
+        supportsInactiveMarking: false,
+        isImplemented: true,
+    },
+    STP: {
+        name: "STP",
+        displayName: "5 - Storage to Project",
+        requiresFactorySection: false,
+        requiresMachine: false,
+        requiresSourceFactory: true,
+        requiresSourceMachine: false,
+        requiresProject: true,
+        requiresProjectComponent: true,
+        supportsInactiveMarking: false,
+        isImplemented: true,
+    },
 };
 
 // ============================================================================
@@ -208,6 +241,84 @@ const STM_HELPERS = {
 
 };
 
+// ============================================================================
+// PFP (Purchase For Project) LOGIC
+// ============================================================================
+
+const PFP_HELPERS = {
+    validateForm: (selectedFactoryId: number, departmentId: number, selectedProjectId: number, selectedProjectComponentId: number) => {
+        return selectedFactoryId !== -1 && departmentId !== -1 && selectedProjectId !== -1 && selectedProjectComponentId !== -1;
+    },
+
+    validatePart: (partId: number, qty: number, orderedParts: InputOrderedPart[]) => {
+        const isPartAlreadyAdded = orderedParts.some(part => part.part_id === partId);
+        if (isPartAlreadyAdded) {
+            return { isValid: false, error: 'This part has already been added.' };
+        }
+        if (qty <= 0) {
+            return { isValid: false, error: 'Quantity must be greater than 0.' };
+        }
+        return { isValid: true };
+    },
+
+    createOrder: async (tempOrderDetails: InputOrder) => {
+        return await insertOrderPFP(
+            tempOrderDetails.req_num,
+            tempOrderDetails.order_note,
+            tempOrderDetails.created_by_user_id,
+            tempOrderDetails.department_id,
+            tempOrderDetails.factory_id,
+            1, // Current Status
+            tempOrderDetails.order_type,
+            tempOrderDetails.project_id!,
+            tempOrderDetails.project_component_id!,
+        );
+    },
+};
+
+// ============================================================================
+// STP (Storage To Project) LOGIC
+// ============================================================================
+
+const STP_HELPERS = {
+    validateForm: (selectedFactoryId: number, departmentId: number, selectedProjectId: number, selectedProjectComponentId: number, srcFactoryId: number) => {
+        return selectedFactoryId !== -1 && departmentId !== -1 && selectedProjectId !== -1 && selectedProjectComponentId !== -1 && srcFactoryId !== -1;
+    },
+
+    validatePart: (partId: number, qty: number, orderedParts: InputOrderedPart[], storageParts: StoragePart[]) => {
+        const isPartAlreadyAdded = orderedParts.some(part => part.part_id === partId);
+        if (isPartAlreadyAdded) {
+            return { isValid: false, error: 'This part has already been added.' };
+        }
+        if (qty <= 0) {
+            return { isValid: false, error: 'Quantity must be greater than 0.' };
+        }
+        const storagePart = storageParts.find(sp => sp.part_id === partId);
+        if (storagePart && qty > storagePart.qty) {
+            return { 
+                isValid: false, 
+                error: `Requested quantity (${qty}) exceeds available quantity (${storagePart.qty}) in storage.` 
+            };
+        }
+        return { isValid: true };
+    },
+
+    createOrder: async (tempOrderDetails: InputOrder, srcFactoryId: number) => {
+        return await insertOrderSTP(
+            tempOrderDetails.req_num,
+            tempOrderDetails.order_note,
+            tempOrderDetails.created_by_user_id,
+            tempOrderDetails.department_id,
+            tempOrderDetails.factory_id,
+            1, // Current Status
+            tempOrderDetails.order_type,
+            tempOrderDetails.project_id!,
+            tempOrderDetails.project_component_id!,
+            srcFactoryId,
+        );
+    },
+};
+
 const CreateOrderPage = () => {
 
     const profile = useAuth().profile
@@ -230,6 +341,15 @@ const CreateOrderPage = () => {
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
     const [srcFactoryId, setSrcFactoryId] = useState<number>(-1);
     const selectedSrcFactoryName = factories.find(factory => factory.id === srcFactoryId)?.name || "Select Source Factory";
+
+    // Project and Project Component state
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<number>(-1);
+    const selectedProjectName = projects.find(project => project.id === selectedProjectId)?.name || "Select Project";
+
+    const [projectComponents, setProjectComponents] = useState<ProjectComponent[]>([]);
+    const [selectedProjectComponentId, setSelectedProjectComponentId] = useState<number>(-1);
+    const selectedProjectComponentName = projectComponents.find(component => component.id === selectedProjectComponentId)?.name || "Select Project Component";
 
   
 
@@ -263,7 +383,10 @@ const CreateOrderPage = () => {
                 return PFS_HELPERS.validateForm(selectedFactoryId, departmentId);
             case "STM":
                 return STM_HELPERS.validateForm(selectedFactoryId, departmentId, selectedFactorySectionId, selectedMachineId, srcFactoryId);
-           
+            case "PFP":
+                return PFP_HELPERS.validateForm(selectedFactoryId, departmentId, selectedProjectId, selectedProjectComponentId);
+            case "STP":
+                return STP_HELPERS.validateForm(selectedFactoryId, departmentId, selectedProjectId, selectedProjectComponentId, srcFactoryId);
             default:
                 return false;
         }
@@ -281,10 +404,10 @@ const CreateOrderPage = () => {
         loadParts();
     }, []);
 
-    // Load storage parts when STM is selected and source factory is chosen
+    // Load storage parts when STM or STP is selected and source factory is chosen
     useEffect(() => {
         const loadStorageParts = async () => {
-            if (orderType === "STM" && srcFactoryId !== -1) {
+            if ((orderType === "STM" || orderType === "STP") && srcFactoryId !== -1) {
                 try {
                     const response = await fetchStorageParts({factoryId: srcFactoryId, page: 1, limit: 1000});
                     // Filter out parts with 0 quantity
@@ -301,6 +424,46 @@ const CreateOrderPage = () => {
 
         loadStorageParts();
     }, [orderType, srcFactoryId]);
+
+    // Load projects when PFP or STP is selected and factory is chosen
+    useEffect(() => {
+        const loadProjects = async () => {
+            if ((orderType === "PFP" || orderType === "STP") && selectedFactoryId !== -1) {
+                try {
+                    const response = await fetchProjects(selectedFactoryId, 1, 1000);
+                    setProjects(response.data);
+                } catch (error) {
+                    console.error("Error loading projects:", error);
+                    toast.error("Failed to load projects");
+                }
+            } else {
+                setProjects([]);
+                setSelectedProjectId(-1);
+            }
+        };
+
+        loadProjects();
+    }, [orderType, selectedFactoryId]);
+
+    // Load project components when project is selected
+    useEffect(() => {
+        const loadProjectComponents = async () => {
+            if (selectedProjectId !== -1) {
+                try {
+                    const components = await fetchProjectComponentsByProjectId(selectedProjectId);
+                    setProjectComponents(components || []);
+                } catch (error) {
+                    console.error("Error loading project components:", error);
+                    toast.error("Failed to load project components");
+                }
+            } else {
+                setProjectComponents([]);
+                setSelectedProjectComponentId(-1);
+            }
+        };
+
+        loadProjectComponents();
+    }, [selectedProjectId]);
 
     const [orderedParts, setOrderedParts] = useState<InputOrderedPart[]>([]);
 
@@ -402,6 +565,8 @@ const CreateOrderPage = () => {
                 machine_name: selectedMachineName,
                 current_status_id: statusId,
                 order_type: orderType!,
+                project_id: (orderType === "PFP" || orderType === "STP") ? selectedProjectId : null,
+                project_component_id: (orderType === "PFP" || orderType === "STP") ? selectedProjectComponentId : null,
             };
             
 
@@ -465,7 +630,12 @@ const CreateOrderPage = () => {
             case "STM":
                 validationResult = STM_HELPERS.validatePart(partId, qty, orderedParts, storageParts);
                 break;
-            
+            case "PFP":
+                validationResult = PFP_HELPERS.validatePart(partId, qty, orderedParts);
+                break;
+            case "STP":
+                validationResult = STP_HELPERS.validatePart(partId, qty, orderedParts, storageParts);
+                break;
             default:
                 validationResult = { isValid: false, error: `Unknown order type: ${orderType}` };
         }
@@ -501,6 +671,10 @@ const CreateOrderPage = () => {
                 return await PFS_HELPERS.createOrder(tempOrderDetails);
             case "STM":
                 return await STM_HELPERS.createOrder(tempOrderDetails, srcFactoryId);
+            case "PFP":
+                return await PFP_HELPERS.createOrder(tempOrderDetails);
+            case "STP":
+                return await STP_HELPERS.createOrder(tempOrderDetails, srcFactoryId);
             default:
                 throw new Error(`Unknown order type: ${orderType}`);
         }
@@ -576,6 +750,8 @@ const CreateOrderPage = () => {
         // Reset order-level settings when canceling
         setTempOrderDetails(null);
         setSrcFactoryId(-1);
+        setSelectedProjectId(-1);
+        setSelectedProjectComponentId(-1);
         console.log(`[DEBUG] handleCancelOrder completed`);
     };
 
@@ -1046,6 +1222,209 @@ const CreateOrderPage = () => {
                                     </>
     );
 
+    const renderPFPForm = () => (
+                                    <>
+                                        <div>
+                                            <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
+                                            <Input
+                                                id="req_num"
+                                                value={reqNum}
+                                                className="mt-1"
+                                                placeholder="Enter requisition number (optional)"
+                                                onChange={e => setReqNum(e.target.value)}
+                                                onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                                disabled={isOrderStarted}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="department" className="text-sm font-medium">Department</Label>
+                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((dept) => (
+                                                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                            {dept.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
+                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="project" className="text-sm font-medium">Project</Label>
+                                            <Select 
+                                                onValueChange={(value) => setSelectedProjectId(Number(value))} 
+                                                disabled={isOrderStarted || selectedFactoryId === -1}
+                                            >
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedProjectName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {projects.map((project) => (
+                                                        <SelectItem key={project.id} value={project.id.toString()}>
+                                                            {project.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="projectComponent" className="text-sm font-medium">Project Component</Label>
+                                            <Select 
+                                                onValueChange={(value) => setSelectedProjectComponentId(Number(value))} 
+                                                disabled={isOrderStarted || selectedProjectId === -1}
+                                            >
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedProjectComponentName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {projectComponents.map((component) => (
+                                                        <SelectItem key={component.id} value={component.id.toString()}>
+                                                            {component.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                                            <Textarea
+                                                id="description"
+                                                value={description}
+                                                className="mt-1 min-h-20"
+                                                onChange={e => setDescription(e.target.value)}
+                                                disabled={isOrderStarted}
+                                                placeholder="Enter order description (optional)"
+                                            />
+                                        </div>
+                                    </>
+    );
+
+    const renderSTPForm = () => (
+                                    <>
+                                        <div>
+                                            <Label htmlFor="req_num" className="text-sm font-medium">Requisition Number (Optional)</Label>
+                                            <Input
+                                                id="req_num"
+                                                value={reqNum}
+                                                className="mt-1"
+                                                placeholder="Enter requisition number (optional)"
+                                                onChange={e => setReqNum(e.target.value)}
+                                                onBlur={() => setReqNum(reqNum.replace(/\s+/g, ''))}
+                                                disabled={isOrderStarted}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="department" className="text-sm font-medium">Department</Label>
+                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((dept) => (
+                                                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                                                            {dept.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="srcFactory" className="text-sm font-medium">Source Factory (Storage)</Label>
+                                            <Select onValueChange={(value) => setSrcFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedSrcFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="factoryName" className="text-sm font-medium">Destination Factory</Label>
+                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedFactoryName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {factories.map((factory) => (
+                                                        <SelectItem key={factory.id} value={factory.id.toString()}>
+                                                            {factory.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="project" className="text-sm font-medium">Project</Label>
+                                            <Select 
+                                                onValueChange={(value) => setSelectedProjectId(Number(value))} 
+                                                disabled={isOrderStarted || selectedFactoryId === -1}
+                                            >
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedProjectName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {projects.map((project) => (
+                                                        <SelectItem key={project.id} value={project.id.toString()}>
+                                                            {project.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="projectComponent" className="text-sm font-medium">Project Component</Label>
+                                            <Select 
+                                                onValueChange={(value) => setSelectedProjectComponentId(Number(value))} 
+                                                disabled={isOrderStarted || selectedProjectId === -1}
+                                            >
+                                                <SelectTrigger className="mt-1">
+                                                    <SelectValue>{selectedProjectComponentName}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {projectComponents.map((component) => (
+                                                        <SelectItem key={component.id} value={component.id.toString()}>
+                                                            {component.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                                            <Textarea
+                                                id="description"
+                                                value={description}
+                                                className="mt-1 min-h-20"
+                                                onChange={e => setDescription(e.target.value)}
+                                                disabled={isOrderStarted}
+                                                placeholder="Enter order description (optional)"
+                                            />
+                                        </div>
+                                    </>
+    );
+
 
     return (
         <>
@@ -1099,6 +1478,16 @@ const CreateOrderPage = () => {
                                 {/* STM ORDER FORM */}
                                 {/* ============================================================================ */}
                                 {orderType === "STM" && renderSTMForm()}
+
+                                {/* ============================================================================ */}
+                                {/* PFP ORDER FORM */}
+                                {/* ============================================================================ */}
+                                {orderType === "PFP" && renderPFPForm()}
+
+                                {/* ============================================================================ */}
+                                {/* STP ORDER FORM */}
+                                {/* ============================================================================ */}
+                                {orderType === "STP" && renderSTPForm()}
 
                                
 
@@ -1173,6 +1562,10 @@ const CreateOrderPage = () => {
                                                             return "Storage Order";
                                                         case "STM":
                                                             return `From: ${selectedSrcFactoryName} → ${selectedFactorySectionName} - ${selectedMachineName}`;
+                                                        case "PFP":
+                                                            return `Project: ${selectedProjectName} → ${selectedProjectComponentName}`;
+                                                        case "STP":
+                                                            return `From: ${selectedSrcFactoryName} → Project: ${selectedProjectName} → ${selectedProjectComponentName}`;
                                                         default:
                                                             return "Unknown Order Type";
                                                     }
@@ -1200,7 +1593,7 @@ const CreateOrderPage = () => {
                                             {/* Part Selection */}
                                             <div>
                                                 <Label htmlFor="partId" className="text-sm font-medium">Select Part</Label>
-                                                {orderType === "STM" ? (
+                                                {(orderType === "STM" || orderType === "STP") ? (
                                                     // STM Order - Show storage parts with quantities
                                                     <AsyncSelect
                                                         id="partId"
@@ -1285,7 +1678,7 @@ const CreateOrderPage = () => {
                                             {/* Quantity */}
                                             <div>
                                                 <Label htmlFor="quantity" className="text-sm font-medium">
-                                                    {orderType === "STM" && partId !== -1 ? (
+                                                    {(orderType === "STM" || orderType === "STP") && partId !== -1 ? (
                                                         () => {
                                                             const storagePart = storageParts.find(sp => sp.part_id === partId);
                                                             const unit = storagePart?.parts.unit || 'units';
@@ -1299,17 +1692,17 @@ const CreateOrderPage = () => {
                                                     type="number"
                                                     value={qty >= 0 ? qty : ''}
                                                     onChange={e => setQty(Number(e.target.value))}
-                                                    placeholder={orderType === "STM" && partId !== -1 ? 
+                                                    placeholder={(orderType === "STM" || orderType === "STP") && partId !== -1 ? 
                                                         `Max: ${storageParts.find(sp => sp.part_id === partId)?.qty || 0}` : 
                                                         "Enter quantity"
                                                     }
                                                     className="mt-1"
-                                                    max={orderType === "STM" && partId !== -1 ? 
+                                                    max={(orderType === "STM" || orderType === "STP") && partId !== -1 ? 
                                                         storageParts.find(sp => sp.part_id === partId)?.qty : 
                                                         undefined
                                                     }
                                                 />
-                                                {orderType === "STM" && partId !== -1 && qty > 0 && (
+                                                {(orderType === "STM" || orderType === "STP") && partId !== -1 && qty > 0 && (
                                                     () => {
                                                         const storagePart = storageParts.find(sp => sp.part_id === partId);
                                                         const available = storagePart?.qty || 0;

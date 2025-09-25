@@ -1,22 +1,20 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import NavigationBar from "@/components/customui/NavigationBar";
 import {
   Folder,
   FolderOpen,
-  Settings,
-  Package
+  Settings
 } from "lucide-react";
 import { fetchFactories } from "@/services/FactoriesService";
 import { fetchProjects } from "@/services/ProjectsService";
 import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService";
 import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import ProjectComponentTasks from "@/components/customui/ProjectComponents/ProjectComponentTasks";
+import RunningOrders from "@/components/customui/RunningOrders";
 // NOTE: if your file is named ProjectComponentMiscCosts.tsx, change this import to .../ProjectComponentMiscCosts
 import ProjectComponentMiscCosts from "@/components/customui/ProjectComponents/ProjectComponentMiscCost";
+import ProjectComponentParts from "@/components/customui/ProjectComponents/ProjectComponentParts";
 import ProjectNavigator from "@/components/customui/ProjectComponents/ProjectNavigator";
 
 const ProjectsPage: React.FC = () => {
@@ -325,74 +323,31 @@ const ProjectsPage: React.FC = () => {
               onComponentUpdated={handleComponentUpdated}
             />
 
-            {/* Right Panel - Component Details and Todo List */}
+            {/* Middle Panel - Running Orders + Component Parts; Right Panel stays */}
             {selectedComponent && (
               <div className="flex-1 flex flex-col lg:flex-row gap-4 h-full min-h-0">
-                {/* Component Details */}
-                <div className="flex-1 h-full">
-                  <Card className="h-full flex flex-col">
-                    <CardHeader className="flex-shrink-0">
-                      <CardTitle className="flex items-center gap-2">
-                        <Package className="h-5 w-5" />
-                        Component Details
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto">
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-semibold text-lg">{selectedComponent.name}</h3>
-                          <p className="text-sm text-muted-foreground">{selectedComponent.description}</p>
-                        </div>
+                {/* Middle column: Running Orders (top) + Component Parts (bottom) */}
+                <div className="flex-1 h-full flex flex-col gap-4 overflow-hidden min-h-0">
+                  {/* Running Orders (top half) */}
+                  <div className="flex-1 basis-1/2 min-h-0">
+                    <RunningOrders projectComponent={selectedComponent} />
+                  </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="font-medium">Status</Label>
-                            <Badge className={`text-sm mt-1 ${
-                              selectedComponent.status === 'PLANNING' ? 'bg-blue-100 text-blue-800' :
-                              selectedComponent.status === 'STARTED' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {selectedComponent.status}
-                            </Badge>
-                          </div>
-
-                          {selectedComponent.budget && (
-                            <div>
-                              <Label className="font-medium">Budget</Label>
-                              <p className="text-sm">${selectedComponent.budget.toLocaleString()}</p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          {selectedComponent.start_date && (
-                            <div>
-                              <Label className="font-medium">Start Date</Label>
-                              <p className="text-sm">{selectedComponent.start_date}</p>
-                            </div>
-                          )}
-
-                          {selectedComponent.deadline && (
-                            <div>
-                              <Label className="font-medium">Deadline</Label>
-                              <p className="text-sm">{selectedComponent.deadline}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Component Parts (bottom half) */}
+                  <div className="flex-1 basis-1/2 min-h-0 overflow-hidden">
+                    <ProjectComponentParts projectComponentId={selectedComponent.id} />
+                  </div>
                 </div>
 
-                {/* Right side: Tasks + Misc Costs (equal height 50/50) */}
+                {/* Right side: Tasks + Misc Costs */}
                 <div className="flex-1 h-full flex flex-col gap-4 overflow-hidden min-h-0">
                   {/* Tasks (top half) */}
-                  <div className="flex-1 basis-1/2 min-h-0 overflow-hidden">
+                  <div className="flex-1 basis-1/3 min-h-0 overflow-hidden">
                     <ProjectComponentTasks ProjectComponentId={selectedComponent.id} />
                   </div>
 
                   {/* Misc Costs (bottom half) */}
-                  <div className="flex-1 basis-1/2 min-h-0 overflow-hidden">
+                  <div className="flex-1 basis-1/3 min-h-0 overflow-hidden">
                     <ProjectComponentMiscCosts
                       projectId={selectedProjectId as number}
                       projectComponentId={selectedComponent.id}
