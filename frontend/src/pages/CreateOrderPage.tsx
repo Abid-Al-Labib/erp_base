@@ -648,6 +648,15 @@ const CreateOrderPage = () => {
         try {
             const inStorage = await checkPartInStorage();
             const newOrderedPart = createOrderedPart(inStorage);
+            // If a src factory is chosen, attach its current avg price snapshot now
+            if (srcFactoryId !== -1) {
+                try {
+                    const storagePart = await fetchStoragePartByFactoryAndPartID(partId, srcFactoryId);
+                    newOrderedPart.average_cost_factory = storagePart?.avg_price ?? null;
+                } catch (_) {
+                    newOrderedPart.average_cost_factory = null;
+                }
+            }
             setOrderedParts(prevOrderedParts => [...prevOrderedParts, newOrderedPart]);
             handleResetOrderParts();
         } catch (error) {
@@ -708,9 +717,10 @@ const CreateOrderPage = () => {
 
             const orderId = orderResponse.data[0].id;
             
-            // Insert all ordered parts (keeping original logic)
+            // Insert all ordered parts; use the average_cost_factory captured at add-time (if any)
             for (const part of orderedParts) {
                 try {
+                    const average_cost_factory: number | null | undefined = part.average_cost_factory;
                     await insertOrderedParts(
                         part.qty,
                         orderId,
@@ -719,7 +729,8 @@ const CreateOrderPage = () => {
                         part.note || null,
                         part.in_storage,
                         part.approved_storage_withdrawal,
-                        part.unstable_type
+                        part.unstable_type,
+                        average_cost_factory
                     );
                 } catch (error) {
                     console.error(`Failed to add part: ${part.part_id}`, error);

@@ -207,6 +207,7 @@ export interface InputOrderedPart {
     in_storage: boolean;
     approved_storage_withdrawal: boolean;
     unstable_type?: 'INACTIVE' | 'DEFECTIVE' | 'LESS';  // Part-level unstable type, defaults to 'INACTIVE'
+    average_cost_factory?: number | null; // average cost from src factory storage for transfers
 }
 
 export interface StatusTrackerItemProp {
