@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Save, ArrowLeft, Play, Check } from "lucide-react";
+import { MoreHorizontal, Edit, ArrowLeft, Plus, Play, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { convertUtcToBDTime } from "@/services/helper";
@@ -55,10 +55,10 @@ interface ComponentNavigatorProps {
 const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   selectedProject,
   selectedComponentId,
-  isComponentInfoExpanded,
+  isComponentInfoExpanded: _isComponentInfoExpanded,
   onComponentSelect,
   onComponentDeselect,
-  onToggleComponentInfo,
+  onToggleComponentInfo: _onToggleComponentInfo,
   onComponentCreated,
   onComponentUpdated,
 }) => {
@@ -124,30 +124,69 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
     }
   };
 
-  const getPriorityBadge = (p?: ProjectComponent["priority"]) => {
-    const base = "px-2 py-1 rounded text-xs font-medium";
-    if (!p) return `${base} bg-gray-100 text-gray-800`;
-    if (p === "HIGH") return `${base} bg-red-100 text-red-800`;
-    if (p === "MEDIUM") return `${base} bg-yellow-100 text-yellow-800`;
-    return `${base} bg-gray-100 text-gray-800`;
-  };
+  // removed unused getPriorityBadge to satisfy linter
 
   if (!selectedProject) return null;
 
   return (
     <div className="border-t pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-gray-900">
-          Components ({selectedProject.components.length})
+        <h2 className="text-md font-bold text-gray-900 flex-1 min-w-0 truncate">
+          Component{selectedComponent ? `: ${selectedComponent.name}` : ''}
         </h2>
-        <div className="flex items-center gap-1">
-          <button
+        <div className="flex items-center gap-1 flex-none">
+          {selectedComponent && (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    title="More options"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Component
+                  </DropdownMenuItem>
+                  {selectedComponent.status === "PLANNING" && (
+                    <DropdownMenuItem onClick={() => setIsStartModalOpen(true)}>
+                      <Play className="mr-2 h-4 w-4" />
+                      Start Component
+                    </DropdownMenuItem>
+                  )}
+                  {selectedComponent.status === "STARTED" && (
+                    <DropdownMenuItem onClick={() => setIsCompleteModalOpen(true)}>
+                      <Check className="mr-2 h-4 w-4" />
+                      Complete Component
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onComponentDeselect}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
+                title="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          <Button 
+            variant="ghost"
+            size="sm"
             onClick={() => setIsCreateComponentOpen(true)}
-            className="text-muted-foreground hover:text-blue-500 transition-colors p-1"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
             title="Add component"
           >
-            +
-          </button>
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -155,79 +194,18 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
         <div className="space-y-3">
           {selectedComponent && (
             <div className="space-y-3">
-              {/* Header */}
+              {/* Info */}
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    onClick={onToggleComponentInfo}
-                    className="text-primary hover:text-primary/80 transition-colors"
-                  >
-                    {isComponentInfoExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </button>
-
-                  <h3
-                    className="font-semibold text-lg text-primary flex-1 cursor-pointer hover:text-primary/80 transition-colors"
-                    onClick={onToggleComponentInfo}
-                  >
-                    {selectedComponent.name}
-                  </h3>
-
-                  <div className="flex items-center gap-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          title="More options"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Component
-                        </DropdownMenuItem>
-
-                        {selectedComponent.status === "PLANNING" && (
-                          <DropdownMenuItem onClick={() => setIsStartModalOpen(true)}>
-                            <Play className="mr-2 h-4 w-4" />
-                            Start Component
-                          </DropdownMenuItem>
-                        )}
-
-                        {selectedComponent.status === "STARTED" && (
-                          <DropdownMenuItem onClick={() => setIsCompleteModalOpen(true)}>
-                            <Check className="mr-2 h-4 w-4" />
-                            Complete Component
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <button
-                      onClick={onComponentDeselect}
-                      className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                      title="Back to component selection"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p
+                  className="text-sm text-muted-foreground leading-relaxed line-clamp-3"
+                  title={selectedComponent.description || ''}
+                >
                   {selectedComponent.description}
                 </p>
               </div>
 
-              {/* Details (read-only) */}
-              {isComponentInfoExpanded && (
-                <div className="space-y-3">
+              {/* Details (always visible) */}
+              <div className="space-y-3">
                   {/* Budget and Cost */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
@@ -266,7 +244,6 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                     </div>
                   </div>
                 </div>
-              )}
             </div>
           )}
         </div>

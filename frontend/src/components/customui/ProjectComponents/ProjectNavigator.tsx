@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Folder, ChevronDown, ChevronRight, MoreHorizontal, Edit, Calculator, Calendar, Play, Check } from "lucide-react";
+import { Folder, MoreHorizontal, Edit, Calculator, Calendar, Play, Check, ArrowLeft, Plus } from "lucide-react";
 import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
 import ComponentNavigator from "./ComponentNavigator";
@@ -76,14 +76,14 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   selectedComponentId,
   filteredProjects,
   selectedProject,
-  isProjectInfoExpanded,
+  isProjectInfoExpanded: _isProjectInfoExpanded,
   isComponentInfoExpanded,
   onFactorySelect,
   onProjectSelect,
   onProjectDeselect,
   onComponentSelect,
   onComponentDeselect,
-  onToggleProjectInfo,
+  onToggleProjectInfo: _onToggleProjectInfo,
   onToggleComponentInfo,
   onProjectCreated,
   onComponentCreated,
@@ -187,20 +187,75 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
 
           {/* Project Section */}
           {selectedFactoryId && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-gray-900">Project</h2>
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => setIsCreateProjectOpen(true)}
-                    className="text-muted-foreground hover:text-blue-500 transition-colors p-1" 
-                    title="Add project"
-                    disabled={!selectedFactoryId}
-                  >
-                    +
-                  </button>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-bold text-gray-900 flex-1 min-w-0 truncate">
+                    Project{selectedProject ? `: ${selectedProject.name}` : ''}
+                  </h2>
+                  <div className="flex items-center gap-1 flex-none">
+                    {selectedProject && (
+                      <>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="More options"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Project
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsBudgetModalOpen(true)}>
+                              <Calculator className="mr-2 h-4 w-4" />
+                              Plan Budget
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsDeadlineModalOpen(true)}>
+                              <Calendar className="mr-2 h-4 w-4" />
+                              Plan Deadlines
+                            </DropdownMenuItem>
+                            {selectedProject.status === "PLANNING" && (
+                              <DropdownMenuItem onClick={() => setIsStartModalOpen(true)}>
+                                <Play className="mr-2 h-4 w-4" />
+                                Start Project
+                              </DropdownMenuItem>
+                            )}
+                            {selectedProject.status === "STARTED" && (
+                              <DropdownMenuItem onClick={() => setIsCompleteModalOpen(true)}>
+                                <Check className="mr-2 h-4 w-4" />
+                                Complete Project
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={onProjectDeselect}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
+                          title="Back"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsCreateProjectOpen(true)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
+                      title="Add project"
+                      disabled={!selectedFactoryId}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
               
               {selectedProjectId ? (
                 <div className="space-y-3">
@@ -208,87 +263,15 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                     .filter(project => project.id === selectedProjectId)
                     .map((project) => (
                       <div key={project.id} className="space-y-3">
-                        {/* Project Header */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <button
-                              onClick={onToggleProjectInfo}
-                              className="text-primary hover:text-primary/80 transition-colors"
-                            >
-                              {isProjectInfoExpanded ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </button>
+                        {/* Description (max 3 lines with hover for full text) */}
+                        <p
+                          className="text-sm text-muted-foreground leading-relaxed line-clamp-3"
+                          title={project.description}
+                        >
+                          {project.description}
+                        </p>
 
-                            <h3 
-                              className="font-semibold text-lg text-primary flex-1 cursor-pointer hover:text-primary/80 transition-colors"
-                              onClick={onToggleProjectInfo}
-                            >
-                              {project.name}
-                            </h3>
-
-                            <div className="flex items-center gap-1">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    title="More options"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit Project
-                                  </DropdownMenuItem>
-
-                                  <DropdownMenuItem onClick={() => setIsBudgetModalOpen(true)}>
-                                    <Calculator className="mr-2 h-4 w-4" />
-                                    Plan Budget
-                                  </DropdownMenuItem>
-
-                                  <DropdownMenuItem onClick={() => setIsDeadlineModalOpen(true)}>
-                                    <Calendar className="mr-2 h-4 w-4" />
-                                    Plan Deadlines
-                                  </DropdownMenuItem>
-
-                                  {project.status === "PLANNING" && (
-                                    <DropdownMenuItem onClick={() => setIsStartModalOpen(true)}>
-                                      <Play className="mr-2 h-4 w-4" />
-                                      Start Project
-                                    </DropdownMenuItem>
-                                  )}
-
-                                  {project.status === "STARTED" && (
-                                    <DropdownMenuItem onClick={() => setIsCompleteModalOpen(true)}>
-                                      <Check className="mr-2 h-4 w-4" />
-                                      Complete Project
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-
-                              <button
-                                onClick={onProjectDeselect}
-                                className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                                title="Back to project selection"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Description (read-only in panel; edited via modal) */}
-                          <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
-                        </div>
-
-                        {/* Project Details (all read-only here) */}
-                        {isProjectInfoExpanded && (
+                        {/* Project Details (always visible) */}
                           <div className="space-y-3">
                             {/* Budget and Cost */}
                             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -356,7 +339,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                               </div>
                             </div>
                           </div>
-                        )}
                       </div>
                     ))
                   }
