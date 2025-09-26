@@ -3,17 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Folder, ChevronDown, ChevronRight, MoreHorizontal, Edit, Save, ArrowLeft } from "lucide-react";
+import { Folder, ChevronDown, ChevronRight, MoreHorizontal, Edit, Calculator, Calendar, Play, Check } from "lucide-react";
 import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
-import { updateProject } from "@/services/ProjectsService";
 import { convertUtcToBDTime } from "@/services/helper";
 import ComponentNavigator from "./ComponentNavigator";
 import CreateProject from "./CreateProject";
-import toast from "react-hot-toast";
+import BudgetPlanningModal from "./BudgetPlanningModal";
+import DeadlinePlanningModal from "./DeadlinePlanningModal";
+import StartProjectModal from "./StartProjectModal";
+import CompleteProjectModal from "./CompleteProjectModal";
+import EditProjectModal from "./EditProjectModal";
 
 // Import types for navigation only
 interface ProjectComponent {
@@ -90,18 +91,13 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   onComponentUpdated,
 }) => {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = React.useState(false);
-  const [isEditMode, setIsEditMode] = React.useState(false);
-  const [editFormData, setEditFormData] = React.useState({
-    name: '',
-    description: '',
-    budget: '',
-    start_date: '',
-    end_date: '',
-    deadline: '',
-    priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
-    status: 'PLANNING' as 'PLANNING' | 'STARTED' | 'COMPLETED'
-  });
-  // Get status color for projects
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = React.useState(false);
+  const [isDeadlineModalOpen, setIsDeadlineModalOpen] = React.useState(false);
+  const [isStartModalOpen, setIsStartModalOpen] = React.useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = React.useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+
+  // Styling helpers
   const getProjectStatusColor = (status: Project['status']) => {
     switch (status) {
       case 'PLANNING': return 'bg-blue-100 text-blue-800';
@@ -111,7 +107,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
     }
   };
 
-  // Get project priority color
   const getProjectPriorityColor = (priority: Project['priority']) => {
     switch (priority) {
       case 'HIGH': return 'bg-red-100 text-red-800';
@@ -121,145 +116,40 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
     }
   };
 
-  // Format currency
+  // Currency (BDT)
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'BDT',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  // Handle edit mode
-  const handleEditProject = () => {
-    if (selectedProject) {
-      // Populate form with current project data
-      setEditFormData({
-        name: selectedProject.name,
-        description: selectedProject.description,
-        budget: selectedProject.budget?.toString() || '',
-        start_date: formatDateForInput(selectedProject.startDate),
-        end_date: formatDateForInput(selectedProject.endDate),
-        deadline: formatDateForInput(selectedProject.deadline),
-        priority: selectedProject.priority,
-        status: selectedProject.status
-      });
-      setIsEditMode(true);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-    setEditFormData({
-      name: '',
-      description: '',
-      budget: '',
-      start_date: '',
-      end_date: '',
-      deadline: '',
-      priority: 'MEDIUM',
-      status: 'PLANNING'
-    });
-  };
-
-  // Validate dates
-  const validateDates = () => {
-    const startDate = editFormData.start_date ? new Date(editFormData.start_date) : null;
-    const endDate = editFormData.end_date ? new Date(editFormData.end_date) : null;
-    const deadline = editFormData.deadline ? new Date(editFormData.deadline) : null;
-
-    if (startDate && endDate && endDate <= startDate) {
-      toast.error('End date must be after start date');
-      return false;
-    }
-
-    if (startDate && deadline && deadline <= startDate) {
-      toast.error('Deadline must be after start date');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSaveProject = async () => {
-    if (!selectedProject) return;
-
-    // Validate dates before saving
-    if (!validateDates()) {
-      return;
-    }
-
-    try {
-      const updateData: Partial<ProjectType> = {
-        name: editFormData.name,
-        description: editFormData.description,
-        budget: editFormData.budget ? parseFloat(editFormData.budget) : null,
-        start_date: editFormData.start_date || null,
-        end_date: editFormData.end_date || null,
-        deadline: editFormData.deadline || null,
-        priority: editFormData.priority,
-        status: editFormData.status
-      };
-
-      const success = await updateProject(selectedProject.id, updateData);
-      
-      if (success) {
-        setIsEditMode(false);
-        // Trigger refresh of projects data
-        if (onProjectUpdated) {
-          onProjectUpdated();
-        }
-      }
-    } catch (error) {
-      console.error('Error updating project:', error);
-      toast.error('Failed to update project');
-    }
-  };
-
-  const handleFormChange = (field: string, value: string) => {
-    setEditFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
   // Format date from existing convertUtcToBDTime function (remove time part)
   const formatDateOnly = (utcTimestamp: string | null | undefined): string => {
     if (!utcTimestamp) return 'TBD';
-    
     try {
       const fullDateTime = convertUtcToBDTime(utcTimestamp);
-      // The function returns format like "4 Oct 2024, 14:30"
-      // We want only "4 Oct 2024" part
       return fullDateTime.split(',')[0];
-    } catch (error) {
-      console.error('Error formatting date:', error);
+    } catch {
       return 'TBD';
     }
   };
 
-  // Convert UTC date to YYYY-MM-DD format for date inputs
+  // Convert UTC date to YYYY-MM-DD format for date inputs (used by Start modal)
   const formatDateForInput = (utcTimestamp: string | null | undefined): string => {
     if (!utcTimestamp) return '';
-    
     try {
-      // Parse UTC timestamp and convert to Bangladesh time
       const date = new Date(utcTimestamp);
       if (isNaN(date.getTime())) return '';
-      
-      // Bangladesh is UTC+6
-      const bdOffset = 6 * 60 * 60 * 1000;
+      const bdOffset = 6 * 60 * 60 * 1000; // Bangladesh UTC+6
       const bdDate = new Date(date.getTime() + bdOffset);
-      
-      // Format as YYYY-MM-DD for date input
       const year = bdDate.getUTCFullYear();
       const month = String(bdDate.getUTCMonth() + 1).padStart(2, '0');
       const day = String(bdDate.getUTCDate()).padStart(2, '0');
-      
       return `${year}-${month}-${day}`;
-    } catch (error) {
-      console.error('Error formatting date for input:', error);
+    } catch {
       return '';
     }
   };
@@ -298,7 +188,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
           {/* Project Section */}
           {selectedFactoryId && (
             <div>
-              {/* Project title and add button - always show */}
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-bold text-gray-900">Project</h2>
                 <div className="flex items-center gap-1">
@@ -314,7 +203,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
               </div>
               
               {selectedProjectId ? (
-                // Show selected project information
                 <div className="space-y-3">
                   {filteredProjects
                     .filter(project => project.id === selectedProjectId)
@@ -333,63 +221,58 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                                 <ChevronRight className="h-4 w-4" />
                               )}
                             </button>
-                            {isEditMode ? (
-                              <Input
-                                value={editFormData.name}
-                                onChange={(e) => handleFormChange('name', e.target.value)}
-                                className="font-semibold text-lg text-primary flex-1"
-                                placeholder="Project name"
-                              />
-                            ) : (
-                              <h3 
-                                className="font-semibold text-lg text-primary flex-1 cursor-pointer hover:text-primary/80 transition-colors"
-                                onClick={onToggleProjectInfo}
-                              >
-                                {project.name}
-                              </h3>
-                            )}
+
+                            <h3 
+                              className="font-semibold text-lg text-primary flex-1 cursor-pointer hover:text-primary/80 transition-colors"
+                              onClick={onToggleProjectInfo}
+                            >
+                              {project.name}
+                            </h3>
+
                             <div className="flex items-center gap-1">
-                              {isEditMode ? (
-                                <>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
                                   <Button
+                                    variant="ghost"
                                     size="sm"
-                                    variant="outline"
-                                    onClick={handleSaveProject}
                                     className="h-8 w-8 p-0"
-                                    title="Save changes"
+                                    title="More options"
                                   >
-                                    <Save className="h-4 w-4" />
+                                    <MoreHorizontal className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleCancelEdit}
-                                    className="h-8 w-8 p-0"
-                                    title="Cancel edit"
-                                  >
-                                    <ArrowLeft className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0"
-                                      title="More options"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={handleEditProject}>
-                                      <Edit className="mr-2 h-4 w-4" />
-                                      Edit Project
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Project
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem onClick={() => setIsBudgetModalOpen(true)}>
+                                    <Calculator className="mr-2 h-4 w-4" />
+                                    Plan Budget
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem onClick={() => setIsDeadlineModalOpen(true)}>
+                                    <Calendar className="mr-2 h-4 w-4" />
+                                    Plan Deadlines
+                                  </DropdownMenuItem>
+
+                                  {project.status === "PLANNING" && (
+                                    <DropdownMenuItem onClick={() => setIsStartModalOpen(true)}>
+                                      <Play className="mr-2 h-4 w-4" />
+                                      Start Project
                                     </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
+                                  )}
+
+                                  {project.status === "STARTED" && (
+                                    <DropdownMenuItem onClick={() => setIsCompleteModalOpen(true)}>
+                                      <Check className="mr-2 h-4 w-4" />
+                                      Complete Project
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+
                               <button
                                 onClick={onProjectDeselect}
                                 className="text-muted-foreground hover:text-red-500 transition-colors p-1"
@@ -399,40 +282,23 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                               </button>
                             </div>
                           </div>
-                          {isEditMode ? (
-                            <Textarea
-                              value={editFormData.description}
-                              onChange={(e) => handleFormChange('description', e.target.value)}
-                              className="text-sm text-muted-foreground leading-relaxed min-h-[60px]"
-                              placeholder="Project description"
-                            />
-                          ) : (
-                            <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
-                          )}
+
+                          {/* Description (read-only in panel; edited via modal) */}
+                          <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
                         </div>
 
-                        {/* Project Details */}
+                        {/* Project Details (all read-only here) */}
                         {isProjectInfoExpanded && (
                           <div className="space-y-3">
                             {/* Budget and Cost */}
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
                                 <span className="text-muted-foreground block">Budget</span>
-                                {isEditMode ? (
-                                  <Input
-                                    type="number"
-                                    value={editFormData.budget}
-                                    onChange={(e) => handleFormChange('budget', e.target.value)}
-                                    placeholder="0"
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <div className="font-semibold text-green-600">{formatCurrency(project.budget)}</div>
-                                )}
+                                <div className="font-semibold text-green-600">{project.budget?formatCurrency(project.budget):'TBD'}</div>
                               </div>
                               <div>
                                 <span className="text-muted-foreground block">Total Cost</span>
-                                <div className="font-semibold text-blue-600">{formatCurrency(project.totalCost)}</div>
+                                <div className="font-semibold text-blue-600">{project.totalCost?formatCurrency(project.totalCost):'TBD'}</div>
                               </div>
                             </div>
 
@@ -440,29 +306,11 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
                                 <span className="text-muted-foreground block">Start Date</span>
-                                {isEditMode ? (
-                                  <Input
-                                    type="date"
-                                    value={editFormData.start_date}
-                                    onChange={(e) => handleFormChange('start_date', e.target.value)}
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <div className="font-medium">{formatDateOnly(project.startDate)}</div>
-                                )}
+                                <div className="font-medium">{formatDateOnly(project.startDate)}</div>
                               </div>
                               <div>
                                 <span className="text-muted-foreground block">End Date</span>
-                                {isEditMode ? (
-                                  <Input
-                                    type="date"
-                                    value={editFormData.end_date}
-                                    onChange={(e) => handleFormChange('end_date', e.target.value)}
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <div className="font-medium">{formatDateOnly(project.endDate)}</div>
-                                )}
+                                <div className="font-medium">{formatDateOnly(project.endDate)}</div>
                               </div>
                             </div>
 
@@ -470,35 +318,11 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
                                 <span className="text-muted-foreground block">Deadline</span>
-                                {isEditMode ? (
-                                  <Input
-                                    type="date"
-                                    value={editFormData.deadline}
-                                    onChange={(e) => handleFormChange('deadline', e.target.value)}
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <div className="font-medium text-red-600">{formatDateOnly(project.deadline)}</div>
-                                )}
+                                <div className="font-medium text-red-600">{formatDateOnly(project.deadline)}</div>
                               </div>
                               <div>
                                 <span className="text-muted-foreground block">Priority</span>
-                                {isEditMode ? (
-                                  <Select value={editFormData.priority} onValueChange={(value: 'LOW' | 'MEDIUM' | 'HIGH') => handleFormChange('priority', value)}>
-                                    <SelectTrigger className="h-8 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="LOW">LOW</SelectItem>
-                                      <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-                                      <SelectItem value="HIGH">HIGH</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge className={`text-sm ${getProjectPriorityColor(project.priority)}`}>
-                                    {project.priority}
-                                  </Badge>
-                                )}
+                                <Badge className={`text-sm ${getProjectPriorityColor(project.priority)}`}>{project.priority}</Badge>
                               </div>
                             </div>
 
@@ -506,22 +330,9 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
                                 <span className="text-muted-foreground block">Status</span>
-                                {isEditMode ? (
-                                  <Select value={editFormData.status} onValueChange={(value: 'PLANNING' | 'STARTED' | 'COMPLETED') => handleFormChange('status', value)}>
-                                    <SelectTrigger className="h-8 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="PLANNING">PLANNING</SelectItem>
-                                      <SelectItem value="STARTED">STARTED</SelectItem>
-                                      <SelectItem value="COMPLETED">COMPLETED</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge className={`text-sm ${getProjectStatusColor(project.status)}`}>
-                                    {project.status}
-                                  </Badge>
-                                )}
+                                <Badge className={`text-sm ${getProjectStatusColor(project.status)}`}>
+                                  {project.status}
+                                </Badge>
                               </div>
                               <div>
                                 <span className="text-muted-foreground block">Time Elapsed</span>
@@ -533,15 +344,15 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             <div>
                               <div className="flex items-center justify-between text-sm mb-1">
                                 <span className="text-muted-foreground">Components Completed</span>
-                                      <span className="font-medium text-primary">
-                                        {project.components.filter(c => c.status === 'COMPLETED').length}/{project.components.length}
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                      <div 
-                                        className="bg-primary h-2 rounded-full transition-all duration-300" 
-                                        style={{ width: `${(project.components.filter(c => c.status === 'COMPLETED').length / project.components.length) * 100}%` }}
-                                      ></div>
+                                <span className="font-medium text-primary">
+                                  {project.components.filter(c => c.status === 'COMPLETED').length}/{project.components.length}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${(project.components.filter(c => c.status === 'COMPLETED').length / project.components.length) * 100}%` }}
+                                ></div>
                               </div>
                             </div>
                           </div>
@@ -551,10 +362,9 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                   }
                 </div>
               ) : (
-                // Show project selection cards
+                // Project list
                 <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
                   {filteredProjects.length === 0 ? (
-                    // Show create new project message when no projects
                     <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50">
                       <div className="text-gray-500 mb-2">
                         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -565,7 +375,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                       <p className="text-sm text-gray-500 mb-4">Get started by creating your first project</p>
                       <button 
                         onClick={() => setIsCreateProjectOpen(true)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                       >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -574,7 +384,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                       </button>
                     </div>
                   ) : (
-                    // Show all projects for selection
                     filteredProjects.map((project) => (
                       <div 
                         key={project.id} 
@@ -595,8 +404,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             </div>
           )}
 
-
-          {/* Component Navigator - Only show when project is selected */}
+          {/* Component Navigator */}
           {selectedProject && (
             <ComponentNavigator
               selectedProject={selectedProject}
@@ -622,6 +430,54 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
           onProjectCreated={onProjectCreated}
         />
       )}
+
+      {selectedProject && (
+        <>
+          <BudgetPlanningModal
+            isOpen={isBudgetModalOpen}
+            onClose={() => setIsBudgetModalOpen(false)}
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+            onProjectUpdated={onProjectUpdated}
+          />
+
+          <DeadlinePlanningModal
+            isOpen={isDeadlineModalOpen}
+            onClose={() => setIsDeadlineModalOpen(false)}
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+            onProjectUpdated={onProjectUpdated}
+          />
+
+          <StartProjectModal
+            isOpen={isStartModalOpen}
+            onClose={() => setIsStartModalOpen(false)}
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+            defaultStartDate={formatDateForInput(selectedProject.startDate)}
+            onProjectUpdated={onProjectUpdated}
+          />
+
+          <CompleteProjectModal
+            isOpen={isCompleteModalOpen}
+            onClose={() => setIsCompleteModalOpen(false)}
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+            onProjectUpdated={onProjectUpdated}
+          />
+
+          <EditProjectModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            projectId={selectedProject.id}
+            initialName={selectedProject.name}
+            initialDescription={selectedProject.description}
+            initialPriority={selectedProject.priority}
+            onProjectUpdated={onProjectUpdated}
+          />
+        </>
+      )}
+
     </div>
   );
 };
