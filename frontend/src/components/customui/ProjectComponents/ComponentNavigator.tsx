@@ -131,12 +131,22 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   return (
     <div className="border-t pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-md font-bold text-gray-900 flex-1 min-w-0 truncate">
-          Component{selectedComponent ? `: ${selectedComponent.name}` : ''}
+        <h2 className="text-lg font-bold text-gray-900 flex-1 min-w-0 truncate">
+          {selectedComponent ? ` ${selectedComponent.name}` : 'Component'}
         </h2>
         <div className="flex items-center gap-1 flex-none">
           {selectedComponent && (
             <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onComponentDeselect}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
+                title="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -167,15 +177,7 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onComponentDeselect}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
-                title="Back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+              
             </>
           )}
           <Button 

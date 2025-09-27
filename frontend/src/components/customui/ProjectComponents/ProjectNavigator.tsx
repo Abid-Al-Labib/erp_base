@@ -190,11 +190,21 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-bold text-gray-900 flex-1 min-w-0 truncate">
-                    Project{selectedProject ? `: ${selectedProject.name}` : ''}
+                    {selectedProject ? ` ${selectedProject.name}` : 'Project'}
                   </h2>
                   <div className="flex items-center gap-1 flex-none">
                     {selectedProject && (
                       <>
+                      <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={onProjectDeselect}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
+                          title="Back"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -233,27 +243,20 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button
+                        
+                        <Button 
                           variant="ghost"
                           size="sm"
-                          onClick={onProjectDeselect}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
-                          title="Back"
+                          onClick={() => setIsCreateProjectOpen(true)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
+                          title="Add project"
+                          disabled={!selectedFactoryId}
                         >
-                          <ArrowLeft className="h-4 w-4" />
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </>
                     )}
-                    <Button 
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsCreateProjectOpen(true)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
-                      title="Add project"
-                      disabled={!selectedFactoryId}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    
                   </div>
                 </div>
               
