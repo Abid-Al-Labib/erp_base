@@ -156,6 +156,33 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
     }
   };
 
+  // Calculate and format time elapsed for projects
+  const getTimeElapsedInfo = (project: Project) => {
+    if (!project.startDate) {
+      return { label: 'Time Elapsed', value: 'Not started' };
+    }
+
+    const startDate = new Date(project.startDate);
+    const endDate = project.status === 'COMPLETED' && project.endDate 
+      ? new Date(project.endDate) 
+      : new Date();
+    
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    
+    if (project.status === 'COMPLETED') {
+      return {
+        label: 'Duration',
+        value: `${daysDiff} days`
+      };
+    } else {
+      return {
+        label: 'Time Elapsed',
+        value: `${daysDiff} days`
+      };
+    }
+  };
+
   return (
     <div className="flex-none min-w-80 max-w-96 w-full lg:w-1/4 h-full">
       <Card className="h-full flex flex-col">
@@ -323,8 +350,8 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                                 </Badge>
                               </div>
                               <div>
-                                <span className="text-muted-foreground block">Time Elapsed</span>
-                                <div className="font-medium">{project.timeElapsed} days</div>
+                                <span className="text-muted-foreground block">{getTimeElapsedInfo(project).label}</span>
+                                <div className="font-medium">{getTimeElapsedInfo(project).value}</div>
                               </div>
                             </div>
 
@@ -407,6 +434,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
               onToggleComponentInfo={onToggleComponentInfo}
               onComponentCreated={onComponentCreated}
               onComponentUpdated={onComponentUpdated}
+              onProjectUpdated={onProjectUpdated}
             />
           )}
 

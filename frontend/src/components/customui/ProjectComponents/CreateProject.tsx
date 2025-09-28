@@ -204,7 +204,6 @@ const CreateProject: React.FC<CreateProjectProps> = ({
                         <div key={component.id} className="flex items-center justify-between p-2 border rounded">
                           <div className="flex-1">
                             <p className="font-medium text-sm">{component.name}</p>
-                            <p className="text-xs text-muted-foreground">{component.status}</p>
                           </div>
                           <Button
                             type="button"

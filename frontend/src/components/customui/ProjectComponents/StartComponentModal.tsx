@@ -7,14 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { updateProjectComponent } from "@/services/ProjectComponentService";
+import { updateProject } from "@/services/ProjectsService";
 
 interface StartComponentModalProps {
   isOpen: boolean;
   onClose: () => void;
   componentId: number;
   componentName: string;
+  projectId: number;
+  projectStatus: 'PLANNING' | 'STARTED' | 'COMPLETED';
   defaultStartDate?: string | null; // "YYYY-MM-DD"
   onComponentUpdated?: () => void;
+  onProjectUpdated?: () => void;
 }
 
 const isoToday = () => new Date().toISOString().slice(0, 10);
@@ -24,8 +28,11 @@ const StartComponentModal: React.FC<StartComponentModalProps> = ({
   onClose,
   componentId,
   componentName,
+  projectId,
+  projectStatus,
   defaultStartDate,
   onComponentUpdated,
+  onProjectUpdated,
 }) => {
   const [startDate, setStartDate] = useState<string>(defaultStartDate || isoToday());
   const [saving, setSaving] = useState(false);
@@ -41,9 +48,29 @@ const StartComponentModal: React.FC<StartComponentModalProps> = ({
     }
     setSaving(true);
     try {
-      const ok = await updateProjectComponent(componentId, { start_date: startDate, status: "STARTED" } as any);
-      if (ok) {
+      // Check if parent project needs to be started first
+      if (projectStatus === 'PLANNING') {
+        const projectStarted = await updateProject(projectId, { 
+          start_date: startDate, 
+          status: "STARTED" 
+        });
+        if (!projectStarted) {
+          toast.error("Failed to start parent project");
+          return;
+        }
+        toast.success("Project and component started");
+        onProjectUpdated?.();
+      } else {
         toast.success("Component started");
+      }
+
+      // Start the component
+      const ok = await updateProjectComponent(componentId, { 
+        start_date: startDate, 
+        status: "STARTED" 
+      } as any);
+      
+      if (ok) {
         onComponentUpdated?.();
         onClose();
       }

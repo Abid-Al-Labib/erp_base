@@ -50,6 +50,7 @@ interface ComponentNavigatorProps {
   onToggleComponentInfo: () => void;
   onComponentCreated?: (component: any) => void;
   onComponentUpdated?: () => void;
+  onProjectUpdated?: () => void;
 }
 
 const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
@@ -61,6 +62,7 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   onToggleComponentInfo: _onToggleComponentInfo,
   onComponentCreated,
   onComponentUpdated,
+  onProjectUpdated,
 }) => {
   const [isCreateComponentOpen, setIsCreateComponentOpen] = React.useState(false);
 
@@ -292,8 +294,11 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
             onClose={() => setIsStartModalOpen(false)}
             componentId={selectedComponent.id}
             componentName={selectedComponent.name}
+            projectId={selectedProject.id}
+            projectStatus={selectedProject.status}
             defaultStartDate={formatDateForInput(selectedComponent.startDate)}
             onComponentUpdated={onComponentUpdated}
+            onProjectUpdated={onProjectUpdated}
           />
 
           <CompleteComponentModal
