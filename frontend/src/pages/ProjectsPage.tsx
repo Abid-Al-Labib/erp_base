@@ -36,6 +36,7 @@ const ProjectsPage: React.FC = () => {
   });
   const [isProjectInfoExpanded, setIsProjectInfoExpanded] = useState(true);
   const [isComponentInfoExpanded, setIsComponentInfoExpanded] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
 
   // Filter projects by selected factory
   const filteredProjects = useMemo(() => {
@@ -137,11 +138,14 @@ const ProjectsPage: React.FC = () => {
         return;
       }
 
+      setLoadingProjects(true);
       try {
         const { data: projectsData } = await fetchProjects(selectedFactoryId);
         setProjects(projectsData || []);
       } catch (error) {
         console.error("Failed to fetch projects:", error);
+      } finally {
+        setLoadingProjects(false);
       }
     };
     loadProjects();
@@ -310,6 +314,7 @@ const ProjectsPage: React.FC = () => {
               selectedProject={transformedSelectedProject}
               isProjectInfoExpanded={isProjectInfoExpanded}
               isComponentInfoExpanded={isComponentInfoExpanded}
+              loadingProjects={loadingProjects}
               onFactorySelect={handleFactorySelect}
               onProjectSelect={handleProjectSelect}
               onProjectDeselect={handleProjectDeselect}

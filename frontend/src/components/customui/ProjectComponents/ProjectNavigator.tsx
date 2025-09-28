@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Folder, MoreHorizontal, Edit, Calculator, Calendar, Play, Check, ArrowLeft, Plus } from "lucide-react";
+import { Folder, MoreHorizontal, Edit, Calculator, Calendar, Play, Check, ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
 import ComponentNavigator from "./ComponentNavigator";
@@ -56,6 +56,7 @@ interface ProjectNavigatorProps {
   selectedProject: Project | undefined;
   isProjectInfoExpanded: boolean;
   isComponentInfoExpanded: boolean;
+  loadingProjects: boolean;
   onFactorySelect: (factoryId: string) => void;
   onProjectSelect: (projectId: number) => void;
   onProjectDeselect: () => void;
@@ -78,6 +79,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   selectedProject,
   isProjectInfoExpanded: _isProjectInfoExpanded,
   isComponentInfoExpanded,
+  loadingProjects,
   onFactorySelect,
   onProjectSelect,
   onProjectDeselect,
@@ -349,7 +351,12 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
               ) : (
                 // Project list
                 <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
-                  {filteredProjects.length === 0 ? (
+                  {loadingProjects ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span className="text-muted-foreground">Loading projects...</span>
+                    </div>
+                  ) : filteredProjects.length === 0 ? (
                     <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50">
                       <div className="text-gray-500 mb-2">
                         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
