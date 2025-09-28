@@ -10,10 +10,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MachineStatusRadialChart from "@/components/customui/MachineStatusRadialChart";
 import OrderStatusRadialChart from "@/components/customui/OrderStatusRadialChart";
-import { showExpenseLensPart } from "@/services/ButtonVisibilityHelper";
-import { LucideGlasses } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import ExpenseLensDisplayCard from "@/components/customui/ExpenseLensDisplayCard";
+import BusinessLensDisplayCard from "@/components/customui/ExpenseLensDisplayCard";
 const HomePage = () => {
   const profile = useAuth().profile
   const navigate = useNavigate();
@@ -212,7 +209,7 @@ const HomePage = () => {
          {/* Chart Section - Most Frequent Parts */}
          <div className="w-full flex flex-row justify-center gap-4" id="bottom-chart-wrapper">
           <div className="w-1/2" id="expenselens">
-              <ExpenseLensDisplayCard/>
+              <BusinessLensDisplayCard/>
           </div>
           <div className="w-1/2" id="machine-status-chart-inner">
               <MachineStatusRadialChart

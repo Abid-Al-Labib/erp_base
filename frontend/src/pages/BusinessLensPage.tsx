@@ -117,25 +117,12 @@ const BusinessLens: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-cyan-700">BusinessLens</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Centralize financial insights across storage, parts, orders, machines, projects, and factories. Pick a template to begin.
+              Centralized reporting for different aspects of your business. Pick a template to begin!
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/businesslens/help">Help</Link>
-            </Button>
           </div>
         </div>
 
         <Separator className="my-6" />
-
-        {/* Optional search affordance */}
-        <div className="mb-6">
-          <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search templates (e.g., 'vendor spend last quarter')" className="pl-9" aria-label="Search templates" />
-          </div>
-        </div>
 
         {/* Template tiles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">

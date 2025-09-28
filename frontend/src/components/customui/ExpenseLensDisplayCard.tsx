@@ -8,17 +8,17 @@ const BusinessLensDisplayCard = () => {
     const navigate = useNavigate()
 
     return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
-        <CardTitle>ExpenseLens</CardTitle>
+        <CardTitle>BusinessLens</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        <CardDescription>
-            Use our reporting tool to get insane insights
+        <CardDescription className="my-5">
+            Our reporting tool reveals where your money is going, uncovers inefficiencies, and helps you identify opportunities to save—so you can make confident decisions.
         </CardDescription>
-        <div className="items-center">
+        <div className="flex justify-center">
             <Button className='bg-cyan-600' onClick={()=>navigate(`/businesslens`)}>
-                ExpenseLens<LucideGlasses className='pl-2'></LucideGlasses>
+                BusinessLens<LucideGlasses className='pl-2'></LucideGlasses>
             </Button>
         </div>
 
