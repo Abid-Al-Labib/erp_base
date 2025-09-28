@@ -5,14 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { addProject } from "@/services/ProjectsService";
 import { addProjectComponent } from "@/services/ProjectComponentService";
 import { Project, ProjectComponent } from "@/types";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import CreateProjectComponent from "./CreateProjectComponent";
 
@@ -36,7 +32,6 @@ const CreateProject: React.FC<CreateProjectProps> = ({
     priority: "MEDIUM" as "LOW" | "MEDIUM" | "HIGH",
   });
   
-  const [deadline, setDeadline] = useState<Date>();
   const [components, setComponents] = useState<ProjectComponent[]>([]);
   const [isCreateComponentOpen, setIsCreateComponentOpen] = useState(false);
 
@@ -46,7 +41,6 @@ const CreateProject: React.FC<CreateProjectProps> = ({
       description: "",
       priority: "MEDIUM",
     });
-    setDeadline(undefined);
     setComponents([]);
   };
 
@@ -78,11 +72,6 @@ const CreateProject: React.FC<CreateProjectProps> = ({
       return;
     }
     
-    if (!deadline) {
-      toast.error('Project deadline is required');
-      return;
-    }
-    
     setIsLoading(true);
 
     try {
@@ -90,7 +79,7 @@ const CreateProject: React.FC<CreateProjectProps> = ({
       const projectPayload: Partial<Project> = {
         name: projectData.name,
         description: projectData.description,
-        deadline: deadline ? format(deadline, 'yyyy-MM-dd') : null,
+        deadline: null,
         priority: projectData.priority,
         status: "PLANNING", // Always create projects in Planning stage
         factory_id: factoryId,
@@ -166,33 +155,6 @@ const CreateProject: React.FC<CreateProjectProps> = ({
                   />
                 </div>
 
-                {/* Deadline */}
-                <div>
-                  <Label>Deadline *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !deadline && "text-muted-foreground"
-                        )}
-                        type="button"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {deadline ? format(deadline, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={deadline}
-                        onSelect={setDeadline}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
 
                 {/* Priority */}
                 <div>

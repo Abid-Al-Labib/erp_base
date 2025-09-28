@@ -5,13 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
 import { addProjectComponent } from "@/services/ProjectComponentService";
 import { ProjectComponent } from "@/types";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 interface CreateProjectComponentProps {
@@ -35,14 +30,11 @@ const CreateProjectComponent: React.FC<CreateProjectComponentProps> = ({
     description: "",
   });
 
-  const [deadline, setDeadline] = useState<Date>();
-
   const resetForm = () => {
     setComponentData({
       name: "",
       description: "",
     });
-    setDeadline(undefined);
   };
 
   const handleClose = () => {
@@ -58,7 +50,7 @@ const CreateProjectComponent: React.FC<CreateProjectComponentProps> = ({
       const componentPayload: Partial<ProjectComponent> = {
         name: componentData.name,
         description: componentData.description || null,
-        deadline: deadline ? format(deadline, 'yyyy-MM-dd') : null,
+        deadline: null,
         status: "PLANNING", // Always create components in Planning stage
         project_id: projectId,
       };
@@ -69,7 +61,7 @@ const CreateProjectComponent: React.FC<CreateProjectComponentProps> = ({
           id: Date.now(), // Temporary ID
           name: componentData.name,
           description: componentData.description || null,
-          deadline: deadline ? format(deadline, 'yyyy-MM-dd') : null,
+          deadline: null,
           status: "PLANNING", // Always create components in Planning stage
           project_id: 0, // Will be updated when project is created
           created_at: new Date().toISOString(),
@@ -130,32 +122,6 @@ const CreateProjectComponent: React.FC<CreateProjectComponentProps> = ({
             />
           </div>
           
-          {/* Deadline */}
-          <div>
-            <Label>Deadline</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !deadline && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deadline ? format(deadline, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={deadline}
-                  onSelect={setDeadline}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
 
           {/* Actions */}
           <div className="flex space-x-2 pt-4 border-t">
