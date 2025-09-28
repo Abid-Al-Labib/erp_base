@@ -64,7 +64,7 @@ interface OrderTypeConfig {
 const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
     PFM: {
         name: "PFM",
-        displayName: "1 - Order for Machine",
+        displayName: "1 - Purchase for Machine",
         requiresFactorySection: true,
         requiresMachine: true,
         requiresSourceFactory: false,
@@ -76,7 +76,7 @@ const ORDER_TYPE_CONFIGS: Record<OrderType, OrderTypeConfig> = {
     },
     PFS: {
         name: "PFS", 
-        displayName: "2 - Order for Storage",
+        displayName: "2 - Purchase for Storage",
         requiresFactorySection: false,
         requiresMachine: false,
         requiresSourceFactory: false,
