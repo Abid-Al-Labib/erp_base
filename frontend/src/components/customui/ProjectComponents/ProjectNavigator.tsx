@@ -192,7 +192,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             Project Navigator
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 flex-1 overflow-y-auto">
+        <CardContent className="space-y-4 flex-1 overflow-hidden flex flex-col">
           
           {/* Factory Selection */}
           <div>
@@ -376,8 +376,8 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                   }
                 </div>
               ) : (
-                // Project list
-                <div className={`space-y-2 overflow-y-auto ${selectedProject ? 'max-h-64' : 'max-h-96'}`}>
+                // Project list fills leftover height and scrolls
+                <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
                   {loadingProjects ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
