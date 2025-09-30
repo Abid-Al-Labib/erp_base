@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { Table, TableHead, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
 import { fetchAllMachines } from "@/services/MachineServices";
 import { fetchMachineParts, upsertMachineParts, updateMachinePartQuantities, deleteMachinePart } from "@/services/MachinePartsService";
-import { Check, PencilOff, PencilRuler, Plus, PlusCircle, X, XCircle } from "lucide-react";
+import { Check, Pencil, PencilOff, PencilRuler, Plus, PlusCircle, Trash2, X, XCircle } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Factory, FactorySection, Machine, MachinePart, Part } from "@/types";
 import { fetchAllParts } from "@/services/PartsService";
@@ -250,268 +251,220 @@ const MachinePartsManagementCard = () => {
   
 
   return (
-    <>  
-      {/* Heading and Add Button */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Configure Machine Parts</h2>
-        <div className="relative group">
-          <Button 
-            onClick={() => {
-              if (isAddingPart) {
-                setIsAddingPart(false);
-                setSelectedPartId(null);
-                setPartQty(1);
-              } else {
-                setIsAddingPart(true);
-              }
-            }}
-            disabled={!selectedMachineId}
-            className={`flex items-center gap-2 ${
-              isAddingPart 
-                ? "bg-red-600 text-white hover:bg-red-700" 
-                : selectedMachineId
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-gray-400 text-white cursor-not-allowed"
-            }`}
-          >
-            {isAddingPart ? (
-              <>
-                <X size={18} />
-                Cancel
-              </>
-            ) : (
-              <>
-                <PlusCircle size={18} />
-                Add Part
-              </>
-            )}
-          </Button>
-          {!selectedMachineId && (
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Please select a machine first
-            </div>
-          )}
-        </div>
-      </div>
-  
-      {/* Selection Controls - Horizontal Layout */}
-      <div className="flex items-center space-x-4 overflow-x-hidden mb-4">
-        {/* Factory Selection - Always a Dropdown */}
-        <Select 
-          value={selectedFactoryId?.toString() || ""} 
-          onValueChange={handleFactoryChange}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue>
-              {selectedFactoryId
-                ? factories.find((f) => f.id === selectedFactoryId)?.abbreviation
-                : "Select Factory"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {factories.map((factory) => (
-              <SelectItem key={factory.id} value={factory.id.toString()}>
-                {factory.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-  
-        {/* Factory Section Selection - Always a Dropdown */}
-        <Select 
-          value={selectedFactorySectionId?.toString() || ""} 
-          onValueChange={handleFactorySectionChange} 
-          disabled={!selectedFactoryId}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Select Section" />
-          </SelectTrigger>
-          <SelectContent>
-            {factorySections.map((section) => (
-              <SelectItem key={section.id} value={section.id.toString()}>
-                {section.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-  
-        {/* Machine Selection - Always a Dropdown */}
-        <Select 
-          value={selectedMachineId?.toString() || ""} 
-          onValueChange={handleMachineChange} 
-          disabled={!selectedFactorySectionId}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Select Machine" />
-          </SelectTrigger>
-          <SelectContent>
-            {machines
-              .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-              .map((machine) => (
-                <SelectItem key={machine.id} value={machine.id.toString()}>
-                  {machine.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Add Part Form */}
-      <AnimatePresence mode="wait">
-        {isAddingPart && (
-          <motion.div
-            key="add-form"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="mb-4 overflow-hidden"
-          >
-            <div className="flex items-center gap-4">
-              {/* Select Part */}
-              <ReactSelect
-                id="partId"
-                options={parts
-                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
-                  .map((part) => ({
-                    value: part.id,
-                    label: `${part.name} (${part.unit || "units"})`,
-                    isDisabled: machineParts.some((mp) => mp.parts.id === part.id),
-                  }))
+    <Card className="h-full flex flex-col border-0 shadow-none">
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="flex items-center justify-between">
+          <span>Configure Machine Parts</span>
+          <div className="relative group">
+            <Button 
+              onClick={() => {
+                if (isAddingPart) {
+                  setIsAddingPart(false);
+                  setSelectedPartId(null);
+                  setPartQty(1);
+                } else {
+                  setIsAddingPart(true);
                 }
-                onChange={(selectedOption) => setSelectedPartId(Number(selectedOption?.value))}
-                isSearchable
-                placeholder="Search or Select a Part"
-                value={selectedPartId ? { value: selectedPartId, label: parts.find((p) => p.id === selectedPartId)?.name } : null}
-                className="w-[260px]"
-              />
-
-              {/* Input for Quantity */}
-              <Input
-                type="number"
-                value={partQty}
-                onChange={(e) => setPartQty(Number(e.target.value))}
-                className="w-20 text-center border rounded-md"
-                min={1}
-              />
-
-              {/* Confirm (✔) Button */}
-              <button 
-                onClick={handleAddPart}
-                aria-label="Add part"
-                className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-  
-      {/* Machine Parts Table */}
-      {selectedMachineId && (
-        <div className="rounded-md shadow-md max-h-[500px] overflow-y-auto">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-100">
-                  <TableHead>Part ID</TableHead>
-                  <TableHead>Part Name</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Req Qty</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {machineParts.map((part) => (
-                  <TableRow key={part.id}>
-                    <TableCell>{part.parts.id}</TableCell>
-                    <TableCell>
-                      <Link to={`/viewpart/${part.parts.id}`} className="text-blue-600 hover:underline">
-                        {part.parts.name}
-                      </Link>
-                    </TableCell>
-                    {/* Editable Quantity Fields */}
-                    <TableCell>
-                      {editingPartId === part.id ? (
-                        <input
-                          type="number"
-                          value={editedQty ?? part.qty}
-                          onChange={(e) => setEditedQty(Number(e.target.value))}
-                          aria-label="Edit quantity"
-                          className="border rounded-md p-1 w-16 text-center"
-                        />
-                      ) : (
-                        part.qty
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingPartId === part.id ? (
-                        <input
-                          type="number"
-                          value={editedReqQty ?? part.req_qty}
-                          onChange={(e) => setEditedReqQty(Number(e.target.value))}
-                          aria-label="Edit required quantity"
-                          className="border rounded-md p-1 w-16 text-center"
-                        />
-                      ) : (
-                        part.req_qty
-                      )}
-                    </TableCell>
-    
-                    {/* Actions */}
-                    <TableCell className="flex gap-2">
-                      {editingPartId === part.id ? (
-                        <>
-                        {/* Cancel Edit Button */}
-                          <button
-                            onClick={() => setEditingPartId(null)}
-                            aria-label="Cancel editing"
-                            className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-                          >
-                            <PencilOff size={18} />
-                          </button>
-
-                          {/* Confirm Edit Button */}
-                          <button
-                            onClick={() => handleUpdateMachineParts(part)}
-                            aria-label="Save changes"
-                            className="text-green-600 hover:text-green-800 flex items-center gap-1 px-2 py-1 rounded-md border border-green-600 hover:bg-blue-100 transition"
-                          >
-                            <Check size={18} />
-                          </button>
-                          
-                        </>
-                      ) : (
-                        <>
-                          {/* Edit Button */}
-                          <button
-                            onClick={() => startEditing(part)}
-                            aria-label="Edit part"
-                            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
-                          >
-                            <PencilRuler size={18} />
-                          </button>
-      
-                          {/* Delete Button */}
-                          <button
-                            onClick={() => handleDeleteMachinePart(part.id)}
-                            aria-label="Delete part"
-                            className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              }}
+              disabled={!selectedMachineId}
+              className={`h-8 gap-2 ${
+                isAddingPart 
+                  ? "bg-red-600 hover:bg-red-700"
+                  : selectedMachineId
+                    ? "bg-blue-950 hover:bg-blue-900"
+                    : "bg-gray-400 cursor-not-allowed"
+              } text-white`}
+            >
+              {isAddingPart ? (
+                <>
+                  <X size={16} />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <PlusCircle size={16} />
+                  Add Part
+                </>
+              )}
+            </Button>
+            {!selectedMachineId && (
+              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Please select a machine first
+              </div>
+            )}
           </div>
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="flex-1 overflow-hidden flex flex-col min-h-[500px]">
+        {/* Selection toolbar */}
+        <div className="flex items-center gap-3 flex-wrap mb-4">
+          <Select value={selectedFactoryId?.toString() || ""} onValueChange={handleFactoryChange}>
+            <SelectTrigger className="w-44">
+              <SelectValue>
+                {selectedFactoryId ? factories.find(f => f.id === selectedFactoryId)?.abbreviation : "Select Factory"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {factories.map(factory => (
+                <SelectItem key={factory.id} value={factory.id.toString()}>{factory.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedFactorySectionId?.toString() || ""} onValueChange={handleFactorySectionChange} disabled={!selectedFactoryId}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Select Section" />
+            </SelectTrigger>
+            <SelectContent>
+              {factorySections.map(section => (
+                <SelectItem key={section.id} value={section.id.toString()}>{section.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedMachineId?.toString() || ""} onValueChange={handleMachineChange} disabled={!selectedFactorySectionId}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Select Machine" />
+            </SelectTrigger>
+            <SelectContent>
+              {machines.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map(machine => (
+                <SelectItem key={machine.id} value={machine.id.toString()}>{machine.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
-    </>
+
+        {/* Add Part Form */}
+        <AnimatePresence mode="wait">
+          {isAddingPart && (
+            <motion.div
+              key="add-form"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mb-4 overflow-hidden"
+            >
+              <div className="flex items-center gap-4">
+                <ReactSelect
+                  id="partId"
+                  options={parts
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(part => ({
+                      value: part.id,
+                      label: `${part.name} (${part.unit || "units"})`,
+                      isDisabled: machineParts.some(mp => mp.parts.id === part.id),
+                    }))}
+                  onChange={(selectedOption) => setSelectedPartId(Number(selectedOption?.value))}
+                  isSearchable
+                  placeholder="Search or Select a Part"
+                  value={selectedPartId ? { value: selectedPartId, label: parts.find(p => p.id === selectedPartId)?.name } : null}
+                  className="w-[280px]"
+                />
+
+                <Input
+                  type="number"
+                  value={partQty}
+                  onChange={(e) => setPartQty(Number(e.target.value))}
+                  className="w-24 text-center"
+                  min={1}
+                />
+
+                <Button variant="outline" onClick={handleAddPart} className="gap-1">
+                  <Plus size={16} />
+                  Add
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Machine Parts Table or Empty State */}
+        {selectedMachineId ? (
+          <div className="rounded-md border flex-1 flex flex-col min-h-[400px]">
+            <div className="overflow-x-auto flex-1 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="w-[90px]">Part ID</TableHead>
+                    <TableHead>Part Name</TableHead>
+                    <TableHead className="w-[120px]">Quantity</TableHead>
+                    <TableHead className="w-[120px]">Req Qty</TableHead>
+                    <TableHead className="w-[160px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {machineParts.map(part => (
+                    <TableRow key={part.id}>
+                      <TableCell>{part.parts.id}</TableCell>
+                      <TableCell>
+                        <Link to={`/viewpart/${part.parts.id}`} className="text-blue-700 hover:underline">
+                          {part.parts.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        {editingPartId === part.id ? (
+                          <input
+                            type="number"
+                            value={editedQty ?? part.qty}
+                            onChange={(e) => setEditedQty(Number(e.target.value))}
+                            aria-label="Edit quantity"
+                            className="border rounded-md p-1 w-20 text-center"
+                          />
+                        ) : (
+                          part.qty
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingPartId === part.id ? (
+                          <input
+                            type="number"
+                            value={editedReqQty ?? part.req_qty}
+                            onChange={(e) => setEditedReqQty(Number(e.target.value))}
+                            aria-label="Edit required quantity"
+                            className="border rounded-md p-1 w-20 text-center"
+                          />
+                        ) : (
+                          part.req_qty
+                        )}
+                      </TableCell>
+                      <TableCell className="flex gap-2">
+                        {editingPartId === part.id ? (
+                          <>
+                            <Button variant="outline" onClick={() => setEditingPartId(null)} className="gap-1">
+                              <PencilOff className="w-4 h-4" />
+                            </Button>
+                            <Button onClick={() => handleUpdateMachineParts(part)} className="bg-blue-950 hover:bg-blue-900 gap-1 text-white">
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button variant="outline" onClick={() => startEditing(part)} className="gap-1">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="destructive" onClick={() => handleDeleteMachinePart(part.id)} className="gap-1">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 grid place-items-center">
+            <div className="w-full h-full border rounded-md grid place-items-center min-h-[400px]">
+              <span className="text-muted-foreground">Select a factory, section, and machine to manage parts</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

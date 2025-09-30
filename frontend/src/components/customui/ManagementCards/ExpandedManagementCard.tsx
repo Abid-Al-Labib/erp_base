@@ -36,13 +36,17 @@ const ExpandedManagementCard: React.FC<ExpandedManagementCardProps> = ({ type, o
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <Card className="bg-white w-full max-w-xl rounded-lg shadow-lg relative overflow-y-auto">
+      <Card className="bg-white w-[85vw] max-w-5xl h-[82vh] rounded-lg shadow-lg relative overflow-hidden">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-600 hover:text-black">
           <X size={20} />
         </button>
-        <CardContent>
-          <div className="w-full max-w-2xl p-6 space-y-6">
-            {managementCards[managementType]}
+        <CardContent className="h-full overflow-hidden p-6 pt-14 pr-12">
+          <div className="w-full h-full p-0 min-h-[600px] flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="h-full flex flex-col overflow-hidden">
+                {managementCards[managementType]}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

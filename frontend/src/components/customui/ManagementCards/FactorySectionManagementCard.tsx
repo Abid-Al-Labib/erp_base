@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import toast from "react-hot-toast";
-import { fetchFactories, fetchFactorySections, addFactorySection, deleteFactorySection } from "@/services/FactoriesService";
-import { Plus, PlusCircle, X, XCircle } from "lucide-react"; 
+import { fetchFactories, fetchFactorySections, addFactorySection, deleteFactorySection, updateFactorySection } from "@/services/FactoriesService";
+import { Check, Pencil, PencilOff, Plus, PlusCircle, Trash2, X, XCircle } from "lucide-react"; 
 import { useSearchParams } from "react-router-dom";
 import { Factory, FactorySection } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
@@ -22,6 +22,8 @@ const FactorySectionManagementCard = () => {
 
   const [factorySection, setFactorySections] = useState<FactorySection[]>([]);
   const [newSectionName, setNewSectionName] = useState("");
+  const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
+  const [editedSectionName, setEditedSectionName] = useState<string>("");
 
   const handleFactoryChange = (value: string) => {
     const newFactoryId = Number(value);
@@ -101,7 +103,7 @@ const FactorySectionManagementCard = () => {
   };
 
   return (
-    <>
+    <div className="h-full flex flex-col min-h-0 overflow-hidden">
       {/* Heading and Add Button */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-800">Configure Factory Section</h2>
@@ -150,11 +152,11 @@ const FactorySectionManagementCard = () => {
           value={selectedFactoryId?.toString() || ""} 
           onValueChange={handleFactoryChange}
         >
-          <SelectTrigger className="w-40">
-            <SelectValue>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Select a Factory">
               {selectedFactoryId
                 ? factories.find((f) => f.id === selectedFactoryId)?.abbreviation
-                : "Select Factory"}
+                : undefined}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -196,37 +198,80 @@ const FactorySectionManagementCard = () => {
         </AnimatePresence>
       </div>
 
-      {/* Sections Table */}
-      {selectedFactoryId && (
-        <div className="border rounded-md shadow-sm max-h-80 overflow-y-auto relative">
-          <Table>
-            <TableHeader className="top-0 bg-white shadow-sm z-10">
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {factorySection.map((section) => (
-                <TableRow key={section.id}>
-                  <TableCell>{section.id}</TableCell>
-                  <TableCell>{section.name}</TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleDeleteSection(section.id)}
-                      className="text-red-600 hover:text-red-800 flex items-center gap-1"
-                    >
-                      <XCircle size={18} />
-                    </button>
-                  </TableCell>
+      {/* Sections list area - show bordered placeholder until a factory is selected */}
+      <div className="flex-1 min-h-0">
+        {selectedFactoryId ? (
+          <div className="h-full overflow-y-auto rounded-md border">
+            <Table>
+              <TableHeader className="top-0 bg-white shadow-sm z-10">
+                <TableRow className="bg-muted">
+                  <TableHead>ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </>
+              </TableHeader>
+              <TableBody>
+                {factorySection.map((section) => (
+                  <TableRow key={section.id}>
+                    <TableCell>{section.id}</TableCell>
+                    <TableCell>
+                      {editingSectionId === section.id ? (
+                        <Input
+                          value={editedSectionName}
+                          onChange={(e) => setEditedSectionName(e.target.value)}
+                          className="w-[220px]"
+                        />
+                      ) : (
+                        section.name
+                      )}
+                    </TableCell>
+                    <TableCell className="flex justify-end gap-2">
+                      {editingSectionId === section.id ? (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => setEditingSectionId(null)}>
+                            <PencilOff className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" onClick={async () => {
+                            if (!editedSectionName.trim()) return;
+                            const ok = await updateFactorySection(section.id, editedSectionName.trim());
+                            if (ok) {
+                              setEditingSectionId(null);
+                              loadFactorySections(selectedFactoryId!);
+                            }
+                          }}>
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingSectionId(section.id); setEditedSectionName(section.name); }}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteSection(section.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {factorySection.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                      No sections found for this factory.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="h-full rounded-md border grid place-items-center text-muted-foreground">
+            Please select a factory to view sections.
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

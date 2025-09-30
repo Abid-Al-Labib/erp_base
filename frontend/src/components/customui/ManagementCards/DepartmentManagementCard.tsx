@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
-import { PlusCircle, Plus, X, PencilRuler, PencilOff, Check, XCircle } from "lucide-react";
+import { PlusCircle, Plus, X, PencilRuler, PencilOff, Check, XCircle, Trash2, Pencil } from "lucide-react";
 import { fetchDepartments, addDepartment, deleteDepartment, updateDepartment } from "@/services/FactoriesService";
 
 const DepartmentManagementCard = () => {
@@ -142,10 +142,10 @@ const DepartmentManagementCard = () => {
       </AnimatePresence>
 
       {/* Departments Table */}
-      <div className="rounded-md shadow-md max-h-[500px] overflow-y-auto mt-4">
+      <div className="rounded-md border max-h-[500px] overflow-y-auto mt-4">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-100">
+            <TableRow className="bg-muted">
               <TableHead>ID</TableHead>
               <TableHead>Department Name</TableHead>
               <TableHead>Actions</TableHead>
@@ -172,45 +172,37 @@ const DepartmentManagementCard = () => {
                 <TableCell className="flex gap-2">
                   {editingDepartmentId === dept.id ? (
                     <>
-                      {/* Cancel Edit */}
-                      <button
+                      <Button size="sm" variant="ghost"
                         onClick={() => {
                           setEditingDepartmentId(null);
                           setEditedDepartmentName("");
                         }}
-                        className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
                       >
-                        <PencilOff size={18} />
-                      </button>
+                        <PencilOff className="w-4 h-4" />
+                      </Button>
 
-                      {/* Confirm Edit */}
-                      <button
-                        onClick={() => handleUpdateDepartment(dept.id)}
-                        className="text-green-600 hover:text-green-800 flex items-center gap-1 px-2 py-1 rounded-md border border-green-600 hover:bg-green-100 transition"
-                      >
-                        <Check size={18} />
-                      </button>
+                      <Button size="sm" onClick={() => handleUpdateDepartment(dept.id)}>
+                        <Check className="w-4 h-4" />
+                      </Button>
                     </>
                   ) : (
                     <>
                       {/* Edit Button */}
-                      <button
+                      <Button variant="outline" size="sm"
                         onClick={() => {
                           setEditingDepartmentId(dept.id);
                           setEditedDepartmentName(dept.name);
                         }}
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
                       >
-                        <PencilRuler size={18} />
-                      </button>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
 
                       {/* Delete Button */}
-                      <button
+                      <Button variant="destructive" size="sm"
                         onClick={() => handleDeleteDepartment(dept.id)}
-                        className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
                       >
-                        <XCircle size={18} />
-                      </button>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </>
                   )}
                 </TableCell>

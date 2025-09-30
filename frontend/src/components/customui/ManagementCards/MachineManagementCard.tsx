@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
-import { fetchAllMachines, addMachine, deleteMachine } from "@/services/MachineServices";
-import { Check, PlusCircle, XCircle } from "lucide-react";
+import { fetchAllMachines, addMachine, deleteMachine, editMachineName } from "@/services/MachineServices";
+import { Check, PlusCircle, XCircle, Pencil, Trash2, PencilOff } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Factory, FactorySection } from "@/types";
@@ -18,6 +18,8 @@ const MachineManagementCard = () => {
   const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
   const [machines, setMachines] = useState<{ id: number; name: string }[]>([]);
   const [newMachineName, setNewMachineName] = useState("");
+  const [editModeId, setEditModeId] = useState<number | null>(null);
+  const [editedMachineName, setEditedMachineName] = useState<string>("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [isAddingMachine, setIsAddingMachine] = useState(false);
 
@@ -201,7 +203,7 @@ const MachineManagementCard = () => {
       </div>
 
       {/* Controls Container */}
-      <div className="flex items-center space-x-4 mb-4 overflow-hidden">
+      <div className="flex items-center space-x-4 mb-4 py-2 overflow-visible">
         {/* Factory Selection */}
         <Select 
           value={selectedFactoryId?.toString() || ""} 
@@ -271,37 +273,80 @@ const MachineManagementCard = () => {
         </AnimatePresence>
       </div>
 
-      {/* Machine List */}
-      {selectedFactorySectionId && (
-        <div className="border rounded-md shadow-sm max-h-80 overflow-y-auto relative">
-          <Table>
-            <TableHeader className="top-0 bg-white shadow-sm z-10">
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {machines.map((machine) => (
-                <TableRow key={machine.id}>
-                  <TableCell>{machine.id}</TableCell>
-                  <TableCell>{machine.name}</TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleDeleteMachine(machine.id)}
-                      className="text-red-600 hover:text-red-800 flex items-center gap-1"
-                      title="Delete machine"
-                    >
-                      <XCircle size={18} />
-                    </button>
-                  </TableCell>
+      {/* Machine List area - placeholder until a section is selected */}
+      <div className="flex-1 min-h-0">
+        {selectedFactorySectionId ? (
+          <div className="h-full overflow-y-auto relative rounded-md border">
+            <Table>
+              <TableHeader className="top-0 bg-white shadow-sm z-10">
+                <TableRow className="bg-muted">
+                  <TableHead>ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {machines.map((machine) => (
+                  <TableRow key={machine.id}>
+                    <TableCell>{machine.id}</TableCell>
+                    <TableCell>
+                      {editModeId === machine.id ? (
+                        <Input
+                          value={editedMachineName}
+                          onChange={(e) => setEditedMachineName(e.target.value)}
+                          className="w-[220px]"
+                        />
+                      ) : (
+                        machine.name
+                      )}
+                    </TableCell>
+                    <TableCell className="flex justify-end gap-2">
+                      {editModeId === machine.id ? (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => setEditModeId(null)}>
+                            <PencilOff className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" onClick={async () => {
+                            if (!editedMachineName.trim()) return;
+                            try {
+                              await editMachineName(machine.id, editedMachineName.trim());
+                              setEditModeId(null);
+                              loadMachines(selectedFactorySectionId!);
+                              toast.success("Machine updated");
+                            } catch (e) {
+                              toast.error("Failed to update machine");
+                            }
+                          }}>
+                          <Check className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => { setEditModeId(machine.id); setEditedMachineName(machine.name); }}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteMachine(machine.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {machines.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">No machines found in this section.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="h-full rounded-md border grid place-items-center text-muted-foreground">
+            Please select a factory section to view machines.
+          </div>
+        )}
+      </div>
     </>
   );
 };

@@ -58,7 +58,7 @@ const FactoryManagementCard = () => {
 
   return (
     <>
-      <div className="max-h-[calc(100vh-100px)] overflow-y-auto p-4">
+      <div className="h-full flex flex-col p-4 overflow-hidden">
         {/* Title and Add/Cancel Button Row */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-800">Configure Factories</h2>
@@ -130,12 +130,12 @@ const FactoryManagementCard = () => {
           )}
         </AnimatePresence>
 
-        {/* Factory List Table */}
-        <div className="border rounded-lg shadow-sm overflow-x-auto">
-          <div className="max-h-80 overflow-y-auto">
+        {/* Factory List Table - bordered content with header always visible */}
+        <div className="flex-1 min-h-0">
+          <div className="h-full overflow-y-auto rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted">
                   <TableHead className="w-16">ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Abrv.</TableHead>
@@ -175,6 +175,11 @@ const FactoryManagementCard = () => {
                     )}
                   </TableRow>
                 ))}
+                {factories.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">No factories found.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

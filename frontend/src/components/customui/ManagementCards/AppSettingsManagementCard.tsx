@@ -38,16 +38,16 @@ const AppSettingsManagementCard = () => {
   }, []);
 
   return (
-    <Card>
+    <Card className="border-0 shadow-none h-full">
       <CardHeader>
         <CardTitle>App Settings</CardTitle>
         <CardDescription>
           The following configuration will be applied for all users.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-full overflow-auto">
         <div className="space-y-4">
-          <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+          <div className="flex flex-row items-center justify-between rounded-lg p-4">
             <div className="space-y-0.5">
               <label className="text-base font-medium">Add Part</label>
               <p className="text-sm text-muted-foreground">
@@ -60,7 +60,7 @@ const AppSettingsManagementCard = () => {
             />
           </div>
 
-          <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+          <div className="flex flex-row items-center justify-between rounded-lg p-4">
             <div className="space-y-0.5">
               <label className="text-base font-medium">Create Order</label>
               <p className="text-sm text-muted-foreground">

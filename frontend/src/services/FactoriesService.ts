@@ -15,6 +15,28 @@ export const fetchFactories = async () => {
     return data as unknown as Factory[];
 };
 
+// Update a factory section's name
+export const updateFactorySection = async (sectionId: number, newName: string) => {
+    try {
+        const { error } = await supabase_client
+            .from('factory_sections')
+            .update({ name: newName })
+            .eq('id', sectionId);
+
+        if (error) {
+            console.error('Error updating factory section:', error.message);
+            throw new Error('Failed to update factory section.');
+        }
+
+        toast.success('Factory section updated successfully.');
+        return true;
+    } catch (error) {
+        console.error(error);
+        toast.error('An error occurred while updating the factory section.');
+        return false;
+    }
+};
+
 export const fetchFactoriesByIds = async (factoryIds:number[])=> {
     const { data, error } = await supabase_client
     .from('factories')
