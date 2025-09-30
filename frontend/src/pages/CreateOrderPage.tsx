@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
@@ -320,44 +320,125 @@ const STP_HELPERS = {
 };
 
 const CreateOrderPage = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const profile = useAuth().profile
     const appSettings = useAuth().appSettings
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Helper function to get initial value from URL params
+    const getInitialValue = (paramName: string, defaultValue: any) => {
+        const param = searchParams.get(paramName);
+        return param ? (typeof defaultValue === 'number' ? Number(param) : param) : defaultValue;
+    };
+
+    // Function to update URL parameters when form values change
+    const updateURLParams = () => {
+        const params = new URLSearchParams(searchParams);
+        
+        // Update URL parameters based on current form state
+        if (selectedFactoryId !== -1) {
+            params.set("factory", selectedFactoryId.toString());
+        } else {
+            params.delete("factory");
+        }
+        
+        if (selectedFactorySectionId !== -1) {
+            params.set("section", selectedFactorySectionId.toString());
+        } else {
+            params.delete("section");
+        }
+        
+        if (selectedMachineId !== -1) {
+            params.set("machine", selectedMachineId.toString());
+        } else {
+            params.delete("machine");
+        }
+        
+        if (departmentId !== -1) {
+            params.set("department", departmentId.toString());
+        } else {
+            params.delete("department");
+        }
+        
+        if (selectedProjectId !== -1) {
+            params.set("project", selectedProjectId.toString());
+        } else {
+            params.delete("project");
+        }
+        
+        if (selectedProjectComponentId !== -1) {
+            params.set("component", selectedProjectComponentId.toString());
+        } else {
+            params.delete("component");
+        }
+        
+        if (orderType) {
+            params.set("orderType", orderType);
+        } else {
+            params.delete("orderType");
+        }
+        
+        if (description) {
+            params.set("description", description);
+        } else {
+            params.delete("description");
+        }
+        
+        if (note) {
+            params.set("note", note);
+        } else {
+            params.delete("note");
+        }
+        
+        if (reqNum) {
+            params.set("reqNum", reqNum);
+        } else {
+            params.delete("reqNum");
+        }
+        
+        if (srcFactoryId !== -1) {
+            params.set("srcFactory", srcFactoryId.toString());
+        } else {
+            params.delete("srcFactory");
+        }
+        
+        setSearchParams(params);
+    };
+
     const [factories, setFactories] = useState<Factory[]>([]);
-    const [selectedFactoryId, setSelectedFactoryId] = useState<number>(-1);
+    const [selectedFactoryId, setSelectedFactoryId] = useState<number>(getInitialValue('factory', -1));
     const selectedFactoryName = factories.find(factory => factory.id === selectedFactoryId)?.name || "Select Factory";
 
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
-    const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number>(-1);
+    const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number>(getInitialValue('section', -1));
     const selectedFactorySectionName = factorySections.find(section => section.id === selectedFactorySectionId)?.name || "Select Section";
 
     const [machines, setMachines] = useState<Machine[]>([]);
-    const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
+    const [selectedMachineId, setSelectedMachineId] = useState<number>(getInitialValue('machine', -1));
     const selectedMachineName = machines.find(machine => machine.id === selectedMachineId)?.name || '';
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [departmentId, setDepartmentId] = useState<number>(-1);
+    const [departmentId, setDepartmentId] = useState<number>(getInitialValue('department', -1));
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
-    const [srcFactoryId, setSrcFactoryId] = useState<number>(-1);
+    const [srcFactoryId, setSrcFactoryId] = useState<number>(getInitialValue('srcFactory', -1));
     const selectedSrcFactoryName = factories.find(factory => factory.id === srcFactoryId)?.name || "Select Source Factory";
 
     // Project and Project Component state
     const [projects, setProjects] = useState<Project[]>([]);
-    const [selectedProjectId, setSelectedProjectId] = useState<number>(-1);
+    const [selectedProjectId, setSelectedProjectId] = useState<number>(getInitialValue('project', -1));
     const selectedProjectName = projects.find(project => project.id === selectedProjectId)?.name || "Select Project";
 
     const [projectComponents, setProjectComponents] = useState<ProjectComponent[]>([]);
-    const [selectedProjectComponentId, setSelectedProjectComponentId] = useState<number>(-1);
+    const [selectedProjectComponentId, setSelectedProjectComponentId] = useState<number>(getInitialValue('component', -1));
     const selectedProjectComponentName = projectComponents.find(component => component.id === selectedProjectComponentId)?.name || "Select Project Component";
 
   
 
-    const [orderType, setOrderType] = useState<string>();
-    const [description, setDescription] = useState('');
-    const [note, setNote] = useState('');
+    const [orderType, setOrderType] = useState<string>(getInitialValue('orderType', undefined));
+    const [description, setDescription] = useState(getInitialValue('description', ''));
+    const [note, setNote] = useState(getInitialValue('note', ''));
 
-    const [reqNum, setReqNum] = useState('')
+    const [reqNum, setReqNum] = useState(getInitialValue('reqNum', ''))
     
     // Part-level unstable type state for PFM/STM orders
     const [partUnstableType, setPartUnstableType] = useState<'INACTIVE' | 'DEFECTIVE' | 'LESS'>('INACTIVE');
@@ -403,6 +484,69 @@ const CreateOrderPage = () => {
 
         loadParts();
     }, []);
+
+    // Apply URL parameters after data is loaded
+    useEffect(() => {
+        if (factories.length > 0 && searchParams.get('factory')) {
+            const factoryId = Number(searchParams.get('factory'));
+            if (factoryId !== selectedFactoryId) {
+                setSelectedFactoryId(factoryId);
+            }
+        }
+    }, [factories, searchParams]);
+
+    // Apply URL parameters with a small delay to ensure data is loaded
+    useEffect(() => {
+        const applyUrlParams = () => {
+            // Apply factory selection
+            if (factories.length > 0 && searchParams.get('factory')) {
+                const factoryId = Number(searchParams.get('factory'));
+                if (factoryId !== selectedFactoryId) {
+                    setSelectedFactoryId(factoryId);
+                }
+            }
+
+            // Apply project selection
+            if (projects.length > 0 && searchParams.get('project')) {
+                const projId = Number(searchParams.get('project'));
+                if (projId !== selectedProjectId) {
+                    setSelectedProjectId(projId);
+                }
+            }
+
+            // Apply component selection
+            if (projectComponents.length > 0 && searchParams.get('component')) {
+                const compId = Number(searchParams.get('component'));
+                if (compId !== selectedProjectComponentId) {
+                    setSelectedProjectComponentId(compId);
+                }
+            }
+        };
+
+        // Apply with a small delay to ensure data is loaded
+        const timeoutId = setTimeout(applyUrlParams, 100);
+        return () => clearTimeout(timeoutId);
+    }, [factories, projects, projectComponents, searchParams]);
+
+
+
+    // Update URL parameters when form values change
+    useEffect(() => {
+        updateURLParams();
+    }, [
+        selectedFactoryId,
+        selectedFactorySectionId,
+        selectedMachineId,
+        departmentId,
+        selectedProjectId,
+        selectedProjectComponentId,
+        orderType,
+        description,
+        note,
+        reqNum,
+        srcFactoryId
+    ]);
+
 
     // Load storage parts when STM or STP is selected and source factory is chosen
     useEffect(() => {
@@ -964,7 +1108,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={departmentId !== -1 ? departmentId.toString() : ""} onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
                                                 </SelectTrigger>
@@ -979,7 +1123,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
-                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={selectedFactoryId !== -1 ? selectedFactoryId.toString() : ""} onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -995,6 +1139,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="factorySection" className="text-sm font-medium">Factory Section</Label>
                                             <Select
+                                                value={selectedFactorySectionId !== -1 ? selectedFactorySectionId.toString() : ""}
                                                 onValueChange={(value) => handleSelectFactorySection(Number(value))}
                                                 disabled={isOrderStarted || selectedFactoryId === -1}
                                             >
@@ -1017,6 +1162,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="machine" className="text-sm font-medium">Machine</Label>
                                             <Select
+                                                value={selectedMachineId !== -1 ? selectedMachineId.toString() : ""}
                                                 onValueChange={(value) => handleSelectMachine(Number(value))}
                                                 disabled={isOrderStarted || selectedFactorySectionId === -1}
                                             >
@@ -1070,7 +1216,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={departmentId !== -1 ? departmentId.toString() : ""} onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
                                                 </SelectTrigger>
@@ -1085,7 +1231,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
-                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={selectedFactoryId !== -1 ? selectedFactoryId.toString() : ""} onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -1128,7 +1274,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={departmentId !== -1 ? departmentId.toString() : ""} onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
                                                 </SelectTrigger>
@@ -1143,7 +1289,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="srcFactory" className="text-sm font-medium">Source Factory (Storage)</Label>
-                                            <Select onValueChange={(value) => setSrcFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={srcFactoryId !== -1 ? srcFactoryId.toString() : ""} onValueChange={(value) => setSrcFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedSrcFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -1158,7 +1304,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="factoryName" className="text-sm font-medium">Destination Factory</Label>
-                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={selectedFactoryId !== -1 ? selectedFactoryId.toString() : ""} onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -1174,6 +1320,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="factorySection" className="text-sm font-medium">Destination Factory Section</Label>
                                             <Select
+                                                value={selectedFactorySectionId !== -1 ? selectedFactorySectionId.toString() : ""}
                                                 onValueChange={(value) => handleSelectFactorySection(Number(value))}
                                                 disabled={isOrderStarted || selectedFactoryId === -1}
                                             >
@@ -1196,6 +1343,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="machine" className="text-sm font-medium">Destination Machine</Label>
                                             <Select
+                                                value={selectedMachineId !== -1 ? selectedMachineId.toString() : ""}
                                                 onValueChange={(value) => handleSelectMachine(Number(value))}
                                                 disabled={isOrderStarted || selectedFactorySectionId === -1}
                                             >
@@ -1249,7 +1397,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={departmentId !== -1 ? departmentId.toString() : ""} onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
                                                 </SelectTrigger>
@@ -1264,7 +1412,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="factoryName" className="text-sm font-medium">Factory Name</Label>
-                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={selectedFactoryId !== -1 ? selectedFactoryId.toString() : ""} onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -1280,6 +1428,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="project" className="text-sm font-medium">Project</Label>
                                             <Select 
+                                                value={selectedProjectId !== -1 ? selectedProjectId.toString() : ""}
                                                 onValueChange={(value) => setSelectedProjectId(Number(value))} 
                                                 disabled={isOrderStarted || selectedFactoryId === -1}
                                             >
@@ -1298,6 +1447,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="projectComponent" className="text-sm font-medium">Project Component</Label>
                                             <Select 
+                                                value={selectedProjectComponentId !== -1 ? selectedProjectComponentId.toString() : ""}
                                                 onValueChange={(value) => setSelectedProjectComponentId(Number(value))} 
                                                 disabled={isOrderStarted || selectedProjectId === -1}
                                             >
@@ -1343,7 +1493,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="department" className="text-sm font-medium">Department</Label>
-                                            <Select onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={departmentId !== -1 ? departmentId.toString() : ""} onValueChange={(value) => setDepartmentId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedDepartmentName || "Select Department"}</SelectValue>
                                                 </SelectTrigger>
@@ -1358,7 +1508,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="srcFactory" className="text-sm font-medium">Source Factory (Storage)</Label>
-                                            <Select onValueChange={(value) => setSrcFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={srcFactoryId !== -1 ? srcFactoryId.toString() : ""} onValueChange={(value) => setSrcFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedSrcFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -1373,7 +1523,7 @@ const CreateOrderPage = () => {
                                         </div>
                                         <div>
                                             <Label htmlFor="factoryName" className="text-sm font-medium">Destination Factory</Label>
-                                            <Select onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
+                                            <Select value={selectedFactoryId !== -1 ? selectedFactoryId.toString() : ""} onValueChange={(value) => setSelectedFactoryId(Number(value))} disabled={isOrderStarted}>
                                                 <SelectTrigger className="mt-1">
                                                     <SelectValue>{selectedFactoryName}</SelectValue>
                                                 </SelectTrigger>
@@ -1389,6 +1539,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="project" className="text-sm font-medium">Project</Label>
                                             <Select 
+                                                value={selectedProjectId !== -1 ? selectedProjectId.toString() : ""}
                                                 onValueChange={(value) => setSelectedProjectId(Number(value))} 
                                                 disabled={isOrderStarted || selectedFactoryId === -1}
                                             >
@@ -1407,6 +1558,7 @@ const CreateOrderPage = () => {
                                         <div>
                                             <Label htmlFor="projectComponent" className="text-sm font-medium">Project Component</Label>
                                             <Select 
+                                                value={selectedProjectComponentId !== -1 ? selectedProjectComponentId.toString() : ""}
                                                 onValueChange={(value) => setSelectedProjectComponentId(Number(value))} 
                                                 disabled={isOrderStarted || selectedProjectId === -1}
                                             >
@@ -1456,7 +1608,21 @@ const CreateOrderPage = () => {
                                 {/* Order Type - Main Dropdown */}
                                 <div>
                                     <Label htmlFor="orderType" className="text-sm font-medium">Order Type</Label>
-                                    <Select onValueChange={(value) => setOrderType(value)} disabled={isOrderStarted}>
+                                    <Select value={orderType || ""} onValueChange={(value) => {
+                                        // Reset all dependent selections when order type changes
+                                        setOrderType(value);
+                                        setSelectedFactoryId(-1);
+                                        setSelectedFactorySectionId(-1);
+                                        setSelectedMachineId(-1);
+                                        setDepartmentId(-1);
+                                        setSrcFactoryId(-1);
+                                        setSelectedProjectId(-1);
+                                        setSelectedProjectComponentId(-1);
+                                        setOrderedParts([]);
+                                        setDescription("");
+                                        setNote("");
+                                        setReqNum("");
+                                    }} disabled={isOrderStarted}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue>
                                                 {orderType && ORDER_TYPE_CONFIGS[orderType as OrderType]
@@ -1745,7 +1911,7 @@ const CreateOrderPage = () => {
                                             {(orderType === "PFM" || orderType === "STM") && (
                                                 <div>
                                                     <Label htmlFor="partUnstableType" className="text-sm font-medium">Part Status (Required)</Label>
-                                                    <Select onValueChange={(value) => setPartUnstableType(value as 'INACTIVE' | 'DEFECTIVE' | 'LESS')}>
+                                                    <Select value={partUnstableType} onValueChange={(value) => setPartUnstableType(value as 'INACTIVE' | 'DEFECTIVE' | 'LESS')}>
                                                         <SelectTrigger className="mt-1">
                                                             <SelectValue placeholder="Select part status">
                                                                 {partUnstableType === 'INACTIVE' ? 'Machine Inactive' :

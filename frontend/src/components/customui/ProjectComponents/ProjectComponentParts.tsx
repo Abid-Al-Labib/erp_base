@@ -1,19 +1,44 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Wrench } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, Wrench, Plus } from "lucide-react";
 import { ProjectComponentPart } from "@/types";
 import { fetchProjectComponentParts } from "@/services/ProjectComponentPartsService";
 // toast removed - component simplified
 
 interface ProjectComponentPartsProps {
   projectComponentId: number;
+  projectId?: number;
+  componentId?: number;
+  factoryId?: number;
 }
 
 const ProjectComponentParts: React.FC<ProjectComponentPartsProps> = ({
   projectComponentId,
+  projectId,
+  componentId,
+  factoryId,
 }) => {
   const [parts, setParts] = useState<ProjectComponentPart[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Function to open CreateOrderPage in new tab with comprehensive pre-filled data
+  const handleCreateNewOrder = () => {
+    if (!projectId || !componentId || !factoryId) return;
+    
+    const params = new URLSearchParams({
+      // Core identifiers
+      factory: factoryId.toString(),
+      project: projectId.toString(),
+      component: componentId.toString(),
+      
+      // Order type only
+      orderType: 'PFP' // Project for Part order type
+    });
+    
+    const createOrderUrl = `/createorder?${params.toString()}`;
+    window.open(createOrderUrl, '_blank');
+  };
 
   // Load parts when component mounts or projectComponentId changes
   useEffect(() => {
@@ -45,12 +70,24 @@ const ProjectComponentParts: React.FC<ProjectComponentPartsProps> = ({
   if (loading) {
     return (
       <Card className="h-full flex flex-col">
-        <CardHeader className="flex-shrink-0">
-          <CardTitle className="flex items-center gap-2">
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             Component Parts
-          </CardTitle>
-        </CardHeader>
+          </div>
+          {projectId && componentId && factoryId && (
+            <Button
+              size="sm"
+              onClick={handleCreateNewOrder}
+              className="h-8 gap-1 bg-blue-950 hover:bg-blue-900"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create New Order
+            </Button>
+          )}
+        </CardTitle>
+      </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
@@ -74,9 +111,21 @@ const ProjectComponentParts: React.FC<ProjectComponentPartsProps> = ({
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Component Parts ({parts.length})
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Component Parts ({parts.length})
+          </div>
+          {projectId && componentId && factoryId && (
+            <Button
+              size="sm"
+              onClick={handleCreateNewOrder}
+              className="h-8 gap-1 bg-blue-950 hover:bg-blue-900"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create New Order
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto">

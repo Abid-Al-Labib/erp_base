@@ -340,7 +340,12 @@ const ProjectsPage: React.FC = () => {
 
                   {/* Component Parts (bottom half) */}
                   <div className="flex-1 basis-1/2 min-h-0 overflow-hidden">
-                    <ProjectComponentParts projectComponentId={selectedComponent.id} />
+                    <ProjectComponentParts 
+                      projectComponentId={selectedComponent.id}
+                      projectId={selectedProjectId}
+                      componentId={selectedComponent.id}
+                      factoryId={selectedFactoryId}
+                    />
                   </div>
                 </div>
 
