@@ -596,20 +596,22 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
           {shouldShowFilter("orderType") && (
             <div className="space-y-2">
               <Label>Order Type</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
+                  size="sm"
                   variant={filters.orderType === "all" ? "default" : "outline"}
                   onClick={() => updateFilters({ orderType: "all" })}
-                  className="flex-1"
+                  className="px-2"
                 >
                   All
                 </Button>
                 {orderTypes.map((orderType) => (
                   <Button
+                    size="sm"
                     key={orderType.type}
                     variant={filters.orderType === orderType.type ? "default" : "outline"}
                     onClick={() => updateFilters({ orderType: orderType.type })}
-                    className="flex-1"
+                    className="px-2"
                   >
                     {orderType.type}
                   </Button>
