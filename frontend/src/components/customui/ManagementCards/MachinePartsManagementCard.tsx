@@ -361,6 +361,12 @@ const MachinePartsManagementCard = () => {
                   placeholder="Search or Select a Part"
                   value={selectedPartId ? { value: selectedPartId, label: parts.find(p => p.id === selectedPartId)?.name } : null}
                   className="w-[280px]"
+                  menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                  menuPosition="fixed"
+                  styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                    menu: (base) => ({ ...base, zIndex: 9999 })
+                  }}
                 />
 
                 <Input
