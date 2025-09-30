@@ -216,12 +216,24 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
 
           {/* Project Section */}
           {selectedFactoryId && (
-              <div>
+              <div className="flex flex-col min-h-0">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-bold text-gray-900 flex-1 min-w-0 truncate">
                     {selectedProject ? ` ${selectedProject.name}` : 'Project'}
                   </h2>
                   <div className="flex items-center gap-1 flex-none">
+                    {/* Always allow creating a project when a factory is selected */}
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsCreateProjectOpen(true)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
+                      title="Add project"
+                      disabled={!selectedFactoryId}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+
                     {selectedProject && (
                       <>
                       <Button
@@ -273,16 +285,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                           </DropdownMenuContent>
                         </DropdownMenu>
                         
-                        <Button 
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsCreateProjectOpen(true)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
-                          title="Add project"
-                          disabled={!selectedFactoryId}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
                       </>
                     )}
                     
@@ -377,7 +379,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                 </div>
               ) : (
                 // Project list fills leftover height and scrolls
-                <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
+                <div className="space-y-2 flex-1 min-h-0 overflow-auto pr-2 pb-2">
                   {loadingProjects ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
