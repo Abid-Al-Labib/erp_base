@@ -3,52 +3,25 @@ import { MoreHorizontal, Edit, ArrowLeft, Plus, Play, Check } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { convertUtcToBDTime } from "@/services/helper";
+import { Project, ProjectComponent } from "@/types";
 import CreateProjectComponent from "./CreateProjectComponent";
 import EditComponentModal from "./EditComponentModal";
 import StartComponentModal from "./StartComponentModal";
 import CompleteComponentModal from "./CompleteComponentModal";
-
-// Local-only types for rendering
-interface ProjectComponent {
-  id: number;
-  name: string;
-  description: string | null;
-  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
-  progress: number;
-  budget: number | null;
-  totalCost: number | null;
-  startDate: string | null;
-  endDate?: string | null;
-  deadline: string | null;
-  // Optional: allow priority if you add it in DB later
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
-}
-
-interface Project {
-  id: number;
-  name: string;
-  description: string;
-  factoryId: number;
-  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
-  startDate: string | null;
-  endDate?: string | null;
-  deadline: string | null;
-  progress: number;
-  components: ProjectComponent[];
-  budget: number | null;
-  totalCost: number;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  timeElapsed: number;
-}
+import { calculateProjectComponentCost } from "@/services/ProjectComponentService";
+import { fetchMiscProjectCosts } from "@/services/MiscellaneousProjectCostServices";
 
 interface ComponentNavigatorProps {
   selectedProject: Project | undefined;
   selectedComponentId: number | undefined;
   isComponentInfoExpanded: boolean;
+  components: ProjectComponent[];
+  // When supplemental expenses change for a component, this prop will carry its id
+  miscCostUpdatedForComponentId?: number | null;
   onComponentSelect: (componentId: number) => void;
   onComponentDeselect: () => void;
   onToggleComponentInfo: () => void;
-  onComponentCreated?: (component: any) => void;
+  onComponentCreated?: (component: ProjectComponent) => void;
   onComponentUpdated?: () => void;
   onProjectUpdated?: () => void;
 }
@@ -57,6 +30,8 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   selectedProject,
   selectedComponentId,
   isComponentInfoExpanded: _isComponentInfoExpanded,
+  components,
+  miscCostUpdatedForComponentId,
   onComponentSelect,
   onComponentDeselect,
   onToggleComponentInfo: _onToggleComponentInfo,
@@ -71,10 +46,65 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   const [isStartModalOpen, setIsStartModalOpen] = React.useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = React.useState(false);
 
+  // Component costs state
+  const [componentCosts, setComponentCosts] = React.useState<Record<number, number | null>>({});
+  const [supplementalExpenses, setSupplementalExpenses] = React.useState<Record<number, number | null>>({});
+  const [loadingCosts, setLoadingCosts] = React.useState<Record<number, boolean>>({});
+
   // Get selected component
-  const selectedComponent = selectedProject?.components.find(
+  const selectedComponent = components?.find(
     (component) => component.id === selectedComponentId
   );
+
+  // Calculate costs for a component (orders and supplemental expenses)
+  const calculateComponentCost = React.useCallback(async (componentId: number) => {
+    if (loadingCosts[componentId]) return; // Already loading
+    
+    setLoadingCosts(prev => ({ ...prev, [componentId]: true }));
+    try {
+      // Calculate both order costs and supplemental expenses in parallel
+      const [orderCost, miscCosts] = await Promise.all([
+        calculateProjectComponentCost(componentId),
+        fetchMiscProjectCosts(undefined, componentId)
+      ]);
+      
+      // Calculate total supplemental expenses
+      const totalSupplementalExpenses = miscCosts.reduce((total, cost) => {
+        return total + (cost.amount || 0);
+      }, 0);
+      
+      // Store both values
+      setComponentCosts(prev => ({ ...prev, [componentId]: orderCost }));
+      setSupplementalExpenses(prev => ({ ...prev, [componentId]: totalSupplementalExpenses }));
+    } catch (error) {
+      console.error('Error calculating component cost:', error);
+      setComponentCosts(prev => ({ ...prev, [componentId]: null }));
+      setSupplementalExpenses(prev => ({ ...prev, [componentId]: null }));
+    } finally {
+      setLoadingCosts(prev => ({ ...prev, [componentId]: false }));
+    }
+  }, [loadingCosts]);
+
+  // Load costs for all components when components change
+  React.useEffect(() => {
+    if (components && components.length > 0) {
+      components.forEach(component => {
+        if ((!(component.id in componentCosts) || !(component.id in supplementalExpenses)) && !loadingCosts[component.id]) {
+          calculateComponentCost(component.id);
+        }
+      });
+    }
+  }, [components, componentCosts, supplementalExpenses, loadingCosts, calculateComponentCost]);
+
+  // Recalculate a single component's costs when its supplemental expenses were updated
+  React.useEffect(() => {
+    if (!miscCostUpdatedForComponentId) return;
+    // Ensure the component exists in current list
+    const exists = components?.some(c => c.id === miscCostUpdatedForComponentId);
+    if (!exists) return;
+    calculateComponentCost(miscCostUpdatedForComponentId);
+    // no cleanup needed
+  }, [miscCostUpdatedForComponentId, components, calculateComponentCost]);
 
   // Utilities
   const formatCurrency = (amount: number | null | undefined) => {
@@ -127,6 +157,7 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   };
 
   // removed unused getPriorityBadge to satisfy linter
+
 
   if (!selectedProject) return null;
 
@@ -218,7 +249,20 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                     </div>
                     <div>
                       <span className="text-muted-foreground block">Total Cost</span>
-                      <div className="font-semibold text-blue-600">{selectedComponent.totalCost?formatCurrency(selectedComponent.totalCost):'TBD'}</div>
+                      <div className="font-semibold text-blue-600">
+                        {selectedComponent && loadingCosts[selectedComponent.id] ? (
+                          <span className="text-sm">Calculating...</span>
+                        ) : selectedComponent && componentCosts[selectedComponent.id] !== undefined && supplementalExpenses[selectedComponent.id] !== undefined ? (
+                          (() => {
+                            const orderCost = componentCosts[selectedComponent.id] || 0;
+                            const suppExpenses = supplementalExpenses[selectedComponent.id] || 0;
+                            const totalCost = orderCost + suppExpenses;
+                            return totalCost > 0 ? formatCurrency(totalCost) : 'TBD';
+                          })()
+                        ) : (
+                          'TBD'
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -226,11 +270,11 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-muted-foreground block">Start Date</span>
-                      <div className="font-medium">{formatDateOnly(selectedComponent.startDate)}</div>
+                      <div className="font-medium">{formatDateOnly(selectedComponent.start_date)}</div>
                     </div>
                     <div>
                       <span className="text-muted-foreground block">End Date</span>
-                      <div className="font-medium">{formatDateOnly(selectedComponent.endDate)}</div>
+                      <div className="font-medium">{formatDateOnly(selectedComponent.end_date)}</div>
                     </div>
                   </div>
 
@@ -254,18 +298,46 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
       ) : (
         // Grid of components to select
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {selectedProject.components.map((component) => (
-            <div
-              key={component.id}
-              className="p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:bg-gray-50 border-gray-200"
-              onClick={() => onComponentSelect(component.id)}
-            >
-              <h4 className="font-medium text-base mb-2">{component.name}</h4>
-              <p className="text-sm text-muted-foreground truncate">
-                {component.description || ""}
-              </p>
+          {!components || components.length === 0 ? (
+            <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50">
+              <div className="text-gray-500 mb-2">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No components yet</h3>
+              <p className="text-sm text-gray-500 mb-4">Get started by creating your first component</p>
             </div>
-          ))}
+          ) : (
+            components.map((component) => (
+              <div
+                key={component.id}
+                className="p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:bg-gray-50 border-gray-200"
+                onClick={() => onComponentSelect(component.id)}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium text-base">{component.name}</h4>
+                  <div className="text-sm text-muted-foreground ml-2">
+                    {loadingCosts[component.id] ? (
+                      <span className="text-xs">Calculating...</span>
+                    ) : componentCosts[component.id] !== undefined && supplementalExpenses[component.id] !== undefined ? (
+                      (() => {
+                        const orderCost = componentCosts[component.id] || 0;
+                        const suppExpenses = supplementalExpenses[component.id] || 0;
+                        const totalCost = orderCost + suppExpenses;
+                        return totalCost > 0 ? formatCurrency(totalCost) : 'TBD';
+                      })()
+                    ) : (
+                      'TBD'
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground truncate">
+                  {component.description || ""}
+                </p>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -296,7 +368,7 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
             componentName={selectedComponent.name}
             projectId={selectedProject.id}
             projectStatus={selectedProject.status}
-            defaultStartDate={formatDateForInput(selectedComponent.startDate)}
+            defaultStartDate={formatDateForInput(selectedComponent.start_date)}
             onComponentUpdated={onComponentUpdated}
             onProjectUpdated={onProjectUpdated}
           />
@@ -306,7 +378,7 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
             onClose={() => setIsCompleteModalOpen(false)}
             componentId={selectedComponent.id}
             componentName={selectedComponent.name}
-            defaultStartDate={formatDateForInput(selectedComponent.startDate)}
+            defaultStartDate={formatDateForInput(selectedComponent.start_date)}
             onComponentUpdated={onComponentUpdated}
           />
         </>

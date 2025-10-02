@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import NavigationBar from "@/components/customui/NavigationBar";
 import {
@@ -37,6 +37,11 @@ const ProjectsPage: React.FC = () => {
   const [isProjectInfoExpanded, setIsProjectInfoExpanded] = useState(true);
   const [isComponentInfoExpanded, setIsComponentInfoExpanded] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  
+  // Ref to store the project total cost refresh function
+  const refreshProjectTotalCostRef = useRef<(() => void) | null>(null);
+  // Track which component's misc costs were updated to trigger per-component recompute
+  const [miscCostUpdatedForComponentId, setMiscCostUpdatedForComponentId] = useState<number | null>(null);
 
   // Filter projects by selected factory
   const filteredProjects = useMemo(() => {
@@ -54,68 +59,7 @@ const ProjectsPage: React.FC = () => {
     return components.find(component => component.id === selectedComponentId);
   }, [components, selectedComponentId]);
 
-  // Transform projects for navigation component
-  const transformedProjects = useMemo(() => {
-    return filteredProjects.map(project => ({
-      id: project.id,
-      name: project.name,
-      description: project.description,
-      factoryId: project.factory_id,
-      startDate: project.start_date || '',
-      endDate: project.end_date || '',
-      deadline: project.deadline || '',
-      status: project.status,
-      priority: project.priority,
-      budget: project.budget || 0,
-      components: selectedProjectId === project.id ? components.map(comp => ({
-        id: comp.id,
-        name: comp.name,
-        description: comp.description || '',
-        startDate: comp.start_date || '',
-        endDate: comp.end_date || '',
-        deadline: comp.deadline || '',
-        status: comp.status,
-        progress: 0,
-        budget: comp.budget || 0,
-        totalCost: comp.budget || 0,
-      })) : [],
-      progress: 0,
-      totalCost: 0,
-      timeElapsed: 0,
-    }));
-  }, [filteredProjects, components, selectedProjectId]);
-
-  // Transform selected project for navigation
-  const transformedSelectedProject = useMemo(() => {
-    if (!selectedProject) return undefined;
-    return {
-      id: selectedProject.id,
-      name: selectedProject.name,
-      description: selectedProject.description,
-      factoryId: selectedProject.factory_id,
-      startDate: selectedProject.start_date || '',
-      endDate: selectedProject.end_date || '',
-      deadline: selectedProject.deadline || '',
-      status: selectedProject.status,
-      priority: selectedProject.priority,
-      budget: selectedProject.budget || 0,
-      components: components.map(comp => ({
-        id: comp.id,
-        name: comp.name,
-        description: comp.description || '',
-        startDate: comp.start_date || '',
-        endDate: comp.end_date || '',
-        deadline: comp.deadline || '',
-        status: comp.status,
-        progress: 0,
-        budget: comp.budget || 0,
-        totalCost: comp.budget || 0,
-      })),
-      progress: 0,
-      totalCost: 0,
-      timeElapsed: 0,
-    };
-  }, [selectedProject, components]);
+  // No transformation needed - use actual types directly
 
   // Load factories on component mount
   useEffect(() => {
@@ -310,8 +254,8 @@ const ProjectsPage: React.FC = () => {
               selectedFactoryId={selectedFactoryId}
               selectedProjectId={selectedProjectId}
               selectedComponentId={selectedComponentId}
-              filteredProjects={transformedProjects}
-              selectedProject={transformedSelectedProject}
+              filteredProjects={filteredProjects}
+              selectedProject={selectedProject}
               isProjectInfoExpanded={isProjectInfoExpanded}
               isComponentInfoExpanded={isComponentInfoExpanded}
               loadingProjects={loadingProjects}
@@ -326,6 +270,10 @@ const ProjectsPage: React.FC = () => {
               onComponentCreated={handleComponentCreated}
               onProjectUpdated={handleProjectUpdated}
               onComponentUpdated={handleComponentUpdated}
+              onRefreshProjectTotalCost={(refreshFn) => {
+                refreshProjectTotalCostRef.current = refreshFn;
+              }}
+              miscCostUpdatedForComponentId={miscCostUpdatedForComponentId}
             />
 
             {/* Middle Panel - Running Orders + Component Parts; Right Panel stays */}
@@ -361,6 +309,13 @@ const ProjectsPage: React.FC = () => {
                     <ProjectComponentMiscCosts
                       projectId={selectedProjectId as number}
                       projectComponentId={selectedComponent.id}
+                      onMiscCostUpdated={() => {
+                        // Refresh project total cost and trigger per-component recompute
+                        refreshProjectTotalCostRef.current?.();
+                        setMiscCostUpdatedForComponentId(selectedComponent.id);
+                        // Reset so subsequent updates retrigger
+                        setTimeout(() => setMiscCostUpdatedForComponentId(null), 0);
+                      }}
                     />
                   </div>
                 </div>

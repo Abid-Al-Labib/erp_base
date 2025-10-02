@@ -92,3 +92,43 @@ export const fetchMetricProjectComponentsByStatus = async (
 
   return count;
 };
+
+
+export const calculateProjectComponentCost = async (projectComponentId: number) => {
+  // 1. Fetch order ids from orders table based on project_component_id
+  const { data: orders, error: ordersError } = await supabase_client
+    .from("orders")
+    .select("id")
+    .eq("project_component_id", projectComponentId);
+
+  if (ordersError) {
+    toast.error("Failed to fetch orders: " + ordersError.message);
+    return null;
+  }
+
+  const orderIds = (orders ?? []).map((order: any) => order.id);
+  if (orderIds.length === 0) {
+    return 0;
+  }
+
+  // 2. Fetch order_parts for those order ids
+  const { data: orderParts, error: orderPartsError } = await supabase_client
+    .from("order_parts")
+    .select("qty, unit_cost")
+    .in("order_id", orderIds);
+
+  if (orderPartsError) {
+    toast.error("Failed to fetch order parts: " + orderPartsError.message);
+    return null;
+  }
+
+  // 3. Calculate total cost
+  let totalCost = 0;
+  (orderParts ?? []).forEach((part: any) => {
+    if (typeof part.qty === "number" && typeof part.unit_cost === "number") {
+      totalCost += part.qty * part.unit_cost;
+    }
+  });
+
+  return totalCost;
+}

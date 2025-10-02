@@ -43,6 +43,7 @@ type Props = {
   projectId: number;
   projectComponentId: number;
   className?: string;
+  onMiscCostUpdated?: () => void;
 };
 
 // ---- centralize copy here ----
@@ -60,6 +61,7 @@ const ProjectComponentMiscCosts: React.FC<Props> = ({
   projectId,
   projectComponentId,
   className,
+  onMiscCostUpdated,
 }) => {
   const [items, setItems] = useState<MiscProjectCost[]>([]);
   const [loading, setLoading] = useState(false);
@@ -151,12 +153,16 @@ const ProjectComponentMiscCosts: React.FC<Props> = ({
       setOpen(false);
       resetForm();
       await load();
+      onMiscCostUpdated?.();
     }
   };
 
   const remove = async (id: number) => {
     const ok = await deleteMiscProjectCost(id);
-    if (ok) await load();
+    if (ok) {
+      await load();
+      onMiscCostUpdated?.();
+    }
   };
 
   return (

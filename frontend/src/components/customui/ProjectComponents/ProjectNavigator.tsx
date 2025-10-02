@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Folder, MoreHorizontal, Edit, Calculator, Calendar, Play, Check, ArrowLeft, Plus, Loader2 } from "lucide-react";
-import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
+import { Factory, Project, ProjectComponent } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
+import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService";
+import { calculateProjectTotalCost } from "@/services/ProjectsService";
 import ComponentNavigator from "./ComponentNavigator";
 import CreateProject from "./CreateProject";
 import BudgetPlanningModal from "./BudgetPlanningModal";
@@ -16,36 +18,7 @@ import StartProjectModal from "./StartProjectModal";
 import CompleteProjectModal from "./CompleteProjectModal";
 import EditProjectModal from "./EditProjectModal";
 
-// Import types for navigation only
-interface ProjectComponent {
-  id: number;
-  name: string;
-  description: string;
-  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
-  progress: number;
-  budget: number;
-  totalCost: number;
-  startDate: string;
-  endDate?: string;
-  deadline: string;
-}
-
-interface Project {
-  id: number;
-  name: string;
-  description: string;
-  factoryId: number;
-  status: 'PLANNING' | 'STARTED' | 'COMPLETED';
-  startDate: string;
-  endDate?: string;
-  deadline: string;
-  progress: number;
-  components: ProjectComponent[];
-  budget: number;
-  totalCost: number;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  timeElapsed: number;
-}
+// Using imported types from @/types
 
 interface ProjectNavigatorProps {
   factories: Factory[];
@@ -64,10 +37,13 @@ interface ProjectNavigatorProps {
   onComponentDeselect: () => void;
   onToggleProjectInfo: () => void;
   onToggleComponentInfo: () => void;
-  onProjectCreated?: (project: ProjectType) => void;
-  onComponentCreated?: (component: ProjectComponentType) => void;
+  onProjectCreated?: (project: Project) => void;
+  onComponentCreated?: (component: ProjectComponent) => void;
   onProjectUpdated?: () => void;
   onComponentUpdated?: () => void;
+  onRefreshProjectTotalCost?: (refreshFn: () => void) => void;
+  // A bumping value indicating which component's misc costs changed
+  miscCostUpdatedForComponentId?: number | null;
 }
 
 const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
@@ -91,6 +67,8 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   onComponentCreated,
   onProjectUpdated,
   onComponentUpdated,
+  onRefreshProjectTotalCost,
+  miscCostUpdatedForComponentId,
 }) => {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = React.useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = React.useState(false);
@@ -98,6 +76,72 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   const [isStartModalOpen, setIsStartModalOpen] = React.useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  
+  // Component state
+  const [components, setComponents] = React.useState<ProjectComponent[]>([]);
+  const [loadingComponents, setLoadingComponents] = React.useState(false);
+  
+  // Project total cost state
+  const [projectTotalCost, setProjectTotalCost] = React.useState<number | null>(null);
+  const [loadingProjectCost, setLoadingProjectCost] = React.useState(false);
+
+  // Load project total cost
+  const loadProjectTotalCost = React.useCallback(async (projectId: number) => {
+    setLoadingProjectCost(true);
+    try {
+      const totalCost = await calculateProjectTotalCost(projectId);
+      setProjectTotalCost(totalCost);
+    } catch (error) {
+      console.error('Error loading project total cost:', error);
+      setProjectTotalCost(null);
+    } finally {
+      setLoadingProjectCost(false);
+    }
+  }, []);
+
+  // Load components for the selected project
+  const loadComponents = React.useCallback(async (projectId: number) => {
+    setLoadingComponents(true);
+    try {
+      const projectComponents = await fetchProjectComponentsByProjectId(projectId);
+      setComponents(projectComponents);
+    } catch (error) {
+      console.error('Error loading components:', error);
+      setComponents([]);
+    } finally {
+      setLoadingComponents(false);
+    }
+  }, []);
+
+  // Load components when a project is selected
+  React.useEffect(() => {
+    if (selectedProjectId) {
+      loadComponents(selectedProjectId);
+    } else {
+      setComponents([]);
+    }
+  }, [selectedProjectId, loadComponents]);
+
+  // Load project total cost when a project is selected
+  React.useEffect(() => {
+    if (selectedProjectId) {
+      loadProjectTotalCost(selectedProjectId);
+    } else {
+      setProjectTotalCost(null);
+    }
+  }, [selectedProjectId, loadProjectTotalCost]);
+
+  // Function to refresh project total cost (can be called from parent)
+  const refreshProjectTotalCost = React.useCallback(() => {
+    if (selectedProjectId) {
+      loadProjectTotalCost(selectedProjectId);
+    }
+  }, [selectedProjectId, loadProjectTotalCost]);
+
+  // Pass refresh function to parent
+  React.useEffect(() => {
+    onRefreshProjectTotalCost?.(refreshProjectTotalCost);
+  }, [onRefreshProjectTotalCost, refreshProjectTotalCost]);
 
   // Styling helpers
   const getProjectStatusColor = (status: Project['status']) => {
@@ -158,13 +202,13 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
 
   // Calculate and format time elapsed for projects
   const getTimeElapsedInfo = (project: Project) => {
-    if (!project.startDate) {
+    if (!project.start_date) {
       return { label: 'Time Elapsed', value: 'Not started' };
     }
 
-    const startDate = new Date(project.startDate);
-    const endDate = project.status === 'COMPLETED' && project.endDate 
-      ? new Date(project.endDate) 
+    const startDate = new Date(project.start_date);
+    const endDate = project.status === 'COMPLETED' && project.end_date 
+      ? new Date(project.end_date) 
       : new Date();
     
     const timeDiff = endDate.getTime() - startDate.getTime();
@@ -182,6 +226,8 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
       };
     }
   };
+
+
 
   return (
     <div className="flex-none min-w-80 max-w-96 w-full lg:w-1/4 h-full">
@@ -315,7 +361,15 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                               </div>
                               <div>
                                 <span className="text-muted-foreground block">Total Cost</span>
-                                <div className="font-semibold text-blue-600">{project.totalCost?formatCurrency(project.totalCost):'TBD'}</div>
+                                <div className="font-semibold text-blue-600">
+                                  {loadingProjectCost ? (
+                                    <span className="text-sm">Calculating...</span>
+                                  ) : projectTotalCost !== null ? (
+                                    projectTotalCost > 0 ? formatCurrency(projectTotalCost) : 'TBD'
+                                  ) : (
+                                    'TBD'
+                                  )}
+                                </div>
                               </div>
                             </div>
 
@@ -323,11 +377,11 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
                                 <span className="text-muted-foreground block">Start Date</span>
-                                <div className="font-medium">{formatDateOnly(project.startDate)}</div>
+                                <div className="font-medium">{formatDateOnly(project.start_date)}</div>
                               </div>
                               <div>
                                 <span className="text-muted-foreground block">End Date</span>
-                                <div className="font-medium">{formatDateOnly(project.endDate)}</div>
+                                <div className="font-medium">{formatDateOnly(project.end_date)}</div>
                               </div>
                             </div>
 
@@ -357,18 +411,18 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                               </div>
                             </div>
 
-                            {/* Components Progress */}
+                            {/* Components Progress - Will be calculated when components are loaded */}
                             <div>
                               <div className="flex items-center justify-between text-sm mb-1">
-                                <span className="text-muted-foreground">Components Completed</span>
+                                <span className="text-muted-foreground">Components Progress</span>
                                 <span className="font-medium text-primary">
-                                  {project.components.filter(c => c.status === 'COMPLETED').length}/{project.components.length}
+                                  N/A
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-primary h-2 rounded-full transition-all duration-300" 
-                                  style={{ width: `${(project.components.filter(c => c.status === 'COMPLETED').length / project.components.length) * 100}%` }}
+                                  style={{ width: '0%' }}
                                 ></div>
                               </div>
                             </div>
@@ -378,7 +432,6 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                   }
                 </div>
               ) : (
-                // Project list fills leftover height and scrolls
                 <div className="space-y-2 flex-1 min-h-0 overflow-auto pr-2 pb-2">
                   {loadingProjects ? (
                     <div className="flex items-center justify-center py-8">
@@ -427,17 +480,42 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
 
           {/* Component Navigator */}
           {selectedProject && (
-            <ComponentNavigator
-              selectedProject={selectedProject}
-              selectedComponentId={selectedComponentId}
-              isComponentInfoExpanded={isComponentInfoExpanded}
-              onComponentSelect={onComponentSelect}
-              onComponentDeselect={onComponentDeselect}
-              onToggleComponentInfo={onToggleComponentInfo}
-              onComponentCreated={onComponentCreated}
-              onComponentUpdated={onComponentUpdated}
-              onProjectUpdated={onProjectUpdated}
-            />
+            <>
+              {loadingComponents ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading components...</span>
+                </div>
+              ) : (
+                <ComponentNavigator
+                  selectedProject={selectedProject}
+                  selectedComponentId={selectedComponentId}
+                  isComponentInfoExpanded={isComponentInfoExpanded}
+                  components={components}
+                  miscCostUpdatedForComponentId={miscCostUpdatedForComponentId}
+                  onComponentSelect={onComponentSelect}
+                  onComponentDeselect={onComponentDeselect}
+                  onToggleComponentInfo={onToggleComponentInfo}
+                  onComponentCreated={(component) => {
+                    // Add the new component to the local state
+                    setComponents(prev => [component, ...prev]);
+                    onComponentCreated?.(component);
+                  }}
+                  onComponentUpdated={() => {
+                    // Reload components when one is updated
+                    if (selectedProjectId) {
+                      loadComponents(selectedProjectId);
+                    }
+                    // Reload project total cost when component costs change
+                    if (selectedProjectId) {
+                      loadProjectTotalCost(selectedProjectId);
+                    }
+                    onComponentUpdated?.();
+                  }}
+                  onProjectUpdated={onProjectUpdated}
+                />
+              )}
+            </>
           )}
 
         </CardContent>
@@ -476,7 +554,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             onClose={() => setIsStartModalOpen(false)}
             projectId={selectedProject.id}
             projectName={selectedProject.name}
-            defaultStartDate={formatDateForInput(selectedProject.startDate)}
+            defaultStartDate={formatDateForInput(selectedProject.start_date)}
             onProjectUpdated={onProjectUpdated}
           />
 
