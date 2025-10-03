@@ -113,6 +113,15 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
     }
   }, []);
 
+
+  const handleProjectUpdatedLocal = async () => {
+    if (selectedProjectId) {
+      await loadComponents(selectedProjectId);       
+    }
+    onProjectUpdated?.();
+  };
+
+
   // Load components when a project is selected
   React.useEffect(() => {
     if (selectedProjectId) {
@@ -512,7 +521,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                     }
                     onComponentUpdated?.();
                   }}
-                  onProjectUpdated={onProjectUpdated}
+                  onProjectUpdated={handleProjectUpdatedLocal}
                 />
               )}
             </>
@@ -538,7 +547,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             onClose={() => setIsBudgetModalOpen(false)}
             projectId={selectedProject.id}
             projectName={selectedProject.name}
-            onProjectUpdated={onProjectUpdated}
+            onProjectUpdated={handleProjectUpdatedLocal}
           />
 
           <DeadlinePlanningModal
@@ -546,7 +555,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             onClose={() => setIsDeadlineModalOpen(false)}
             projectId={selectedProject.id}
             projectName={selectedProject.name}
-            onProjectUpdated={onProjectUpdated}
+            onProjectUpdated={handleProjectUpdatedLocal}
           />
 
           <StartProjectModal
@@ -555,7 +564,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             projectId={selectedProject.id}
             projectName={selectedProject.name}
             defaultStartDate={formatDateForInput(selectedProject.start_date)}
-            onProjectUpdated={onProjectUpdated}
+            onProjectUpdated={handleProjectUpdatedLocal}
           />
 
           <CompleteProjectModal
@@ -563,7 +572,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             onClose={() => setIsCompleteModalOpen(false)}
             projectId={selectedProject.id}
             projectName={selectedProject.name}
-            onProjectUpdated={onProjectUpdated}
+            onProjectUpdated={handleProjectUpdatedLocal}
           />
 
           <EditProjectModal
@@ -573,7 +582,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
             initialName={selectedProject.name}
             initialDescription={selectedProject.description}
             initialPriority={selectedProject.priority}
-            onProjectUpdated={onProjectUpdated}
+            onProjectUpdated={handleProjectUpdatedLocal}
           />
         </>
       )}

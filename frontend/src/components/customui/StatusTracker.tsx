@@ -31,9 +31,11 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
     const merged = getStatusDataForWorkflow(
       allStatuses,
       statusTracker,
-      order.order_workflows.status_sequence
+      order.order_workflows.status_sequence,
+      order.current_status_id
     );
     setMergedStatuses(merged);
+
   };
 
   useEffect(() => {
@@ -58,7 +60,7 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
     return () => {
       supabase_client.removeChannel(channel);
     };
-  }, [order.id]);
+  }, [order]);
 
   const { elapsedDays, totalDaysToCompletion } = getStatusDurations(mergedStatuses);
   const { completedCount, totalCount } = getWorkflowProgress(
@@ -110,6 +112,7 @@ const StatusTracker: React.FC<StatusTrackerProp> = ({ order }) => {
               action_at={status.action_at}
               action_by={status.action_by}
               complete={status.complete}
+              isCurrent={status.isCurrent}
             />
             {index < mergedStatuses.length - 1 && (
               <div className="flex justify-center my-1">

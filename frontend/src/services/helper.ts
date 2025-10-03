@@ -4,33 +4,48 @@ import { ApplicationSettings, OrderedPart, Status, StatusTracker, StatusTrackerI
 export function getStatusDataForWorkflow(
   statuses: Status[],
   statusTracker: StatusTracker[],
-  status_sequence: number[]
+  status_sequence: number[],
+  current_status_id: number
 ) {
-  // Build lookup maps for quick access
+  // Map: status_id -> tracker row (only for displaying action_at/action_by)
   const trackerMap = new Map<number, StatusTracker>();
-  for (const tracker of statusTracker) {
-    trackerMap.set(tracker.status_id, tracker);
-  }
+  for (const t of statusTracker) trackerMap.set(t.status_id, t);
 
+  // Map: status_id -> status name
   const statusMap = new Map<number, string>();
-  for (const status of statuses) {
-    statusMap.set(status.id, status.name);
-  }
+  for (const s of statuses) statusMap.set(s.id, s.name);
 
-  // Final merged list
-  const merged = status_sequence.map((status_id) => {
+  // Index positions in the workflow
+  const idxById = new Map<number, number>(
+    status_sequence.map((id, i) => [id, i])
+  );
+  const currentIdx = idxById.get(current_status_id) ?? -1;
+  const lastIdx = status_sequence.length - 1;
+
+  return status_sequence.map((status_id) => {
+    const seqIdx = idxById.get(status_id) ?? -1;
     const tracker = trackerMap.get(status_id);
 
+    const isPast = currentIdx >= 0 && seqIdx >= 0 && seqIdx < currentIdx;
+    const isCurrent = seqIdx === currentIdx;
+    const isLastCurrent = isCurrent && seqIdx === lastIdx;
+
+    // Completion/Color rules (NO dependency on tracker presence):
+    // - Past steps are complete (green)
+    // - Current step is yellow, unless it's also last -> green
+    // - Future steps are not complete (red)
+    const complete = isPast || isLastCurrent;
+
     return {
-      status: statusMap.get(status_id) || "", // fallback to empty string if name not found
+      status: statusMap.get(status_id) || "",
       action_at: tracker?.action_at || null,
       action_by: tracker?.profiles?.name || null,
-      complete: !!tracker,
+      complete,        // drives green/red
+      isCurrent,       // drives yellow styling when !complete
     };
   });
-
-  return merged;
 }
+
 
 export function getStatusDurations(statuses: StatusTrackerItemProp[]) {
   const completed = statuses.filter((s) => s.complete && s.action_at);

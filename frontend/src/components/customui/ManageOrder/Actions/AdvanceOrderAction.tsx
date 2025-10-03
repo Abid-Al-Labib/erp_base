@@ -44,7 +44,7 @@ const AdvanceOrderDialog: React.FC<AdvanceOrderDialogProps> = ({
       }
 
       await UpdateStatusByID(order.id, next_status_id);
-      await InsertStatusTracker(new Date(), order.id, profile.id, next_status_id);
+      await InsertStatusTracker(new Date(), order.id, profile.id, order.current_status_id);
       
 
 

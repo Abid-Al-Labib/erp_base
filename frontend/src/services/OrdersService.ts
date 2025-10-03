@@ -88,10 +88,12 @@ export const fetchOrders = async ({
   }
 
   if (!showCompleted) {
-    queryBuilder = queryBuilder.neq("current_status_id", 8);
+    queryBuilder = queryBuilder
+      .neq('current_status_id', 8)
+      .neq('current_status_id', 9);
   }
   if (showCompleted) {
-    queryBuilder = queryBuilder.eq("current_status_id", 8);
+    queryBuilder = queryBuilder.in("current_status_id", [8,9]);
   }
 
   if (filters.selectedDate && filters.dateFilterType) {

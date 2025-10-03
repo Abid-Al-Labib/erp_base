@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ExternalLink, MoreHorizontal } from "lucide-react";
+import { ExternalLink, MoreHorizontal, OctagonAlert } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { TableCell, TableRow } from "../ui/table";
@@ -12,126 +12,132 @@ import { convertUtcToBDTime, isManagebleOrder, managePermission } from '@/servic
 import { fetchFactoriesByIds } from '@/services/FactoriesService';
 import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '@/context/AuthContext';
-import { OctagonAlert } from 'lucide-react';
 import { setMachineIsRunningById } from '@/services/MachineServices';
 import { fetchOrderedPartsByOrderID } from '@/services/OrderedPartsService';
 import OrderedPartsPopup from './OrderedPartsPopup';
 
+/* =========================
+   COMPLETED & STATUS COLORS
+   - Only "Pending" is red.
+   - All completed statuses are green.
+   - Everything else keeps prior colors.
+   ========================= */
 
+// Which statuses count as "completed"
+const COMPLETED_STATUSES = new Set<string>([
+  'Parts Received',
+  'Transferred To Machine',
+  'Transferred To Storage',
+  'Transferred To Project',
+  'Transfer Completed',
+]);
+
+// Colors for non-completed statuses
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  'Pending': 'bg-red-200 text-red-900',
+
+  // In-progress steps
+  'Order Sent To Head Office': "bg-orange-100",
+  'Waiting For Quotation': "bg-orange-100",
+  'Budget Released': "bg-orange-100",
+  'Waiting For Purchase': "bg-orange-100",
+  'Purchase Complete': "bg-orange-100",
+  'Parts Sent To Factory': "bg-orange-100",
+};
+
+function getStatusBadgeClass(statusName: string): string {
+  if (COMPLETED_STATUSES.has(statusName)) return 'bg-green-100 text-green-900';
+  if (statusName === 'Pending') return 'bg-red-200 text-red-900';
+  return STATUS_BADGE_STYLES[statusName] ?? 'bg-orange-100 text-orange-900';
+}
 
 interface OrdersTableRowProps {
-  order: Order
+  order: Order;
 }
 
 const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const profile = useAuth().profile;
-  const [orderedParts,setOrderedParts] = useState<OrderedPart[]|null>(null);
+  const [orderedParts, setOrderedParts] = useState<OrderedPart[] | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
   const [orderDisplayText, setOrderDisplayText] = useState<string>("Loading...");
-  
+
   const handleDeleteOrder = async () => {
     try {
-      if (order.order_type == "PFM") {
-          if(order.current_status_id == 1) {
-            if ((await (fetchRunningOrdersByMachineId(order.machine_id))).length == 1) {
-              setMachineIsRunningById(order.machine_id, true)
-              toast.success("Machine is now running")
-            }
+      if (order.order_type === "PFM") {
+        if (order.current_status_id === 1) {
+          if ((await fetchRunningOrdersByMachineId(order.machine_id)).length === 1) {
+            setMachineIsRunningById(order.machine_id, true);
+            toast.success("Machine is now running");
           }
         }
-        await deleteOrderByID(order.id)
-        toast.success("Order successfully deleted")
+      }
+      await deleteOrderByID(order.id);
+      toast.success("Order successfully deleted");
     } catch (error) {
-        toast.error("Failed to delete");
-        
+      toast.error("Failed to delete");
     }
-    setIsDeleteDialogOpen(false)
-  }
+    setIsDeleteDialogOpen(false);
+  };
 
   const handleRowClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
-    // Get the clicked row's bounding rect
     const rowRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    //Get mouse click y coordinates
     const clickX = event.clientX;
-    // Calculate the popup position
-    const popupTop = rowRect.top + window.scrollY - 250; // Position above the row
-    const popupLeft = clickX - 128; // Centered above the row
+    const popupTop = rowRect.top + window.scrollY - 250;
+    const popupLeft = clickX - 128;
 
-    setPopupPosition({
-      top: popupTop,
-      left: popupLeft,
-    });
-
-    setIsPopupOpen(true); // Show the popup
+    setPopupPosition({ top: popupTop, left: popupLeft });
+    setIsPopupOpen(true);
   };
 
   const loadOrderedParts = async () => {
-
-    const order_id = order.id
     try {
-      const ordered_parts = await fetchOrderedPartsByOrderID(order_id);
-      if (ordered_parts) {
-        setOrderedParts(ordered_parts);
-      } else {
-        console.log("Could not fetch ordered parts for this order id")
-        setOrderedParts(null)
-      }
-      
+      const ordered_parts = await fetchOrderedPartsByOrderID(order.id);
+      setOrderedParts(ordered_parts ?? null);
     } catch (error) {
-      console.log(`ERROR - ${error}`)
+      console.log(`ERROR - ${error}`);
+      setOrderedParts(null);
     }
   };
-  
+
   useEffect(() => {
     loadOrderedParts();
-  },[]);
+  }, []);
 
-  // Process order display for all order types in one function
+  // Compute display string
   useEffect(() => {
     const processOrderDisplay = async () => {
       try {
-        // STM Order - Storage to Machine (requires fetching source factory)
         if (order.order_type === "STM" && order.src_factory) {
           setOrderDisplayText("Loading...");
           const factories = await fetchFactoriesByIds([order.src_factory]);
           const sourceFactory = factories.length > 0 ? factories[0] : null;
-          
+
           if (sourceFactory) {
-            setOrderDisplayText(`${sourceFactory.abbreviation} → ${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name || 'N/A'}`);
+            setOrderDisplayText(
+              `${sourceFactory.abbreviation} → ${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name || 'N/A'}`
+            );
           } else {
-            setOrderDisplayText(`Unknown → ${order.factories.abbreviation} - ${order.machines?.name || 'N/A'}`);
+            setOrderDisplayText(
+              `Unknown → ${order.factories.abbreviation} - ${order.machines?.name || 'N/A'}`
+            );
           }
-        }
-        
-        // Regular Machine Order (PFM)
-        else if (order.factory_sections?.name && order.machines?.name) {
+        } else if (order.factory_sections?.name && order.machines?.name) {
           setOrderDisplayText(`${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`);
-        }
-        // Storage Order (PFS) or fallback
-        else if (order.order_type === "PFS") {
+        } else if (order.order_type === "PFS") {
           setOrderDisplayText(`${order.factories.abbreviation} - Storage`);
-        }
-        else if (order.order_type === "PFP") {
-          // Project order
-          if (order.project_id) {
-            setOrderDisplayText(`${order.factories.abbreviation} - Project: ${order.factories.abbreviation}`);
-          } else {
-            setOrderDisplayText(`${order.factories.abbreviation} - Project`);
-          }
-        }
-        else if (order.order_type === "STP") {
-          // Project + Storage order
+        } else if (order.order_type === "PFP") {
+          setOrderDisplayText(`${order.factories.abbreviation} - Project`);
+        } else if (order.order_type === "STP") {
           if (order.src_factory) {
-            setOrderDisplayText(`${order.factories.abbreviation} - Storage to Project: ${order.factories.abbreviation} - Storage`);
+            setOrderDisplayText(`${order.factories.abbreviation} - Storage to Project`);
           } else {
             setOrderDisplayText(`${order.factories.abbreviation} - Project - Storage`);
           }
         }
       } catch (error) {
         console.error("Error processing order display:", error);
-        // Fallback display on error
         if (order.factory_sections?.name && order.machines?.name) {
           setOrderDisplayText(`${order.factories.abbreviation} - ${order.factory_sections?.name} - ${order.machines?.name}`);
         } else {
@@ -141,148 +147,138 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
     };
 
     processOrderDisplay();
-  }, [order.order_type, order.factories.abbreviation, order.factory_sections?.name, order.machines?.name]);
+  }, [order.order_type, order.factories.abbreviation, order.factory_sections?.name, order.machines?.name, order.src_factory]);
 
-  const permissionToManage = managePermission(order.statuses.name, profile?.permission ? profile.permission: "")
-  const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ? profile.permission: "")
-  return  (
+  const permissionToManage = managePermission(order.statuses.name, profile?.permission ?? "");
+  const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ?? "");
+
+  return (
     <>
-  <TableRow onClick={handleRowClick} className={isHighlightedOrder? "bg-red-50": ""}>
-      <TableCell className="font-medium">
+      <TableRow onClick={handleRowClick} className={isHighlightedOrder ? "bg-red-50" : ""}>
+        <TableCell className="font-medium">
+          {order.id}
+        </TableCell>
+        <TableCell className="font-medium hidden md:table-cell">
+          {order.req_num}
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {orderDisplayText}
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {convertUtcToBDTime(order.created_at)}
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {order.profiles.name}
+        </TableCell>
+        <TableCell className="hidden md:table-cell">
+          {order.departments.name}
+        </TableCell>
 
-        {order.id}
-           
-      </TableCell>
-      <TableCell className="font-medium hidden md:table-cell">
-        {order.req_num}
-      </TableCell>
-      <TableCell className="hidden md:table-cell">
-        {orderDisplayText}
-      </TableCell>
-      <TableCell className="hidden md:table-cell">
-        {convertUtcToBDTime(order.created_at)}
-      </TableCell>
-      <TableCell className="hidden md:table-cell">
-        {order.profiles.name}
-      </TableCell>
-      <TableCell className="hidden md:table-cell">
-        {order.departments.name}
-      </TableCell>
-      <TableCell className="table-cell md:hidden">
-        <Dialog>
-          <DialogTrigger><ExternalLink className="hover:cursor-pointer"/></DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Order information</DialogTitle>
-              <DialogDescription>
-              <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Req Number</span>
-                <span> {order.req_num} </span>
-              </li>    
-              <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Order Type</span>
-                <span>{orderDisplayText}</span>
-              </li>              
-              <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Created At</span>
-                <span> {convertUtcToBDTime(order.created_at)} </span>
-              </li>              
-              <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Created by</span>
-                <span>{order.profiles.name}</span>
-              </li>              
-              <li className="flex items-center justify-between">
-                <span className="font-semibold text-muted-foreground">Department</span>
-                <span> {order.departments.name}</span>
-              </li>
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
-      </TableCell>
-      <TableCell>
-      <Badge
-        className={order.statuses.name === "Parts Received" ? "bg-green-100": order.statuses.name === "Pending" ? "bg-red-300": "bg-orange-100"}
-        variant="secondary"
-      >
-        {order.statuses.name}
-      </Badge>
-      </TableCell>
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            {isHighlightedOrder ? (
-              <Button
-                // className="text-indigo-400" // Set static color of the button
-                className="text-yellow-900" // Set static color of the button
+        {/* Compact dialog for mobile */}
+        <TableCell className="table-cell md:hidden">
+          <Dialog>
+            <DialogTrigger><ExternalLink className="hover:cursor-pointer" /></DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Order information</DialogTitle>
+                <DialogDescription>
+                  <li className="flex items-center justify-between">
+                    <span className="font-semibold text-muted-foreground">Req Number</span>
+                    <span> {order.req_num} </span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="font-semibold text-muted-foreground">Order Type</span>
+                    <span>{orderDisplayText}</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="font-semibold text-muted-foreground">Created At</span>
+                    <span> {convertUtcToBDTime(order.created_at)} </span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="font-semibold text-muted-foreground">Created by</span>
+                    <span>{order.profiles.name}</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="font-semibold text-muted-foreground">Department</span>
+                    <span> {order.departments.name}</span>
+                  </li>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        </TableCell>
 
-                aria-haspopup="true"
-                size="icon"
-                variant="ghost">
-                <OctagonAlert>
-                  <span className="sr-only text-red-600 ">Toggle menu</span>
-                </OctagonAlert>
-              </Button>
+        {/* Status badge with centralized color logic */}
+        <TableCell>
+          <Badge className={getStatusBadgeClass(order.statuses.name)} variant="secondary">
+            {order.statuses.name}
+          </Badge>
+        </TableCell>
 
-            ):(
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              {isHighlightedOrder ? (
                 <Button
+                  className="text-yellow-900"
                   aria-haspopup="true"
                   size="icon"
                   variant="ghost"
                 >
+                  <OctagonAlert>
+                    <span className="sr-only text-red-600 ">Toggle menu</span>
+                  </OctagonAlert>
+                </Button>
+              ) : (
+                <Button aria-haspopup="true" size="icon" variant="ghost">
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
-              )
-            }
-            
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link to={`/vieworder/${order.id}`}>
-              <DropdownMenuItem>
-                View
-              </DropdownMenuItem>
-            </Link>
-            {permissionToManage &&
-              <Link to={`/manageorder/${order.id}`}>
-              <DropdownMenuItem>
-                Manage
-              </DropdownMenuItem>
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <Link to={`/vieworder/${order.id}`}>
+                <DropdownMenuItem>View</DropdownMenuItem>
               </Link>
-            }
-            {
-              profile?.permission==='admin' && 
-              <DropdownMenuItem onClick={()=>setIsDeleteDialogOpen(true)}>
-                <span className='hover:text-red-600'>Delete</span>
-              </DropdownMenuItem>
-            }
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-                <DialogTitle className="text-red-600">Delete Order -  <span> ID: {order.id}</span></DialogTitle>
-                <div>
-                  You are about to permanently delete this order.
-                  <br />
-                  Are you sure you want to delete this order?
-                </div>
-                <Button onClick={handleDeleteOrder}>Delete</Button>
-        </DialogContent>
-      </Dialog>
-    </TableRow>
-    {isPopupOpen && (
-      <OrderedPartsPopup
-        orderedParts={orderedParts}
-        onClose={() => setIsPopupOpen(false)}
-        position={popupPosition}
-      />
-    )}
+              {permissionToManage && (
+                <Link to={`/manageorder/${order.id}`}>
+                  <DropdownMenuItem>Manage</DropdownMenuItem>
+                </Link>
+              )}
+              {profile?.permission === 'admin' && (
+                <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
+                  <span className='hover:text-red-600'>Delete</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogTitle className="text-red-600">
+              Delete Order - <span> ID: {order.id}</span>
+            </DialogTitle>
+            <div>
+              You are about to permanently delete this order.
+              <br />
+              Are you sure you want to delete this order?
+            </div>
+            <Button onClick={handleDeleteOrder}>Delete</Button>
+          </DialogContent>
+        </Dialog>
+      </TableRow>
+
+      {isPopupOpen && (
+        <OrderedPartsPopup
+          orderedParts={orderedParts}
+          onClose={() => setIsPopupOpen(false)}
+          position={popupPosition}
+        />
+      )}
     </>
   );
 };
 
 export default OrdersTableRow;
-
-
