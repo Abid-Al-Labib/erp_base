@@ -148,9 +148,9 @@ const App: React.FC = () => {
           <Route
             path="/project"
             element={
-              <PrivateRoute allowedRoles={['admin']}>
-                <ProjectsPage />
-              </PrivateRoute>
+              // <PrivateRoute allowedRoles={['admin']}>
+              <ProjectsPage />
+              // </PrivateRoute>
             }
           />
           <Route

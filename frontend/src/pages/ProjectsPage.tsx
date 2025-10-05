@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import NavigationBar from "@/components/customui/NavigationBar";
 import {
@@ -6,10 +6,7 @@ import {
   FolderOpen,
   Settings
 } from "lucide-react";
-import { fetchFactories } from "@/services/FactoriesService";
-import { fetchProjects } from "@/services/ProjectsService";
-import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService";
-import { Factory, Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
+import { Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
 import ProjectComponentTasks from "@/components/customui/ProjectComponents/ProjectComponentTasks";
 import RunningOrders from "@/components/customui/RunningOrders";
 // NOTE: if your file is named ProjectComponentMiscCosts.tsx, change this import to .../ProjectComponentMiscCosts
@@ -19,9 +16,8 @@ import ProjectNavigator from "@/components/customui/ProjectComponents/ProjectNav
 
 const ProjectsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [factories, setFactories] = useState<Factory[]>([]);
-  const [projects, setProjects] = useState<ProjectType[]>([]);
-  const [components, setComponents] = useState<ProjectComponentType[]>([]);
+  
+  // Only manage selection IDs from URL params
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(() => {
     const factoryParam = searchParams.get('factory');
     return factoryParam ? Number(factoryParam) : undefined;
@@ -34,84 +30,15 @@ const ProjectsPage: React.FC = () => {
     const componentParam = searchParams.get('component');
     return componentParam ? Number(componentParam) : undefined;
   });
-  const [isProjectInfoExpanded, setIsProjectInfoExpanded] = useState(true);
-  const [isComponentInfoExpanded, setIsComponentInfoExpanded] = useState(false);
-  const [loadingProjects, setLoadingProjects] = useState(false);
+  
+  // Store selected objects (received from ProjectNavigator)
+  const [selectedProject, setSelectedProject] = useState<ProjectType | undefined>(undefined);
+  const [selectedComponent, setSelectedComponent] = useState<ProjectComponentType | undefined>(undefined);
   
   // Ref to store the project total cost refresh function
   const refreshProjectTotalCostRef = useRef<(() => void) | null>(null);
   // Track which component's misc costs were updated to trigger per-component recompute
   const [miscCostUpdatedForComponentId, setMiscCostUpdatedForComponentId] = useState<number | null>(null);
-
-  // Filter projects by selected factory
-  const filteredProjects = useMemo(() => {
-    if (!selectedFactoryId) return [];
-    return projects.filter(project => project.factory_id === selectedFactoryId);
-  }, [projects, selectedFactoryId]);
-
-  // Get selected project
-  const selectedProject = useMemo(() => {
-    return filteredProjects.find(project => project.id === selectedProjectId);
-  }, [filteredProjects, selectedProjectId]);
-
-  // Get selected component
-  const selectedComponent = useMemo(() => {
-    return components.find(component => component.id === selectedComponentId);
-  }, [components, selectedComponentId]);
-
-  // No transformation needed - use actual types directly
-
-  // Load factories on component mount
-  useEffect(() => {
-    const loadFactories = async () => {
-      try {
-        const factoriesData = await fetchFactories();
-        setFactories(factoriesData || []);
-      } catch (error) {
-        console.error("Failed to fetch factories:", error);
-      }
-    };
-    loadFactories();
-  }, []);
-
-  // Load projects when factory is selected
-  useEffect(() => {
-    const loadProjects = async () => {
-      if (!selectedFactoryId) {
-        setProjects([]);
-        return;
-      }
-
-      setLoadingProjects(true);
-      try {
-        const { data: projectsData } = await fetchProjects(selectedFactoryId);
-        setProjects(projectsData || []);
-      } catch (error) {
-        console.error("Failed to fetch projects:", error);
-      } finally {
-        setLoadingProjects(false);
-      }
-    };
-    loadProjects();
-  }, [selectedFactoryId]);
-
-  // Load components when project is selected
-  useEffect(() => {
-    const loadComponents = async () => {
-      if (!selectedProjectId) {
-        setComponents([]);
-        return;
-      }
-
-      try {
-        const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
-        setComponents(componentsData || []);
-      } catch (error) {
-        console.error("Failed to fetch components:", error);
-      }
-    };
-    loadComponents();
-  }, [selectedProjectId]);
 
   // Update URL parameters when selections change
   const updateUrlParams = (factory?: number, project?: number, component?: number) => {
@@ -145,101 +72,37 @@ const ProjectsPage: React.FC = () => {
     setSelectedFactoryId(id);
     setSelectedProjectId(undefined);
     setSelectedComponentId(undefined);
+    setSelectedProject(undefined);
+    setSelectedComponent(undefined);
     updateUrlParams(id);
   };
 
-  const handleProjectSelect = (projectId: number) => {
+  const handleProjectSelect = (projectId: number, project: ProjectType) => {
     setSelectedProjectId(projectId);
+    setSelectedProject(project);
     setSelectedComponentId(undefined);
+    setSelectedComponent(undefined);
     updateUrlParams(selectedFactoryId, projectId);
   };
 
-  const handleComponentSelect = (componentId: number) => {
+  const handleComponentSelect = (componentId: number, component: ProjectComponentType) => {
     setSelectedComponentId(componentId);
+    setSelectedComponent(component);
     updateUrlParams(selectedFactoryId, selectedProjectId, componentId);
   };
 
   const handleProjectDeselect = () => {
     setSelectedProjectId(undefined);
+    setSelectedProject(undefined);
     setSelectedComponentId(undefined);
+    setSelectedComponent(undefined);
     updateUrlParams(selectedFactoryId);
   };
 
   const handleComponentDeselect = () => {
     setSelectedComponentId(undefined);
+    setSelectedComponent(undefined);
     updateUrlParams(selectedFactoryId, selectedProjectId);
-  };
-
-  const handleProjectCreated = async (project: ProjectType) => {
-    if (selectedFactoryId) {
-      try {
-        const { data: projectsData } = await fetchProjects(selectedFactoryId);
-        setProjects(projectsData || []);
-      } catch (error) {
-        console.error("Failed to refresh projects:", error);
-      }
-    }
-    setSelectedProjectId(project.id);
-    updateUrlParams(selectedFactoryId, project.id);
-  };
-
-  const handleComponentCreated = async (component: ProjectComponentType) => {
-    if (selectedProjectId) {
-      try {
-        const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
-        setComponents(componentsData || []);
-      } catch (error) {
-        console.error("Failed to refresh components:", error);
-      }
-    }
-    setSelectedComponentId(component.id);
-    updateUrlParams(selectedFactoryId, selectedProjectId, component.id);
-  };
-
-  const handleProjectUpdated = async () => {
-    if (selectedFactoryId) {
-      try {
-        const { data: projectsData } = await fetchProjects(selectedFactoryId);
-        setProjects(projectsData || []);
-      } catch (error) {
-        console.error("Failed to refresh projects:", error);
-      }
-    }
-  };
-
-  const handleComponentUpdated = async () => {
-    // Refresh both projects and components data
-    if (selectedFactoryId) {
-      try {
-        const { data: projectsData } = await fetchProjects(selectedFactoryId);
-        setProjects(projectsData || []);
-      } catch (error) {
-        console.error("Failed to refresh projects:", error);
-      }
-    }
-    
-    if (selectedProjectId) {
-      try {
-        const componentsData = await fetchProjectComponentsByProjectId(selectedProjectId);
-        setComponents(componentsData || []);
-      } catch (error) {
-        console.error("Failed to refresh components:", error);
-      }
-    }
-  };
-
-  const toggleProjectInfo = () => {
-    setIsProjectInfoExpanded(!isProjectInfoExpanded);
-    if (!isProjectInfoExpanded) {
-      setIsComponentInfoExpanded(false);
-    }
-  };
-
-  const toggleComponentInfo = () => {
-    setIsComponentInfoExpanded(!isComponentInfoExpanded);
-    if (!isComponentInfoExpanded) {
-      setIsProjectInfoExpanded(false);
-    }
   };
 
   return (
@@ -250,26 +113,14 @@ const ProjectsPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row gap-4" style={{ height: 'calc(100vh - 100px)' }}>
             {/* Left Panel - Project Navigator */}
             <ProjectNavigator
-              factories={factories}
               selectedFactoryId={selectedFactoryId}
               selectedProjectId={selectedProjectId}
               selectedComponentId={selectedComponentId}
-              filteredProjects={filteredProjects}
-              selectedProject={selectedProject}
-              isProjectInfoExpanded={isProjectInfoExpanded}
-              isComponentInfoExpanded={isComponentInfoExpanded}
-              loadingProjects={loadingProjects}
               onFactorySelect={handleFactorySelect}
               onProjectSelect={handleProjectSelect}
               onProjectDeselect={handleProjectDeselect}
               onComponentSelect={handleComponentSelect}
               onComponentDeselect={handleComponentDeselect}
-              onToggleProjectInfo={toggleProjectInfo}
-              onToggleComponentInfo={toggleComponentInfo}
-              onProjectCreated={handleProjectCreated}
-              onComponentCreated={handleComponentCreated}
-              onProjectUpdated={handleProjectUpdated}
-              onComponentUpdated={handleComponentUpdated}
               onRefreshProjectTotalCost={(refreshFn) => {
                 refreshProjectTotalCostRef.current = refreshFn;
               }}
@@ -333,7 +184,7 @@ const ProjectsPage: React.FC = () => {
               </div>
             )}
 
-            {selectedFactoryId && !selectedProject && (
+            {selectedFactoryId && !selectedProjectId && (
               <div className="flex-1 h-full flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
                   <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -343,7 +194,7 @@ const ProjectsPage: React.FC = () => {
               </div>
             )}
 
-            {selectedProject && !selectedComponent && (
+            {selectedProjectId && !selectedComponentId && (
               <div className="flex-1 h-full flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
                   <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />

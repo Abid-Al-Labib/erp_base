@@ -9,7 +9,8 @@ import { Folder, MoreHorizontal, Edit, Calculator, Calendar, Play, Check, ArrowL
 import { Factory, Project, ProjectComponent } from "@/types";
 import { convertUtcToBDTime } from "@/services/helper";
 import { fetchProjectComponentsByProjectId } from "@/services/ProjectComponentService";
-import { calculateProjectTotalCost } from "@/services/ProjectsService";
+import { calculateProjectTotalCost, fetchProjects } from "@/services/ProjectsService";
+import { fetchFactories } from "@/services/FactoriesService";
 import ComponentNavigator from "./ComponentNavigator";
 import CreateProject from "./CreateProject";
 import BudgetPlanningModal from "./BudgetPlanningModal";
@@ -21,55 +22,32 @@ import EditProjectModal from "./EditProjectModal";
 // Using imported types from @/types
 
 interface ProjectNavigatorProps {
-  factories: Factory[];
   selectedFactoryId: number | undefined;
   selectedProjectId: number | undefined;
   selectedComponentId: number | undefined;
-  filteredProjects: Project[];
-  selectedProject: Project | undefined;
-  isProjectInfoExpanded: boolean;
-  isComponentInfoExpanded: boolean;
-  loadingProjects: boolean;
   onFactorySelect: (factoryId: string) => void;
-  onProjectSelect: (projectId: number) => void;
+  onProjectSelect: (projectId: number, project: Project) => void;
   onProjectDeselect: () => void;
-  onComponentSelect: (componentId: number) => void;
+  onComponentSelect: (componentId: number, component: ProjectComponent) => void;
   onComponentDeselect: () => void;
-  onToggleProjectInfo: () => void;
-  onToggleComponentInfo: () => void;
-  onProjectCreated?: (project: Project) => void;
-  onComponentCreated?: (component: ProjectComponent) => void;
-  onProjectUpdated?: () => void;
-  onComponentUpdated?: () => void;
   onRefreshProjectTotalCost?: (refreshFn: () => void) => void;
   // A bumping value indicating which component's misc costs changed
   miscCostUpdatedForComponentId?: number | null;
 }
 
 const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
-  factories,
   selectedFactoryId,
   selectedProjectId,
   selectedComponentId,
-  filteredProjects,
-  selectedProject,
-  isProjectInfoExpanded: _isProjectInfoExpanded,
-  isComponentInfoExpanded,
-  loadingProjects,
   onFactorySelect,
   onProjectSelect,
   onProjectDeselect,
   onComponentSelect,
   onComponentDeselect,
-  onToggleProjectInfo: _onToggleProjectInfo,
-  onToggleComponentInfo,
-  onProjectCreated,
-  onComponentCreated,
-  onProjectUpdated,
-  onComponentUpdated,
   onRefreshProjectTotalCost,
   miscCostUpdatedForComponentId,
 }) => {
+  // Modal states
   const [isCreateProjectOpen, setIsCreateProjectOpen] = React.useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = React.useState(false);
   const [isDeadlineModalOpen, setIsDeadlineModalOpen] = React.useState(false);
@@ -77,13 +55,64 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
   const [isCompleteModalOpen, setIsCompleteModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   
-  // Component state
+  // Data states - ProjectNavigator now owns all data
+  const [factories, setFactories] = React.useState<Factory[]>([]);
+  const [projects, setProjects] = React.useState<Project[]>([]);
   const [components, setComponents] = React.useState<ProjectComponent[]>([]);
-  const [loadingComponents, setLoadingComponents] = React.useState(false);
   
-  // Project total cost state
-  const [projectTotalCost, setProjectTotalCost] = React.useState<number | null>(null);
+  // Loading states
+  const [loadingProjects, setLoadingProjects] = React.useState(false);
+  const [loadingComponents, setLoadingComponents] = React.useState(false);
   const [loadingProjectCost, setLoadingProjectCost] = React.useState(false);
+  
+  // Cost state
+  const [projectTotalCost, setProjectTotalCost] = React.useState<number | null>(null);
+
+  // Derived values
+  const filteredProjects = React.useMemo(() => {
+    if (!selectedFactoryId) return [];
+    return projects.filter(project => project.factory_id === selectedFactoryId);
+  }, [projects, selectedFactoryId]);
+
+  const selectedProject = React.useMemo(() => {
+    return filteredProjects.find(project => project.id === selectedProjectId);
+  }, [filteredProjects, selectedProjectId]);
+
+  // Load factories on mount
+  React.useEffect(() => {
+    const loadFactoriesData = async () => {
+      try {
+        const factoriesData = await fetchFactories();
+        setFactories(factoriesData || []);
+      } catch (error) {
+        console.error("Failed to fetch factories:", error);
+        setFactories([]);
+      }
+    };
+    loadFactoriesData();
+  }, []);
+
+  // Load projects when factory is selected
+  React.useEffect(() => {
+    const loadProjectsData = async () => {
+      if (!selectedFactoryId) {
+        setProjects([]);
+        return;
+      }
+
+      setLoadingProjects(true);
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        setProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    loadProjectsData();
+  }, [selectedFactoryId]);
 
   // Load project total cost
   const loadProjectTotalCost = React.useCallback(async (projectId: number) => {
@@ -115,10 +144,48 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
 
 
   const handleProjectUpdatedLocal = async () => {
+    // Reload projects and components after project update
+    if (selectedFactoryId) {
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to refresh projects:", error);
+      }
+    }
+    
     if (selectedProjectId) {
       await loadComponents(selectedProjectId);       
     }
-    onProjectUpdated?.();
+  };
+
+  const handleComponentUpdatedLocal = async () => {
+    // Reload components and project cost after component update
+    if (selectedProjectId) {
+      await loadComponents(selectedProjectId);
+      await loadProjectTotalCost(selectedProjectId);
+    }
+  };
+
+  const handleProjectCreatedLocal = async (project: Project) => {
+    // Reload projects list
+    if (selectedFactoryId) {
+      try {
+        const { data: projectsData } = await fetchProjects(selectedFactoryId);
+        setProjects(projectsData || []);
+      } catch (error) {
+        console.error("Failed to refresh projects:", error);
+      }
+    }
+    // Select the new project and pass to parent
+    onProjectSelect(project.id, project);
+  };
+
+  const handleComponentCreatedLocal = async (component: ProjectComponent) => {
+    // Add to local components list
+    setComponents(prev => [component, ...prev]);
+    // Select the new component and pass to parent
+    onComponentSelect(component.id, component);
   };
 
 
@@ -277,6 +344,8 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                     {selectedProject ? ` ${selectedProject.name}` : 'Project'}
                   </h2>
                   <div className="flex items-center gap-1 flex-none">
+                    {!selectedProject && (
+                      <>
                     {/* Always allow creating a project when a factory is selected */}
                     <Button 
                       variant="ghost"
@@ -288,6 +357,8 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
+                    </>
+                    )}
 
                     {selectedProject && (
                       <>
@@ -339,6 +410,17 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsCreateProjectOpen(true)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500" 
+                          title="Add project"
+                          disabled={!selectedFactoryId}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                         
                       </>
                     )}
@@ -471,7 +553,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                       <div 
                         key={project.id} 
                         className="p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:bg-gray-50 border-gray-200"
-                        onClick={() => onProjectSelect(project.id)}
+                        onClick={() => onProjectSelect(project.id, project)}
                       >
                         <h4 className="font-medium text-base mb-2">
                           {project.name}
@@ -499,28 +581,17 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
                 <ComponentNavigator
                   selectedProject={selectedProject}
                   selectedComponentId={selectedComponentId}
-                  isComponentInfoExpanded={isComponentInfoExpanded}
                   components={components}
                   miscCostUpdatedForComponentId={miscCostUpdatedForComponentId}
-                  onComponentSelect={onComponentSelect}
+                  onComponentSelect={(componentId) => {
+                    const component = components.find(c => c.id === componentId);
+                    if (component) {
+                      onComponentSelect(componentId, component);
+                    }
+                  }}
                   onComponentDeselect={onComponentDeselect}
-                  onToggleComponentInfo={onToggleComponentInfo}
-                  onComponentCreated={(component) => {
-                    // Add the new component to the local state
-                    setComponents(prev => [component, ...prev]);
-                    onComponentCreated?.(component);
-                  }}
-                  onComponentUpdated={() => {
-                    // Reload components when one is updated
-                    if (selectedProjectId) {
-                      loadComponents(selectedProjectId);
-                    }
-                    // Reload project total cost when component costs change
-                    if (selectedProjectId) {
-                      loadProjectTotalCost(selectedProjectId);
-                    }
-                    onComponentUpdated?.();
-                  }}
+                  onComponentCreated={handleComponentCreatedLocal}
+                  onComponentUpdated={handleComponentUpdatedLocal}
                   onProjectUpdated={handleProjectUpdatedLocal}
                 />
               )}
@@ -536,7 +607,7 @@ const ProjectNavigator: React.FC<ProjectNavigatorProps> = ({
           isOpen={isCreateProjectOpen}
           onClose={() => setIsCreateProjectOpen(false)}
           factoryId={selectedFactoryId}
-          onProjectCreated={onProjectCreated}
+          onProjectCreated={handleProjectCreatedLocal}
         />
       )}
 

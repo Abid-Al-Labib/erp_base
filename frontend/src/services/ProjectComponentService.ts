@@ -94,6 +94,7 @@ export const fetchMetricProjectComponentsByStatus = async (
 };
 
 
+// Calculate only order costs for a project component (no misc expenses)
 export const calculateProjectComponentCost = async (projectComponentId: number) => {
   // 1. Fetch order ids from orders table based on project_component_id
   const { data: orders, error: ordersError } = await supabase_client
@@ -131,4 +132,23 @@ export const calculateProjectComponentCost = async (projectComponentId: number) 
   });
 
   return totalCost;
+}
+
+// Calculate total cost for a project component (order costs + misc expenses)
+export const calculateProjectComponentTotalCost = async (projectComponentId: number): Promise<number> => {
+  try {
+    // 1. Get order costs
+    const orderCost = await calculateProjectComponentCost(projectComponentId);
+    
+    // 2. Get misc expenses for this component
+    const { fetchMiscProjectCosts } = await import("./MiscellaneousProjectCostServices");
+    const miscCosts = await fetchMiscProjectCosts(undefined, projectComponentId);
+    const miscExpenses = miscCosts.reduce((total, cost) => total + (cost.amount || 0), 0);
+    
+    // 3. Return total
+    return (orderCost || 0) + miscExpenses;
+  } catch (error) {
+    console.error("Error calculating project component total cost:", error);
+    return 0;
+  }
 }

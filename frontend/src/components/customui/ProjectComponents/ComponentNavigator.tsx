@@ -8,19 +8,16 @@ import CreateProjectComponent from "./CreateProjectComponent";
 import EditComponentModal from "./EditComponentModal";
 import StartComponentModal from "./StartComponentModal";
 import CompleteComponentModal from "./CompleteComponentModal";
-import { calculateProjectComponentCost } from "@/services/ProjectComponentService";
-import { fetchMiscProjectCosts } from "@/services/MiscellaneousProjectCostServices";
+import { calculateProjectComponentTotalCost } from "@/services/ProjectComponentService";
 
 interface ComponentNavigatorProps {
   selectedProject: Project | undefined;
   selectedComponentId: number | undefined;
-  isComponentInfoExpanded: boolean;
   components: ProjectComponent[];
   // When supplemental expenses change for a component, this prop will carry its id
   miscCostUpdatedForComponentId?: number | null;
   onComponentSelect: (componentId: number) => void;
   onComponentDeselect: () => void;
-  onToggleComponentInfo: () => void;
   onComponentCreated?: (component: ProjectComponent) => void;
   onComponentUpdated?: () => void;
   onProjectUpdated?: () => void;
@@ -29,12 +26,10 @@ interface ComponentNavigatorProps {
 const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   selectedProject,
   selectedComponentId,
-  isComponentInfoExpanded: _isComponentInfoExpanded,
   components,
   miscCostUpdatedForComponentId,
   onComponentSelect,
   onComponentDeselect,
-  onToggleComponentInfo: _onToggleComponentInfo,
   onComponentCreated,
   onComponentUpdated,
   onProjectUpdated,
@@ -46,9 +41,8 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   const [isStartModalOpen, setIsStartModalOpen] = React.useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = React.useState(false);
 
-  // Component costs state
-  const [componentCosts, setComponentCosts] = React.useState<Record<number, number | null>>({});
-  const [supplementalExpenses, setSupplementalExpenses] = React.useState<Record<number, number | null>>({});
+  // Component total costs state (orders + misc expenses)
+  const [componentCosts, setComponentCosts] = React.useState<Record<number, number>>({});
   const [loadingCosts, setLoadingCosts] = React.useState<Record<number, boolean>>({});
 
   // Get selected component
@@ -56,30 +50,17 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
     (component) => component.id === selectedComponentId
   );
 
-  // Calculate costs for a component (orders and supplemental expenses)
+  // Calculate total cost for a component (orders + misc expenses)
   const calculateComponentCost = React.useCallback(async (componentId: number) => {
     if (loadingCosts[componentId]) return; // Already loading
     
     setLoadingCosts(prev => ({ ...prev, [componentId]: true }));
     try {
-      // Calculate both order costs and supplemental expenses in parallel
-      const [orderCost, miscCosts] = await Promise.all([
-        calculateProjectComponentCost(componentId),
-        fetchMiscProjectCosts(undefined, componentId)
-      ]);
-      
-      // Calculate total supplemental expenses
-      const totalSupplementalExpenses = miscCosts.reduce((total, cost) => {
-        return total + (cost.amount || 0);
-      }, 0);
-      
-      // Store both values
-      setComponentCosts(prev => ({ ...prev, [componentId]: orderCost }));
-      setSupplementalExpenses(prev => ({ ...prev, [componentId]: totalSupplementalExpenses }));
+      const totalCost = await calculateProjectComponentTotalCost(componentId);
+      setComponentCosts(prev => ({ ...prev, [componentId]: totalCost }));
     } catch (error) {
       console.error('Error calculating component cost:', error);
-      setComponentCosts(prev => ({ ...prev, [componentId]: null }));
-      setSupplementalExpenses(prev => ({ ...prev, [componentId]: null }));
+      setComponentCosts(prev => ({ ...prev, [componentId]: 0 }));
     } finally {
       setLoadingCosts(prev => ({ ...prev, [componentId]: false }));
     }
@@ -89,12 +70,12 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
   React.useEffect(() => {
     if (components && components.length > 0) {
       components.forEach(component => {
-        if ((!(component.id in componentCosts) || !(component.id in supplementalExpenses)) && !loadingCosts[component.id]) {
+        if (!(component.id in componentCosts) && !loadingCosts[component.id]) {
           calculateComponentCost(component.id);
         }
       });
     }
-  }, [components, componentCosts, supplementalExpenses, loadingCosts, calculateComponentCost]);
+  }, [components, componentCosts, loadingCosts, calculateComponentCost]);
 
   // Recalculate a single component's costs when its supplemental expenses were updated
   React.useEffect(() => {
@@ -252,13 +233,8 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                       <div className="font-semibold text-blue-600">
                         {selectedComponent && loadingCosts[selectedComponent.id] ? (
                           <span className="text-sm">Calculating...</span>
-                        ) : selectedComponent && componentCosts[selectedComponent.id] !== undefined && supplementalExpenses[selectedComponent.id] !== undefined ? (
-                          (() => {
-                            const orderCost = componentCosts[selectedComponent.id] || 0;
-                            const suppExpenses = supplementalExpenses[selectedComponent.id] || 0;
-                            const totalCost = orderCost + suppExpenses;
-                            return totalCost > 0 ? formatCurrency(totalCost) : 'TBD';
-                          })()
+                        ) : selectedComponent && componentCosts[selectedComponent.id] !== undefined ? (
+                          componentCosts[selectedComponent.id] > 0 ? formatCurrency(componentCosts[selectedComponent.id]) : 'TBD'
                         ) : (
                           'TBD'
                         )}
@@ -320,13 +296,8 @@ const ComponentNavigator: React.FC<ComponentNavigatorProps> = ({
                   <div className="text-sm text-muted-foreground ml-2">
                     {loadingCosts[component.id] ? (
                       <span className="text-xs">Calculating...</span>
-                    ) : componentCosts[component.id] !== undefined && supplementalExpenses[component.id] !== undefined ? (
-                      (() => {
-                        const orderCost = componentCosts[component.id] || 0;
-                        const suppExpenses = supplementalExpenses[component.id] || 0;
-                        const totalCost = orderCost + suppExpenses;
-                        return totalCost > 0 ? formatCurrency(totalCost) : 'TBD';
-                      })()
+                    ) : componentCosts[component.id] !== undefined ? (
+                      componentCosts[component.id] > 0 ? formatCurrency(componentCosts[component.id]) : 'TBD'
                     ) : (
                       'TBD'
                     )}

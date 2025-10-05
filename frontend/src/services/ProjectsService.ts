@@ -1,8 +1,7 @@
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 import { Project } from "@/types";
-import { calculateProjectComponentCost } from "./ProjectComponentService";
-import { fetchMiscProjectCosts } from "./MiscellaneousProjectCostServices";
+import { calculateProjectComponentTotalCost } from "./ProjectComponentService";
 
 // Fetch all projects with optional filtering, pagination, and sorting
 export const fetchProjects = async (
@@ -179,40 +178,8 @@ export const fetchMetricProjectsByPriorityCount = async (
 };
 
 
-export const calculateTotalProjectCost = async (projectId: number) => {
-  // Calculate total project cost by summing the cost of each project component
-  // Uses calculateProjectComponentCost from ProjectComponentService
-
-  // Fetch all project components for the given project
-  const { data: components, error } = await supabase_client
-    .from("project_components")
-    .select("id")
-    .eq("project_id", projectId);
-
-  if (error) {
-    console.error("Error fetching project components:", error.message);
-    toast.error("Failed to fetch project components");
-    return null;
-  }
-
-  if (!components || components.length === 0) {
-    return 0;
-  }
-
-  // Calculate cost for each component and sum
-  let totalCost = 0;
-  for (const component of components) {
-    const cost = await calculateProjectComponentCost(component.id);
-    if (typeof cost === "number") {
-      totalCost += cost;
-    }
-  }
-
-  return totalCost;
-}
-
-// Calculate total project cost including orders and misc expenses
-export const calculateProjectTotalCost = async (projectId: number) => {
+// Calculate total project cost (sum of all component totals: orders + misc expenses)
+export const calculateProjectTotalCost = async (projectId: number): Promise<number> => {
   try {
     // 1. Get all project components for this project
     const { data: components, error: componentsError } = await supabase_client
@@ -229,52 +196,13 @@ export const calculateProjectTotalCost = async (projectId: number) => {
       return 0;
     }
 
-    const componentIds = components.map(comp => comp.id);
-
-    // 2. Get all order IDs for these components
-    const { data: orders, error: ordersError } = await supabase_client
-      .from("orders")
-      .select("id")
-      .in("project_component_id", componentIds);
-
-    if (ordersError) {
-      console.error("Error fetching orders:", ordersError.message);
-      return 0;
+    let projectTotalCost = 0;
+    for (const component of components) {
+      const componentTotal = await calculateProjectComponentTotalCost(component.id);
+      projectTotalCost += componentTotal;
     }
 
-    let totalOrderCost = 0;
-    if (orders && orders.length > 0) {
-      const orderIds = orders.map(order => order.id);
-
-      // 3. Get all order parts for these orders
-      const { data: orderParts, error: orderPartsError } = await supabase_client
-        .from("order_parts")
-        .select("qty, unit_cost")
-        .in("order_id", orderIds);
-
-      if (orderPartsError) {
-        console.error("Error fetching order parts:", orderPartsError.message);
-        return 0;
-      }
-
-      // 4. Calculate total order cost
-      if (orderParts) {
-        orderParts.forEach((part: any) => {
-          if (typeof part.qty === "number" && typeof part.unit_cost === "number") {
-            totalOrderCost += part.qty * part.unit_cost;
-          }
-        });
-      }
-    }
-
-    // 5. Get all misc expenses for this project
-    const miscCosts = await fetchMiscProjectCosts(projectId);
-    const totalMiscExpenses = miscCosts.reduce((total, cost) => {
-      return total + (cost.amount || 0);
-    }, 0);
-
-    // 6. Return total cost (orders + misc expenses)
-    return totalOrderCost + totalMiscExpenses;
+    return projectTotalCost;
 
   } catch (error) {
     console.error("Error calculating project total cost:", error);
