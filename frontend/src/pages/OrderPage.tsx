@@ -31,7 +31,8 @@ const OrderPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [createOrderEnabled,setCreateOrderEnabled] = useState<boolean>(false)
     const [showCompleted, setShowCompleted] = useState<boolean>(searchParams.has("showCompleted"));
-
+    const { hasFeatureAccess } = useAuth();
+    const canCreateOrder = hasFeatureAccess("order_create"); 
     const [currentPage, setCurrentPage] = useState(
         searchParams.get("page") ? Number(searchParams.get("page")) : 1
     );
@@ -197,9 +198,9 @@ const OrderPage = () => {
                                 </div>
 
                                 {/* Create Order Button - Positioned on the right */}
-                                { (profile?.permission==='department' || profile?.permission==="admin" || profile?.permission==='finance') &&
+                                { canCreateOrder &&
 
-                                    <Button 
+                                    (<Button 
                                     size="sm" 
                                     className="h-8 gap-1 bg-blue-950"
                                     disabled={!createOrderEnabled}
@@ -209,7 +210,7 @@ const OrderPage = () => {
                                         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                             Create New Order
                                         </span>
-                                    </Button>
+                                    </Button>)
 
                                 }
                             </div>

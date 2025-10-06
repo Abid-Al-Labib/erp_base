@@ -39,6 +39,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_control: {
+        Row: {
+          id: number
+          role: Database["public"]["Enums"]["access_roles"]
+          target: string
+          type: Database["public"]["Enums"]["access_types"]
+        }
+        Insert: {
+          id?: number
+          role: Database["public"]["Enums"]["access_roles"]
+          target: string
+          type: Database["public"]["Enums"]["access_types"]
+        }
+        Update: {
+          id?: number
+          role?: Database["public"]["Enums"]["access_roles"]
+          target?: string
+          type?: Database["public"]["Enums"]["access_types"]
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           enabled: boolean
@@ -56,53 +77,6 @@ export type Database = {
           name?: string
         }
         Relationships: []
-      }
-      assigned_team: {
-        Row: {
-          assigned_at: string | null
-          cost: number | null
-          created_at: string
-          description: string
-          id: number
-          name: string
-          notes: string | null
-          project_component_id: number
-          time_spent: number | null
-          time_unit: string | null
-        }
-        Insert: {
-          assigned_at?: string | null
-          cost?: number | null
-          created_at?: string
-          description: string
-          id?: number
-          name: string
-          notes?: string | null
-          project_component_id: number
-          time_spent?: number | null
-          time_unit?: string | null
-        }
-        Update: {
-          assigned_at?: string | null
-          cost?: number | null
-          created_at?: string
-          description?: string
-          id?: number
-          name?: string
-          notes?: string | null
-          project_component_id?: number
-          time_spent?: number | null
-          time_unit?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assigned_team_project_component_id_fkey"
-            columns: ["project_component_id"]
-            isOneToOne: false
-            referencedRelation: "project_components"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       damaged_parts: {
         Row: {
@@ -812,8 +786,7 @@ export type Database = {
           email: string
           id: number
           name: string
-          password: string
-          permission: string
+          permission: Database["public"]["Enums"]["access_roles"]
           position: string
           user_id: string
         }
@@ -821,8 +794,7 @@ export type Database = {
           email: string
           id?: number
           name: string
-          password: string
-          permission: string
+          permission: Database["public"]["Enums"]["access_roles"]
           position: string
           user_id?: string
         }
@@ -830,8 +802,7 @@ export type Database = {
           email?: string
           id?: number
           name?: string
-          password?: string
-          permission?: string
+          permission?: Database["public"]["Enums"]["access_roles"]
           position?: string
           user_id?: string
         }
@@ -1139,6 +1110,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      access_roles: "owner" | "finance" | "ground-team" | "ground-team-manager"
+      access_types: "page" | "manage_order" | "feature"
       project_priotity: "LOW" | "MEDIUM" | "HIGH"
       project_status: "PLANNING" | "STARTED" | "COMPLETED"
       unstabling_effects: "INACTIVE" | "DEFECTIVE" | "LESS"
@@ -1272,6 +1245,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      access_roles: ["owner", "finance", "ground-team", "ground-team-manager"],
+      access_types: ["page", "manage_order", "feature"],
       project_priotity: ["LOW", "MEDIUM", "HIGH"],
       project_status: ["PLANNING", "STARTED", "COMPLETED"],
       unstabling_effects: ["INACTIVE", "DEFECTIVE", "LESS"],

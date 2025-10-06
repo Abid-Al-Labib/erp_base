@@ -62,6 +62,8 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
   const [orderDisplayText, setOrderDisplayText] = useState<string>("Loading...");
+  const {hasFeatureAccess, canAccessManageOrder} = useAuth()
+  const canDeleteOrder = hasFeatureAccess('order_delete')
 
   const handleDeleteOrder = async () => {
     try {
@@ -149,7 +151,8 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
     processOrderDisplay();
   }, [order.order_type, order.factories.abbreviation, order.factory_sections?.name, order.machines?.name, order.src_factory]);
 
-  const permissionToManage = managePermission(order.statuses.name, profile?.permission ?? "");
+  // const permissionToManage = managePermission(order.statuses.name, profile?.permission ?? "");
+  const permissionToManage = canAccessManageOrder(order.statuses.id)
   const isHighlightedOrder = isManagebleOrder(order.statuses.name, profile?.permission ?? "");
 
   return (
@@ -246,7 +249,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order }) => {
                   <DropdownMenuItem>Manage</DropdownMenuItem>
                 </Link>
               )}
-              {profile?.permission === 'admin' && (
+              {canDeleteOrder && (
                 <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
                   <span className='hover:text-red-600'>Delete</span>
                 </DropdownMenuItem>

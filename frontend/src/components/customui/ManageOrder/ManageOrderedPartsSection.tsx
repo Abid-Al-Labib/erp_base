@@ -30,6 +30,8 @@ interface ManageOrderedPartsSectionProp {
 
 const ManageOrderedPartsSection:React.FC<ManageOrderedPartsSectionProp> = ({order, parts}) => {
   const profile = useAuth().profile
+  const { hasFeatureAccess } = useAuth();
+  const canSeeFinance = hasFeatureAccess("finance_visibility");
   const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingTable, setLoadingTable] = useState(true);
   const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
@@ -271,17 +273,17 @@ const handleOrderManagement = async () => {
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
             <TableHead className="whitespace-nowrap">Current Storage Qty</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
             <TableHead className="whitespace-nowrap">Last Change Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
@@ -302,7 +304,7 @@ const handleOrderManagement = async () => {
               order={order}
               orderedPartInfo={orderedPart}/>
             ))}
-              {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
+              {canSeeFinance && ( <TableRow>
                 <TableCell className="font-bold">Total:</TableCell>
                 <TableCell className="font-bold">{totalCost}</TableCell>
               </TableRow>

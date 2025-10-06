@@ -1,29 +1,25 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import PartsPage from './pages/PartsPage';
-import EditPartPage from './pages/EditPartPage';
-import OrderPage from './pages/OrderPage';
-import CreateOrderPage from './pages/CreateOrderPage';
-import ViewOrderPage from './pages/ViewOrderPage';
-import ManageOrderPage from './pages/ManageOrderPage';
-import ViewPartPage from './pages/ViewPartPage';
-import AddPartPage from './pages/AddPartPage';
-import StoragePage from './pages/StoragePage';
-import MachinePage from './pages/MachinePage';
-import ProjectsPage from './pages/ProjectsPage';
-import ProfilePage from './pages/ProfilePage';
-import { AuthProvider } from './context/AuthContext';
-import PrivateRoute from './components/customui/routing/PrivateRouting'; // Import PrivateRoute component
-import InvoicePage from './pages/InvoicePage';
-import ManagementPage from './pages/ManagementPage';
-import ExpenseLensPage from './pages/ExpenseLensPart';
-import UnauthorizedPage from './pages/UnauthorizedPage';
-import NoProfilePage from './pages/NoProfilePage';
-import DisabledPage from './pages/DisabledPage';
-import BusinessLens from './pages/BusinessLensPage';
-import BusinessLensWizard from './pages/BusinessLensWizardPage';
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import PartsPage from "./pages/PartsPage";
+import OrderPage from "./pages/OrderPage";
+import CreateOrderPage from "./pages/CreateOrderPage";
+import ViewOrderPage from "./pages/ViewOrderPage";
+import ManageOrderPage from "./pages/ManageOrderPage";
+import ViewPartPage from "./pages/ViewPartPage";
+import StoragePage from "./pages/StoragePage";
+import MachinePage from "./pages/MachinePage";
+import ProjectsPage from "./pages/ProjectsPage";
+import { AuthProvider } from "./context/AuthContext";
+import PrivateRoute from "./components/customui/routing/PrivateRouting";
+import InvoicePage from "./pages/InvoicePage";
+import ManagementPage from "./pages/ManagementPage";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+import NoProfilePage from "./pages/NoProfilePage";
+import DisabledPage from "./pages/DisabledPage";
+import BusinessLens from "./pages/BusinessLensPage";
+import BusinessLensWizard from "./pages/BusinessLensWizardPage";
 
 const App: React.FC = () => {
   return (
@@ -31,165 +27,140 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          
-          {/* Protected routes */}
+
+          {/* Protected routes (pageKey maps to access_control.target) */}
           <Route
             path="/"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="home">
                 <HomePage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/parts"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="parts">
                 <PartsPage />
               </PrivateRoute>
             }
           />
-          <Route
-            path="/addpart"
-            element={
-              <PrivateRoute>
-                <AddPartPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/editpart/:id"
-            element={
-              <PrivateRoute>
-                <EditPartPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/expenselens/:id"
-            element={
-              <PrivateRoute>
-                <ExpenseLensPage />
-              </PrivateRoute>
-            }
-          />
+
           <Route
             path="/viewpart/:id"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="view part">
                 <ViewPartPage />
               </PrivateRoute>
             }
           />
-          <Route  
+
+          <Route
             path="/invoice/:id"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="invoice">
                 <InvoicePage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/orders"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="orders">
                 <OrderPage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/management"
             element={
-              <PrivateRoute allowedRoles={['admin']}>
-                <ManagementPage/>
+              <PrivateRoute pageKey="management">
+                <ManagementPage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/createorder"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="create order">
                 <CreateOrderPage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/vieworder/:id"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="view order">
                 <ViewOrderPage />
               </PrivateRoute>
             }
           />
+
+          {/* You can later add an async canAccess here to enforce status-based access too */}
           <Route
             path="/manageorder/:id"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="manage order">
                 <ManageOrderPage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/storage"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="storage">
                 <StoragePage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/machine"
             element={
-              <PrivateRoute>
+              <PrivateRoute pageKey="machine">
                 <MachinePage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/project"
             element={
-              <PrivateRoute allowedRoles={['admin']}>
+              <PrivateRoute pageKey="project">
                 <ProjectsPage />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/businessLens"
             element={
-              <PrivateRoute allowedRoles={['admin']}>
+              <PrivateRoute pageKey="businesslens">
                 <BusinessLens />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/businessLens/:templateId"
             element={
-              <PrivateRoute allowedRoles={['admin']}>
+              <PrivateRoute pageKey="businesslens reports">
                 <BusinessLensWizard />
               </PrivateRoute>
             }
           />
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute>
-                <ProfilePage />
-              </PrivateRoute>
-            }
-          />
-          <Route 
-            path="/unauthorized" 
-            element={<UnauthorizedPage />} 
-          />
-          <Route 
-            path="/profileNotFound" 
-            element={<NoProfilePage />} 
-          />
-          <Route 
-            path="/PageDisabled" 
-            element={<DisabledPage />} 
-          />
-        </Routes>  
+
+          {/* Public/system pages */}
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route path="/profileNotFound" element={<NoProfilePage />} />
+          <Route path="/PageDisabled" element={<DisabledPage />} />
+        </Routes>
       </Router>
     </AuthProvider>
   );

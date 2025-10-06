@@ -10,6 +10,9 @@ import MachinePartsManagementCard from "./MachinePartsManagementCard";
 import AddUserCard from "./AddUserCard";
 import ManageUserManagementCard from "./ManageUserManagementCard";
 import AppSettingsManagementCard from "./AppSettingsManagementCard";
+import PageAccessControlCard from "./PageAccessControlCard";
+import ManageOrderAccessControlCard from "./ManageOrderAccessControlCard";
+import FeatureAccessControlCard from "./FeatureAccessControlCard";
 
 interface ExpandedManagementCardProps {
   type: ManagementType;
@@ -25,7 +28,10 @@ const managementCards: Record<ManagementType, JSX.Element> = {
   departments: <DepartmentManagementCard />,
   addUser: <AddUserCard/>,
   manageUser: <ManageUserManagementCard/>,
-  appSettings: <AppSettingsManagementCard/>
+  appSettings: <AppSettingsManagementCard/>,
+  pageAccessControl: <PageAccessControlCard/>,
+  manageOrderAccessControl: <ManageOrderAccessControlCard/>,
+  featureAccessControl: <FeatureAccessControlCard/>
 };
 
 const ExpandedManagementCard: React.FC<ExpandedManagementCardProps> = ({ type, onClose }) => {

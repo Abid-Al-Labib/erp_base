@@ -79,6 +79,28 @@ const ManagementPage = () => {
           />
         </div>
 
+        <h1 className="text-2xl font-bold">Access Control</h1>
+        <div className="grid  grid-cols-1 lg:grid-cols-3 gap-4">
+          <ManagementCard 
+            icon={<UserPlus />} 
+            title="Page" 
+            subtext="Control who can access a page" 
+            onClick={() => handleExpand("pageAccessControl")} 
+          />
+          <ManagementCard 
+            icon={<UserPlus />} 
+            title="Manage Order Status" 
+            subtext="Control who can manage an order in it's different stages" 
+            onClick={() => handleExpand("manageOrderAccessControl")} 
+          />
+          <ManagementCard 
+            icon={<UserPlus />} 
+            title="Feature's access Control" 
+            subtext="Set access on features" 
+            onClick={() => handleExpand("featureAccessControl")} 
+          />
+        </div>
+
       </div>
 
       {managementType && <ExpandedManagementCard type={managementType} onClose={handleClose} />}

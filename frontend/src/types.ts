@@ -12,7 +12,9 @@ export type InstantAddStoragePart = Tables<"instant_add_storage_part">
 export type InstantAddDamagedPart = Tables<"instant_add_damaged_part">
 export type MiscProjectCost = Tables<"miscellaneous_project_costs">
 export type ProjectComponentTask = Tables<"project_component_tasks">
-
+export type AccessControl = Tables<"access_control">
+export type AccessRole = AccessControl["role"]; 
+export type AccessType = AccessControl["type"];   
 export type StoragePart = {
     id: number;
     qty: number;
@@ -172,7 +174,7 @@ export type Filter = {
     
 };
 
-export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments" | "appSettings" | "addUser" | "manageUser";
+export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments" | "appSettings" | "addUser" | "manageUser" | "pageAccessControl" | "manageOrderAccessControl" | "featureAccessControl";
 
 export interface InputOrder {
     req_num: string,

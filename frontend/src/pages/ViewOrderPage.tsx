@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Order, OrderedPart } from "@/types";
 import { fetchOrderByID } from "@/services/OrdersService";
-import OrderedPartsTable from "@/components/customui/OrderedPartsTable";
 import { supabase_client } from "@/services/SupabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import NavigationBar from "@/components/customui/NavigationBar";
