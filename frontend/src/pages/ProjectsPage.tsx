@@ -6,7 +6,7 @@ import {
   FolderOpen,
   Settings
 } from "lucide-react";
-import { Project as ProjectType, ProjectComponent as ProjectComponentType } from "@/types";
+import { Project, ProjectComponent } from "@/types";
 import ProjectComponentTasks from "@/components/customui/ProjectComponents/ProjectComponentTasks";
 import RunningOrders from "@/components/customui/RunningOrders";
 // NOTE: if your file is named ProjectComponentMiscCosts.tsx, change this import to .../ProjectComponentMiscCosts
@@ -32,8 +32,8 @@ const ProjectsPage: React.FC = () => {
   });
   
   // Store selected objects (received from ProjectNavigator)
-  const [selectedProject, setSelectedProject] = useState<ProjectType | undefined>(undefined);
-  const [selectedComponent, setSelectedComponent] = useState<ProjectComponentType | undefined>(undefined);
+  const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
+  const [selectedComponent, setSelectedComponent] = useState<ProjectComponent | undefined>(undefined);
   
   // Ref to store the project total cost refresh function
   const refreshProjectTotalCostRef = useRef<(() => void) | null>(null);
@@ -77,7 +77,7 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(id);
   };
 
-  const handleProjectSelect = (projectId: number, project: ProjectType) => {
+  const handleProjectSelect = (projectId: number, project: Project) => {
     setSelectedProjectId(projectId);
     setSelectedProject(project);
     setSelectedComponentId(undefined);
@@ -85,7 +85,7 @@ const ProjectsPage: React.FC = () => {
     updateUrlParams(selectedFactoryId, projectId);
   };
 
-  const handleComponentSelect = (componentId: number, component: ProjectComponentType) => {
+  const handleComponentSelect = (componentId: number, component: ProjectComponent) => {
     setSelectedComponentId(componentId);
     setSelectedComponent(component);
     updateUrlParams(selectedFactoryId, selectedProjectId, componentId);
