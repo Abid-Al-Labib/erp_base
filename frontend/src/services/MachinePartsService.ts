@@ -89,6 +89,7 @@ export const updateMachinePartQuantities = async (
   };
 
 
+
 export const increaseMachinePartQty = async (
     machine_id: number,
     part_id: number,
@@ -289,3 +290,50 @@ export const deleteMachinePart = async (machinePartId: number) => {
     toast.success("Machine part deleted successfully!");
     return true;
 };
+
+export const manualAddMachinePart = async (
+    machine_id: number,
+    part_id: number,
+    qty: number,
+    req_qty?: number,
+    defective_qty?: number
+): Promise<{ success: boolean; error?: any }> => {
+    // Check if the machine part already exists
+    const { data: existing, error: fetchError } = await supabase_client
+        .from('machine_parts')
+        .select('id, part_id, machine_id')
+        .eq('machine_id', machine_id)
+        .eq('part_id', part_id)
+        .maybeSingle();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 is "not found" error which is okay
+        toast.error('Error checking for existing machine part: ' + fetchError.message);
+        return { success: false, error: fetchError };
+    }
+
+    if (existing) {
+        toast.error('This part is already present in the machine.');
+        return { success: false, error: 'Part already exists in machine' };
+    }
+    
+    // Insert the new machine part
+    const { error: insertError } = await supabase_client
+        .from('machine_parts')
+        .insert({
+            machine_id,
+            part_id,
+            qty,
+            req_qty: req_qty ?? 0,
+            defective_qty: defective_qty ?? 0
+        });
+
+    if (insertError) {
+        toast.error('Error adding machine part: ' + insertError.message);
+        return { success: false, error: insertError };
+    }
+
+    toast.success('Machine part added successfully!');
+    return { success: true };
+};
+
