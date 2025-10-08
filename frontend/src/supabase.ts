@@ -249,6 +249,68 @@ export type Database = {
           },
         ]
       }
+      instant_add_machine_part: {
+        Row: {
+          added_at: string
+          added_by: number
+          avg_price: number | null
+          factory_id: number
+          id: number
+          note: string | null
+          part_id: number
+          qty: number | null
+        }
+        Insert: {
+          added_at?: string
+          added_by: number
+          avg_price?: number | null
+          factory_id: number
+          id?: number
+          note?: string | null
+          part_id: number
+          qty?: number | null
+        }
+        Update: {
+          added_at?: string
+          added_by?: number
+          avg_price?: number | null
+          factory_id?: number
+          id?: number
+          note?: string | null
+          part_id?: number
+          qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_add_machine_part_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_add_machine_part_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_add_machine_part_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "fullname_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_add_machine_part_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_add_storage_part: {
         Row: {
           added_at: string

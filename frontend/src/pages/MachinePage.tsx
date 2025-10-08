@@ -13,6 +13,7 @@ import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Machine, MachinePart, Part } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const MachinePartsPage = () => {
   // RBAC
-  const { hasFeatureAccess } = useAuth();
+  const { hasFeatureAccess, profile } = useAuth();
   const canMachineInstantAdd = hasFeatureAccess("machine_instant_add");
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -50,6 +51,8 @@ const MachinePartsPage = () => {
   const [selectedPart, setSelectedPart] = useState<Part | undefined>();
   const [addPartCurrentQty, setAddPartCurrentQty] = useState<string>("");
   const [addPartRequiredQty, setAddPartRequiredQty] = useState<string>("");
+  const [addPartAveragePrice, setAddPartAveragePrice] = useState<string>("");
+  const [addPartNote, setAddPartNote] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
   
@@ -365,20 +368,38 @@ const MachinePartsPage = () => {
     setSelectedPart(undefined);
     setAddPartCurrentQty("");
     setAddPartRequiredQty("");
+    setAddPartAveragePrice("");
+    setAddPartNote("");
     setIsAddPartDialogOpen(false);
   };
 
   const handleAddPartToMachine = async () => {
-    if (!selectedPart || !addPartCurrentQty || !selectedMachineId) {
+    if (!profile) {
+      toast.error("Error: could not find profile info");
+      return;
+    }
+
+    if (!selectedPart || !addPartCurrentQty || !selectedMachineId || !selectedFactoryId) {
       toast.error("Please select a part and enter current quantity");
+      return;
+    }
+
+    if (!addPartAveragePrice) {
+      toast.error("Average price is required");
       return;
     }
 
     const currentQtyNum = Number(addPartCurrentQty);
     const requiredQtyNum = Number(addPartRequiredQty);
+    const avgPriceNum = Number(addPartAveragePrice);
 
     if (Number.isNaN(currentQtyNum) || currentQtyNum <= 0) {
       toast.error("Current quantity must be greater than 0");
+      return;
+    }
+
+    if (Number.isNaN(avgPriceNum) || avgPriceNum <= 0) {
+      toast.error("Average price must be greater than 0");
       return;
     }
 
@@ -394,8 +415,12 @@ const MachinePartsPage = () => {
         selectedMachineId,
         selectedPart.id,
         currentQtyNum,
+        selectedFactoryId,
+        profile.id,
+        avgPriceNum,
         requiredQtyNum || 0,
-        0 // defective_qty defaults to 0
+        0, // defective_qty defaults to 0
+        addPartNote || null
       );
       
       // Check if the addition was successful
@@ -626,13 +651,19 @@ const MachinePartsPage = () => {
           if (!open) resetAddPartDialog();
         }}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>Add Part to Machine</DialogTitle>
             <DialogDescription>
-              Add a part to {selectedMachine?.name || "this machine"}
+              Manually add a part to {selectedMachine?.name || "this machine"}. This will be logged for tracking purposes.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-3 text-sm">
+            <strong>Warning:</strong> You are manually adding a part to this machine.
+            <br />
+            Please enter correct parts, quantities, and average prices to avoid inaccuracies.
+          </div>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -689,7 +720,7 @@ const MachinePartsPage = () => {
 
             <div className="grid gap-2">
               <Label htmlFor="required_quantity">
-                Required Quantity (Optional){selectedPart ? ` (${selectedPart.unit || 'units'})` : ''}
+                Required Quantity {selectedPart ? ` (${selectedPart.unit || 'units'})` : ''}
               </Label>
               <Input
                 id="required_quantity"
@@ -698,6 +729,34 @@ const MachinePartsPage = () => {
                 value={addPartRequiredQty}
                 onChange={(e) => setAddPartRequiredQty(e.target.value)}
                 min="0"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="average_price">
+                Average Price Per Unit{selectedPart ? ` (${selectedPart.unit || 'unit'})` : ''}
+              </Label>
+              <Input
+                id="average_price"
+                type="number"
+                placeholder="Enter average price per unit"
+                value={addPartAveragePrice}
+                onChange={(e) => setAddPartAveragePrice(e.target.value)}
+                min="0.01"
+                step="0.01"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="note">
+                Note (Optional)
+              </Label>
+              <Textarea
+                id="note"
+                placeholder="Add any notes about this manual addition"
+                value={addPartNote}
+                onChange={(e) => setAddPartNote(e.target.value)}
+                rows={3}
               />
             </div>
           </div>
@@ -711,7 +770,7 @@ const MachinePartsPage = () => {
             </Button>
             <Button
               onClick={handleAddPartToMachine}
-              disabled={isSubmitting || !selectedPart || !addPartCurrentQty}
+              disabled={isSubmitting || !selectedPart || !addPartCurrentQty || !addPartAveragePrice}
             >
               {isSubmitting ? (
                 <>

@@ -1,6 +1,6 @@
 import toast from "react-hot-toast";
 import { supabase_client } from "./SupabaseClient";
-import { MachinePart } from "@/types";
+import { MachinePart, InstantAddMachinePart } from "@/types";
 
 
 export const fetchMachineParts = async (
@@ -291,12 +291,45 @@ export const deleteMachinePart = async (machinePartId: number) => {
     return true;
 };
 
+export const insertInstantAddMachinePart = async (
+    added_by: number,
+    avg_price: number,
+    factory_id: number,
+    part_id: number,
+    qty: number,
+    note?: string | null
+): Promise<InstantAddMachinePart | null> => {
+    const { data, error } = await supabase_client
+        .from("instant_add_machine_part")
+        .insert({
+            added_by: added_by,
+            avg_price: avg_price,
+            factory_id: factory_id,
+            part_id: part_id,
+            qty: qty,
+            note: note ?? null
+        })
+        .select("*")
+        .single();
+
+    if (error) {
+        toast.error(error.message);
+        return null;
+    }
+
+    return data as InstantAddMachinePart;
+};
+
 export const manualAddMachinePart = async (
     machine_id: number,
     part_id: number,
     qty: number,
+    factory_id: number,
+    added_by: number,
+    avg_price: number,
     req_qty?: number,
-    defective_qty?: number
+    defective_qty?: number,
+    note?: string | null
 ): Promise<{ success: boolean; error?: any }> => {
     // Check if the machine part already exists
     const { data: existing, error: fetchError } = await supabase_client
@@ -317,6 +350,21 @@ export const manualAddMachinePart = async (
         return { success: false, error: 'Part already exists in machine' };
     }
     
+    // Log the instant add to tracking table
+    const instant_add = await insertInstantAddMachinePart(
+        added_by,
+        avg_price,
+        factory_id,
+        part_id,
+        qty,
+        note
+    );
+
+    if (!instant_add) {
+        toast.error("Failed to log instant add, machine part was not added");
+        return { success: false, error: 'Failed to log instant add' };
+    }
+
     // Insert the new machine part
     const { error: insertError } = await supabase_client
         .from('machine_parts')

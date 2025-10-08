@@ -10,6 +10,7 @@ export type ApplicationSettings = Tables<"app_settings">
 export type OrderWorkflow = Tables<"order_workflows">
 export type InstantAddStoragePart = Tables<"instant_add_storage_part">
 export type InstantAddDamagedPart = Tables<"instant_add_damaged_part">
+export type InstantAddMachinePart = Tables<"instant_add_machine_part">
 export type MiscProjectCost = Tables<"miscellaneous_project_costs">
 export type ProjectComponentTask = Tables<"project_component_tasks">
 export type AccessControl = Tables<"access_control">
