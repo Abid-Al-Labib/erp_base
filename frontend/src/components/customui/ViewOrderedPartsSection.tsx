@@ -20,6 +20,8 @@ const ViewOrderedPartsSection:React.FC<ViewOrderedPartsSection> = ({order, order
     const profile = useAuth().profile
     const [totalCost, setTotalCost] = useState<string>(" - ");
     const [partHistoryMap, setPartHistoryMap] = useState<Record<number, PartHistory>>({});
+    const { hasFeatureAccess } = useAuth();
+    const canSeeFinance = hasFeatureAccess("finance_visibility");
     
     useEffect(() => {
         const totalCost = calculateTotalCost(orderPartList);
@@ -59,17 +61,17 @@ const ViewOrderedPartsSection:React.FC<ViewOrderedPartsSection> = ({order, order
             <TableHead className="whitespace-nowrap">Part</TableHead>
             <TableHead className="whitespace-nowrap">In Storage</TableHead>
             <TableHead className="whitespace-nowrap">Taken from storage</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap">Last Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap">Last Vendor</TableHead>
             <TableHead className="whitespace-nowrap">Last Purchase Date</TableHead>
             <TableHead className="whitespace-nowrap">Last Change Date</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Qty</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Unit</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Brand</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Vendor</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Cost/Unit</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Note</TableHead>
-            {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
+            {canSeeFinance && <TableHead className="whitespace-nowrap hidden md:table-cell">Office Note</TableHead>}
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Purchased</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Sent To Factory</TableHead>
             <TableHead className="whitespace-nowrap hidden md:table-cell">Date Received By Factory</TableHead>
@@ -107,7 +109,7 @@ const ViewOrderedPartsSection:React.FC<ViewOrderedPartsSection> = ({order, order
                           {orderedPartInfo.approved_storage_withdrawal ? `${orderedPartInfo.qty_taken_from_storage}` : "No"}
                         </Badge>
                       </TableCell>
-                      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && (
+                      {canSeeFinance && (
                         <TableCell className="whitespace-nowrap">
                           {history?.lastUnitCost ? `BDT ${history.lastUnitCost}` : '-'}
                         </TableCell>
@@ -127,9 +129,9 @@ const ViewOrderedPartsSection:React.FC<ViewOrderedPartsSection> = ({order, order
                       </TableCell>
                       <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
                       <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
-                      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
-                      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
-                      {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
+                      {canSeeFinance && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
+                      {canSeeFinance && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
+                      {canSeeFinance && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
                       <TableCell className="hidden md:table-cell">
                         {
                           orderedPartInfo.note?
@@ -145,7 +147,7 @@ const ViewOrderedPartsSection:React.FC<ViewOrderedPartsSection> = ({order, order
                           ) : '-'
                         }
                       </TableCell>
-                      {(profile?.permission === 'admin' || profile?.permission === 'finance') && <TableCell className="hidden md:table-cell">
+                      {canSeeFinance && <TableCell className="hidden md:table-cell">
                         {
                           orderedPartInfo.office_note?
                           ( <Dialog>
@@ -185,7 +187,7 @@ const ViewOrderedPartsSection:React.FC<ViewOrderedPartsSection> = ({order, order
                   </TableRow>
               );
               })}
-              {(profile?.permission === 'admin' || profile?.permission === 'finance') && ( <TableRow>
+              {canSeeFinance && ( <TableRow>
                 <TableCell className="font-bold">Total:</TableCell>
                 <TableCell className="font-bold">{totalCost}</TableCell>
               </TableRow>

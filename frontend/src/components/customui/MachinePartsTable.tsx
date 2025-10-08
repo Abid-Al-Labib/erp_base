@@ -12,17 +12,19 @@ interface MachinePartsTableProps {
     onRefresh: () => Promise<void>; // Add this line to include the onRefresh prop
     selectedMachine?: Machine;
     loading?: boolean;
+    headerAction?: React.ReactNode; // Add Part button or other actions
 }
 
-const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onApplyFilters, onResetFilters, onRefresh, selectedMachine, loading }) => {
+const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onApplyFilters, onResetFilters, onRefresh, selectedMachine, loading, headerAction }) => {
     // console.log("Machine Parts of", MachineParts);
 
     return (
         <Card>
-            <CardHeader className="flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div>
                         <CardTitle>Machine Parts</CardTitle>
+                        <CardDescription>View and manage Machine Parts</CardDescription>
                     </div>
                     <SearchAndFilter
                         filterConfig={[
@@ -37,7 +39,11 @@ const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onA
                         }}
                     />
                 </div>
-                <CardDescription>A list of all the machine parts in the selected machine</CardDescription>
+                {headerAction && (
+                    <div className="flex items-center gap-4">
+                        {headerAction}
+                    </div>
+                )}
             </CardHeader>
             <CardContent>
                 <Table>

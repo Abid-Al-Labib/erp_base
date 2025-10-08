@@ -1,16 +1,15 @@
 import ToggleBarChart from "@/components/customui/ToggleBarChart";
 import NavigationBar from "@/components/customui/NavigationBar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from '@/context/AuthContext'; 
 import { fetchMetricNotRunningMachines, fetchMetricRunningMachines } from "@/services/MachineServices";
 import { fetchMetricMostFrequentOrderedParts, fetchMetricMostFrequentOrderedPartsCurrentMonth } from "@/services/OrderedPartsService";
 import { fetchManagableOrders, fetchMetricActiveOrders, fetchMetricsHighMaintenanceFactorySections, fetchMetricsHighMaintenanceFactorySectionsCurrentMonth } from "@/services/OrdersService";
-import { FactorySection, Part } from "@/types";
+import {  Part } from "@/types";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import MachineStatusRadialChart from "@/components/customui/MachineStatusRadialChart";
 import OrderStatusRadialChart from "@/components/customui/OrderStatusRadialChart";
-import BusinessLensDisplayCard from "@/components/customui/ExpenseLensDisplayCard";
+import BusinessLensDisplayCard from "@/components/customui/BusinessLensDisplayCard";
 const HomePage = () => {
   const profile = useAuth().profile
   const navigate = useNavigate();

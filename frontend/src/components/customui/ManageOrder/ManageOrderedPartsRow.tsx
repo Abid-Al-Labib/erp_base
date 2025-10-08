@@ -24,7 +24,8 @@ interface ManagerowtemporaryProp{
 }
 
 export const Managerowtemporary:React.FC<ManagerowtemporaryProp> = ({index, order, orderedPartInfo}) => {
-  const profile = useAuth().profile
+  const { hasFeatureAccess } = useAuth();
+  const canSeeFinance = hasFeatureAccess("finance_visibility");
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [lastUnitCost, setLastUnitCost] = useState<number | null>(null);
   const [lastPurchaseDate, setLastPurchaseDate] = useState<string | null>(null); // assuming date is string
@@ -97,15 +98,15 @@ export const Managerowtemporary:React.FC<ManagerowtemporaryProp> = ({index, orde
           </Badge>
         </TableCell>        
         <TableCell className="whitespace-nowrap">{currentStorageQty? currentStorageQty : "-"}</TableCell>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
+        {canSeeFinance && <TableCell className="whitespace-nowrap">{lastUnitCost?`BDT ${lastUnitCost}` : '-'}</TableCell>}
         <TableCell className="whitespace-nowrap">{lastVendor? lastVendor: '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{lastPurchaseDate? convertUtcToBDTime(lastPurchaseDate).split(',')[0]: '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{lastChangeDate? convertUtcToBDTime(lastChangeDate).split(',')[0]: '-'}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.qty}</TableCell>
         <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.parts.unit}</TableCell>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
+        {canSeeFinance && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.brand || '-'}</TableCell>}
+        {canSeeFinance && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.vendor || '-'}</TableCell>}
+        {canSeeFinance && <TableCell className="whitespace-nowrap hidden md:table-cell">{orderedPartInfo.unit_cost || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.note?
@@ -121,7 +122,7 @@ export const Managerowtemporary:React.FC<ManagerowtemporaryProp> = ({index, orde
             ) : '-'
           }
         </TableCell>
-        {(profile?.permission === 'admin' || profile?.permission=== 'finance') && 
+        {canSeeFinance && 
           <TableCell className="hidden md:table-cell">
           {
             orderedPartInfo.office_note?

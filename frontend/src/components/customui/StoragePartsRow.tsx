@@ -8,7 +8,7 @@ import {
 import {
   updateDamagePartQuantity,
   deleteDamagedPart,
-  updateDamagedPartAvg, // <-- add this
+  updateDamagedPartAvg,
 } from "@/services/DamagedGoodsService";
 import {
   Dialog,
@@ -31,6 +31,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
 
 interface StoragePartsRowProps {
   part: StoragePart;
@@ -43,17 +44,20 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
   isDamaged = false,
   onDelete,
 }) => {
+  // Feature gates
+  const { hasFeatureAccess } = useAuth();
+  const canStorageManualUpdate = hasFeatureAccess("storage_manual_updates");
+  const canDamagedPartsManualUpdate = hasFeatureAccess("damaged_parts_manual_updates");
+
   // Delete dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Reset avg price dialog (storage)
-  const [isResetAvgPriceDialogOpen, setIsResetAvgPriceDialogOpen] =
-    useState(false);
+  const [isResetAvgPriceDialogOpen, setIsResetAvgPriceDialogOpen] = useState(false);
   const [isResettingAvg, setIsResettingAvg] = useState(false);
   const [newAvgPrice, setNewAvgPrice] = useState<string>("");
-  const [confirmResetChecked, setConfirmResetChecked] =
-    useState<boolean>(false);
+  const [confirmResetChecked, setConfirmResetChecked] = useState<boolean>(false);
 
   // Update avg price dialog (damaged)
   const [isDamagedAvgDialogOpen, setIsDamagedAvgDialogOpen] = useState(false);
@@ -66,26 +70,22 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
   const [editQty, setEditQty] = useState<string>(String(part.qty));
   const [isSavingQty, setIsSavingQty] = useState(false);
 
-  const openEditDialog = () => {
-    setEditQty(String(part.qty)); // initialize with current qty
+  /* ----------------------------- STORAGE handlers ---------------------------- */
+  const openStorageEditDialog = () => {
+    if (!canStorageManualUpdate) return;
+    setEditQty(String(part.qty));
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveQty = async () => {
+  const handleSaveQtyStorage = async () => {
     const qtyNum = Number(editQty);
     if (Number.isNaN(qtyNum) || qtyNum < 0) {
       toast.error("Please enter a valid quantity (0 or greater).");
       return;
     }
-
     setIsSavingQty(true);
     try {
-      if (isDamaged) {
-        await updateDamagePartQuantity(part.factory_id, part.part_id, qtyNum);
-      } else {
-        await editStoragePartQty(part.part_id, part.factory_id, qtyNum);
-      }
-      // update local row display
+      await editStoragePartQty(part.part_id, part.factory_id, qtyNum);
       part.qty = qtyNum;
       toast.success("Quantity updated successfully");
       setIsEditDialogOpen(false);
@@ -96,21 +96,9 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      if (isDamaged) {
-        await deleteDamagedPart(part.part_id, part.factory_id);
-      } else {
-        await deleteStoragePart(part.part_id, part.factory_id);
-      }
-      setIsDeleteDialogOpen(false);
-      onDelete?.();
-    } catch {
-      toast.error("Failed to delete part");
-    } finally {
-      setIsDeleting(false);
-    }
+  const openStorageResetAvgDialog = () => {
+    if (!canStorageManualUpdate) return;
+    setIsResetAvgPriceDialogOpen(true);
   };
 
   const handleConfirmResetAvgPrice = async () => {
@@ -126,9 +114,8 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
     setIsResettingAvg(true);
     try {
       await updateStoragePartAvg(part.part_id, part.factory_id, valueNum);
-      part.avg_price = valueNum; // local update for immediate UI feedback
+      part.avg_price = valueNum;
       toast.success("Average price reset successfully");
-      // close + reset dialog state
       setIsResetAvgPriceDialogOpen(false);
       setNewAvgPrice("");
       setConfirmResetChecked(false);
@@ -137,6 +124,55 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
     } finally {
       setIsResettingAvg(false);
     }
+  };
+
+  const openStorageDeleteDialog = () => {
+    if (!canStorageManualUpdate) return;
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteStorage = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteStoragePart(part.part_id, part.factory_id);
+      setIsDeleteDialogOpen(false);
+      onDelete?.();
+    } catch {
+      toast.error("Failed to delete part");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  /* ----------------------------- DAMAGED handlers ---------------------------- */
+  const openDamagedEditDialog = () => {
+    if (!canDamagedPartsManualUpdate) return;
+    setEditQty(String(part.qty));
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveQtyDamaged = async () => {
+    const qtyNum = Number(editQty);
+    if (Number.isNaN(qtyNum) || qtyNum < 0) {
+      toast.error("Please enter a valid quantity (0 or greater).");
+      return;
+    }
+    setIsSavingQty(true);
+    try {
+      await updateDamagePartQuantity(part.factory_id, part.part_id, qtyNum);
+      part.qty = qtyNum;
+      toast.success("Quantity updated successfully");
+      setIsEditDialogOpen(false);
+    } catch {
+      toast.error("Failed to update quantity");
+    } finally {
+      setIsSavingQty(false);
+    }
+  };
+
+  const openDamagedAvgDialog = () => {
+    if (!canDamagedPartsManualUpdate) return;
+    setIsDamagedAvgDialogOpen(true);
   };
 
   const handleConfirmUpdateDamagedAvg = async () => {
@@ -152,7 +188,7 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
     setIsUpdatingDamagedAvg(true);
     try {
       await updateDamagedPartAvg(part.part_id, part.factory_id, valueNum);
-      part.avg_price = valueNum; // local update
+      part.avg_price = valueNum;
       toast.success("Damaged part average price updated");
       setIsDamagedAvgDialogOpen(false);
       setDamagedNewAvgPrice("");
@@ -164,6 +200,28 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
     }
   };
 
+  const openDamagedDeleteDialog = () => {
+    if (!canDamagedPartsManualUpdate) return;
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteDamaged = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteDamagedPart(part.part_id, part.factory_id);
+      setIsDeleteDialogOpen(false);
+      onDelete?.();
+    } catch {
+      toast.error("Failed to delete part");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  /* ------------------------------- JSX -------------------------------------- */
+  const canSeeActions =
+    (!isDamaged && canStorageManualUpdate) || (isDamaged && canDamagedPartsManualUpdate);
+
   return (
     <>
       <TableRow>
@@ -172,59 +230,69 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
         <TableCell>{part.qty}</TableCell>
         <TableCell>{part.avg_price ? part.avg_price : "-"}</TableCell>
 
+        {/* Actions column */}
         <TableCell className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="More actions">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+          {/* STORAGE actions */}
+          {!isDamaged && canStorageManualUpdate && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="More actions (storage)">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Storage Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={openStorageEditDialog}>
+                  Edit quantity
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={openStorageResetAvgDialog}>
+                  Reset Avg. Price
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={openStorageDeleteDialog}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem onClick={openEditDialog}>
-                Edit quantity
-              </DropdownMenuItem>
-
-              {/* Storage-only: Reset Avg. Price */}
-              {!isDamaged && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setIsResetAvgPriceDialogOpen(true)}
-                  >
-                    Reset Avg. Price
-                  </DropdownMenuItem>
-                </>
-              )}
-
-              {/* Damaged-only: Update Avg. Price */}
-              {isDamaged && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setIsDamagedAvgDialogOpen(true)}
-                  >
-                    Update Avg. Price
-                  </DropdownMenuItem>
-                </>
-              )}
-
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="text-red-600 focus:text-red-600"
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* DAMAGED actions */}
+          {isDamaged && canDamagedPartsManualUpdate && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="More actions (damaged)">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Damaged Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={openDamagedEditDialog}>
+                  Edit quantity
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={openDamagedAvgDialog}>
+                  Update Avg. Price
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={openDamagedDeleteDialog}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </TableCell>
       </TableRow>
 
-      {/* Edit Quantity Dialog */}
+      {/* Edit Quantity Dialog (shared; calls the correct handler) */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
@@ -257,14 +325,17 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveQty} disabled={isSavingQty}>
+            <Button
+              onClick={isDamaged ? handleSaveQtyDamaged : handleSaveQtyStorage}
+              disabled={isSavingQty}
+            >
               {isSavingQty ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog – routes to correct handler */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -272,8 +343,7 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
               Delete {isDamaged ? "Damaged" : "Storage"} Part
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{" "}
-              <strong>{part.parts.name}</strong> from{" "}
+              Are you sure you want to delete <strong>{part.parts.name}</strong> from{" "}
               {isDamaged ? "damaged parts" : "storage"}?
               <br />
               <br />
@@ -296,7 +366,7 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
             </Button>
             <Button
               variant="destructive"
-              onClick={handleDelete}
+              onClick={isDamaged ? handleDeleteDamaged : handleDeleteStorage}
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete"}
@@ -305,20 +375,17 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Reset Avg. Price Dialog (storage) */}
+      {/* Reset Avg. Price Dialog (storage only) */}
       <Dialog
         open={isResetAvgPriceDialogOpen}
         onOpenChange={setIsResetAvgPriceDialogOpen}
       >
         <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle className="text-red-600">
-              Reset Average Price
-            </DialogTitle>
+            <DialogTitle className="text-red-600">Reset Average Price</DialogTitle>
             <DialogDescription>
-              Set a new average cost for{" "}
-              <strong>{part.parts.name}</strong>. This overrides previous
-              calculations for this part in this factory.
+              Set a new average cost for <strong>{part.parts.name}</strong>. This overrides
+              previous calculations for this part in this factory.
             </DialogDescription>
           </DialogHeader>
 
@@ -354,8 +421,7 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
               className="mt-0.5"
             />
             <span>
-              I understand this step cannot be undone and is a manual override
-              of the average price.
+              I understand this step cannot be undone and is a manual override of the average price.
             </span>
           </label>
 
@@ -382,7 +448,7 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Update Avg. Price Dialog (damaged) */}
+      {/* Update Avg. Price Dialog (damaged only) */}
       <Dialog
         open={isDamagedAvgDialogOpen}
         onOpenChange={setIsDamagedAvgDialogOpen}
@@ -391,14 +457,14 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({
           <DialogHeader>
             <DialogTitle>Update Average Price (Damaged)</DialogTitle>
             <DialogDescription>
-              Set a new average cost for{" "}
-              <strong>{part.parts.name}</strong> in damaged inventory.
+              Set a new average cost for <strong>{part.parts.name}</strong> in damaged
+              inventory.
             </DialogDescription>
           </DialogHeader>
 
           <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-3 text-sm">
-            <strong>Warning:</strong> This will override the current damaged
-            average cost for this part at this factory.
+            <strong>Warning:</strong> This will override the current damaged average cost
+            for this part at this factory.
           </div>
 
           <div className="mt-4 space-y-2">

@@ -1,6 +1,5 @@
 import { Order, OrderedPart } from '@/types';
 import { convertUtcToBDTime } from '@/services/helper';
-import OrderedPartsTable from '@/components/customui/OrderedPartsTable';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';

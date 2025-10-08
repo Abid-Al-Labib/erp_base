@@ -3,21 +3,30 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchFactories, fetchFactorySections, fetchAllFactorySections } from "@/services/FactoriesService";
-import { fetchMachineParts } from "@/services/MachinePartsService";
+import { fetchMachineParts, manualAddMachinePart } from "@/services/MachinePartsService";
 import { fetchMachineById, fetchAllMachines } from "@/services/MachineServices";
+import { fetchAllParts, searchPartsByName } from "@/services/PartsService";
 import toast from "react-hot-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import MachinePartsTable from "@/components/customui/MachinePartsTable";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Machine, MachinePart } from "@/types";
+import { Input } from "@/components/ui/input";
+import { Machine, MachinePart, Part } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AllMachinesStatus from "@/components/customui/AllMachineStatus";
 import RunningOrders from "@/components/customui/RunningOrders";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import AsyncSelect from 'react-select/async';
+import { useAuth } from "@/context/AuthContext";
 
 const MachinePartsPage = () => {
+  // RBAC
+  const { hasFeatureAccess } = useAuth();
+  const canMachineInstantAdd = hasFeatureAccess("machine_instant_add");
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [MachineParts, setMachineParts] = useState<MachinePart[]>([]);
   const [partsLoading, setPartsLoading] = useState(false);
@@ -34,6 +43,15 @@ const MachinePartsPage = () => {
   const [sectionsLoading, setSectionsLoading] = useState(false);
   const [factoryLoading, setFactoryLoading] = useState(false);
   const [overviewLoading, setOverviewLoading] = useState<"factory" | "section" | null>(null);
+
+  // Add Part dialog state
+  const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false);
+  const [allParts, setAllParts] = useState<Part[]>([]);
+  const [selectedPart, setSelectedPart] = useState<Part | undefined>();
+  const [addPartCurrentQty, setAddPartCurrentQty] = useState<string>("");
+  const [addPartRequiredQty, setAddPartRequiredQty] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
   
   // Initialize state from URL parameters
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(() => {
@@ -242,17 +260,19 @@ const MachinePartsPage = () => {
   }, [selectedMachineId, selectedMachine]);
 
   useEffect(() => {
-    // Preload factories, sections, and machines on mount
+    // Preload factories, sections, machines, and parts on mount
     const preloadAll = async () => {
       try {
-        const [fetchedFactories, fetchedSections, fetchedMachines] = await Promise.all([
+        const [fetchedFactories, fetchedSections, fetchedMachines, fetchedParts] = await Promise.all([
           fetchFactories(),
           fetchAllFactorySections(),
           fetchAllMachines(),
+          fetchAllParts(),
         ]);
         setFactories(fetchedFactories);
         setAllSections(fetchedSections as { id: number; name: string; factory_id: number }[]);
         setMachines(fetchedMachines);
+        setAllParts(fetchedParts || []);
       } catch (error) {
         toast.error("Failed to preload data");
       }
@@ -339,6 +359,69 @@ const MachinePartsPage = () => {
     setSelectedMachineId(machineId);
     updateUrlParams(selectedFactoryId, selectedFactorySectionId, machineId);
   };
+
+  // Add Part handlers
+  const resetAddPartDialog = () => {
+    setSelectedPart(undefined);
+    setAddPartCurrentQty("");
+    setAddPartRequiredQty("");
+    setIsAddPartDialogOpen(false);
+  };
+
+  const handleAddPartToMachine = async () => {
+    if (!selectedPart || !addPartCurrentQty || !selectedMachineId) {
+      toast.error("Please select a part and enter current quantity");
+      return;
+    }
+
+    const currentQtyNum = Number(addPartCurrentQty);
+    const requiredQtyNum = Number(addPartRequiredQty);
+
+    if (Number.isNaN(currentQtyNum) || currentQtyNum <= 0) {
+      toast.error("Current quantity must be greater than 0");
+      return;
+    }
+
+    if (addPartRequiredQty && (Number.isNaN(requiredQtyNum) || requiredQtyNum < 0)) {
+      toast.error("Required quantity must be 0 or greater");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Call manualAddMachinePart and check the result
+      const result = await manualAddMachinePart(
+        selectedMachineId,
+        selectedPart.id,
+        currentQtyNum,
+        requiredQtyNum || 0,
+        0 // defective_qty defaults to 0
+      );
+      
+      // Check if the addition was successful
+      if (!result || !result.success) {
+        // Error toast already shown in the service function
+        return;
+      }
+
+      // Success - reset and refresh
+      resetAddPartDialog();
+      await refreshComponents();
+    } catch (error) {
+      console.error("Error adding part:", error);
+      toast.error("Failed to add part to machine");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Create default options for AsyncSelect - sorted alphabetically
+  const allPartOptions = allParts
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((part) => ({
+      value: part,
+      label: `${part.name} (${part.unit || 'units'})`,
+    }));
 
   return (
     <>
@@ -510,21 +593,138 @@ const MachinePartsPage = () => {
               </div>
             ) : (
               <div className="w-full mt-4">
-                
-                  <MachinePartsTable
-                    MachineParts={MachineParts}
-                    onApplyFilters={setFilters}
-                    onResetFilters={() => setFilters({})}
-                    onRefresh={refreshComponents}
-                    selectedMachine={selectedMachine}
-                    loading={partsLoading}
-                  />
-                
+                <MachinePartsTable
+                  MachineParts={MachineParts}
+                  onApplyFilters={setFilters}
+                  onResetFilters={() => setFilters({})}
+                  onRefresh={refreshComponents}
+                  selectedMachine={selectedMachine}
+                  loading={partsLoading}
+                  headerAction={
+                    canMachineInstantAdd ? (
+                      <Button
+                        onClick={() => setIsAddPartDialogOpen(true)}
+                        className="bg-blue-700 hover:bg-blue-800"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Part
+                      </Button>
+                    ) : undefined
+                  }
+                />
               </div>
             )
           }
         </main>
       </div>
+
+      {/* Add Part to Machine Dialog */}
+      <Dialog
+        open={isAddPartDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddPartDialogOpen(open);
+          if (!open) resetAddPartDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Part to Machine</DialogTitle>
+            <DialogDescription>
+              Add a part to {selectedMachine?.name || "this machine"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="part-select">Select Part</Label>
+              <AsyncSelect
+                id="part-select"
+                cacheOptions
+                defaultOptions={allPartOptions}
+                loadOptions={async (inputValue: string) => {
+                  if (!inputValue) {
+                    return allPartOptions;
+                  }
+                  
+                  setIsLoadingParts(true);
+                  try {
+                    const response = await searchPartsByName(inputValue);
+                    return response
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((part) => ({
+                        value: part,
+                        label: `${part.name} (${part.unit || 'units'})`,
+                      }));
+                  } catch (error) {
+                    console.error("Error searching parts:", error);
+                    return [];
+                  } finally {
+                    setIsLoadingParts(false);
+                  }
+                }}
+                onChange={(selectedOption) => {
+                  setSelectedPart(selectedOption?.value);
+                }}
+                placeholder="Search or Select a Part"
+                className="mt-1"
+                isSearchable
+                isLoading={isLoadingParts}
+                value={selectedPart ? { value: selectedPart, label: `${selectedPart.name} (${selectedPart.unit || 'units'})` } : null}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="current_quantity">
+                Current Quantity{selectedPart ? ` (${selectedPart.unit || 'units'})` : ''}
+              </Label>
+              <Input
+                id="current_quantity"
+                type="number"
+                placeholder="Enter current quantity"
+                value={addPartCurrentQty}
+                onChange={(e) => setAddPartCurrentQty(e.target.value)}
+                min="1"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="required_quantity">
+                Required Quantity (Optional){selectedPart ? ` (${selectedPart.unit || 'units'})` : ''}
+              </Label>
+              <Input
+                id="required_quantity"
+                type="number"
+                placeholder="Enter required quantity"
+                value={addPartRequiredQty}
+                onChange={(e) => setAddPartRequiredQty(e.target.value)}
+                min="0"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={resetAddPartDialog}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddPartToMachine}
+              disabled={isSubmitting || !selectedPart || !addPartCurrentQty}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Adding...
+                </>
+              ) : (
+                "Add to Machine"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

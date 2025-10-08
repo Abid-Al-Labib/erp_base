@@ -13,8 +13,6 @@ import { Loader2 } from "lucide-react";
 import { convertUtcToBDTime } from "@/services/helper";
 import {
   calculateTotalCost,
-  fetchLastChangeDate,
-  fetchLastCostAndPurchaseDate,
   getOrderedPartHistory,
 } from "@/services/OrderedPartsService";
 import { Separator } from "../ui/separator";
@@ -30,53 +28,49 @@ const InvoiceTable: FC<InvoiceSectionProp> = ({
   orderPartList,
   orderedPartsLoading,
 }) => {
-  const profile = useAuth().profile;
+  const { hasFeatureAccess } = useAuth();
+  const canSeeFinance = hasFeatureAccess("finance_visibility");
 
   const [totalCost, setTotalCost] = useState<string>(" - ");
-  const [costBreakdown, setCostBreakdown] = useState<string>(
-    "Total Cost Breakdown: -"
-  );
   const [partHistoryMap, setPartHistoryMap] = useState<Record<number, PartHistory>>({});
 
-
-
   useEffect(() => {
-    const totalCost = calculateTotalCost(orderPartList);
-    setTotalCost(totalCost);
-    setCostBreakdown(costBreakdown);
-  }, [orderedPartsLoading]);
+    const total = calculateTotalCost(orderPartList);
+    setTotalCost(total);
+  }, [orderedPartsLoading, orderPartList]);
 
   useEffect(() => {
     const fetchAllPartHistories = async () => {
-      const allPartsHistoryMap = await getOrderedPartHistory(orderPartList, order)
+      const allPartsHistoryMap = await getOrderedPartHistory(orderPartList, order);
       setPartHistoryMap(allPartsHistoryMap);
     };
 
-    if (!orderedPartsLoading && orderPartList.length > 0) {
+    if (!orderedPartsLoading && orderPartList.length > 0 && canSeeFinance) {
+      // Only fetch extra finance-y history when the user can see it
       fetchAllPartHistories();
+    } else {
+      setPartHistoryMap({});
     }
-  }, [orderedPartsLoading]);
+  }, [orderedPartsLoading, orderPartList, order, canSeeFinance]);
 
   return (
     <div>
       <h2 className="text-2xl">Parts Ordered</h2>
-      <Separator className='my-2'/>
+      <Separator className="my-2" />
+
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead></TableHead>
             <TableHead>Part</TableHead>
-            {(profile?.permission === "admin" ||
-              profile?.permission === "finance") && <TableHead>Brand</TableHead>}
-            {(profile?.permission === "admin" ||
-              profile?.permission === "finance") && <TableHead>Vendor</TableHead>}
+            {canSeeFinance && <TableHead>Brand</TableHead>}
+            {canSeeFinance && <TableHead>Vendor</TableHead>}
             <TableHead>Qty(Unit)</TableHead>
-            {(profile?.permission === "admin" ||
-              profile?.permission === "finance") && <TableHead>Cost/Unit</TableHead>}
-            {(profile?.permission === "admin" ||
-              profile?.permission === "finance") && <TableHead>Subtotal</TableHead>}
+            {canSeeFinance && <TableHead>Cost/Unit</TableHead>}
+            {canSeeFinance && <TableHead>Subtotal</TableHead>}
           </TableRow>
         </TableHeader>
+
         {orderedPartsLoading ? (
           <div className="flex flex-row justify-center p-4">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -89,24 +83,22 @@ const InvoiceTable: FC<InvoiceSectionProp> = ({
               return (
                 <TableRow key={orderedPart.id}>
                   <TableCell>{index + 1}.</TableCell>
+
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <a
                         className="font-bold text-lg hover:underline"
                         target="_blank"
                         href={`/viewpart/${orderedPart.part_id}`}
+                        rel="noreferrer"
                       >
                         {orderedPart.parts.name}
                       </a>
 
-                      {(profile?.permission === "admin" ||
-                        profile?.permission === "finance") && (
+                      {canSeeFinance && (
                         <div className="flex gap-2">
                           <div className="whitespace-nowrap text-xs font-bold">
-                            MRR:{" "}
-                            {orderedPart.mrr_number
-                              ? orderedPart.mrr_number
-                              : "-"}
+                            MRR: {orderedPart.mrr_number || "-"}
                           </div>
                           <div className="text-xs">
                             Received Date:{" "}
@@ -119,8 +111,7 @@ const InvoiceTable: FC<InvoiceSectionProp> = ({
                         </div>
                       )}
 
-                      {(profile?.permission === "admin" ||
-                        profile?.permission === "finance") && (
+                      {canSeeFinance && (
                         <>
                           <div className="mt-1 text-xs">History:</div>
                           <div className="flex gap-2">
@@ -157,25 +148,23 @@ const InvoiceTable: FC<InvoiceSectionProp> = ({
                     </div>
                   </TableCell>
 
-                  {(profile?.permission === "admin" ||
-                    profile?.permission === "finance") && (
+                  {canSeeFinance && (
                     <TableCell>{orderedPart.brand || "-"}</TableCell>
                   )}
-                  {(profile?.permission === "admin" ||
-                    profile?.permission === "finance") && (
+                  {canSeeFinance && (
                     <TableCell>{orderedPart.vendor || "-"}</TableCell>
                   )}
+
                   <TableCell className="whitespace-nowrap">
                     {orderedPart.qty} ({orderedPart.parts.unit})
                   </TableCell>
-                  {(profile?.permission === "admin" ||
-                    profile?.permission === "finance") && (
+
+                  {canSeeFinance && (
                     <TableCell className="whitespace-nowrap">
                       {orderedPart.unit_cost ?? "-"}
                     </TableCell>
                   )}
-                  {(profile?.permission === "admin" ||
-                    profile?.permission === "finance") && (
+                  {canSeeFinance && (
                     <TableCell className="whitespace-nowrap">
                       {orderedPart.unit_cost
                         ? orderedPart.unit_cost * orderedPart.qty
@@ -189,8 +178,7 @@ const InvoiceTable: FC<InvoiceSectionProp> = ({
         )}
       </Table>
 
-      {(profile?.permission === "admin" ||
-        profile?.permission === "finance") && (
+      {canSeeFinance && (
         <div className="flex justify-end mt-4">
           <span className="font-bold">Total: {totalCost}</span>
         </div>

@@ -31,6 +31,9 @@ const ITEMS_PER_PAGE = 10;
 
 const StoragePage = () => {
   const profile = useAuth().profile
+  const { hasFeatureAccess } = useAuth();
+  const canStorageInstantAdd = hasFeatureAccess("storage_instant_add"); 
+  const canStorageManualUpdate = hasFeatureAccess("storage_manual_updates")
   const [searchParams, setSearchParams] = useSearchParams();
   const [storageParts, setStorageParts] = useState<StoragePart[]>([]);
   const [damagedParts, setDamagedParts] = useState<StoragePart[]>([]);
@@ -426,13 +429,16 @@ const StoragePage = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4">
-                  <Button 
-                    onClick={() => setIsAddPartDialogOpen(true)}
-                    className="bg-blue-700 hover:bg-blue-800"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Part
-                  </Button>
+                  {canStorageInstantAdd && (
+                    <Button
+                      onClick={() => setIsAddPartDialogOpen(true)}
+                      className="bg-blue-700 hover:bg-blue-800"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Part
+                    </Button>)
+                  }
+
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList className="inline-flex h-10 w-[300px] items-center justify-center rounded-md bg-slate-100 p-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                       <TabsTrigger value="storage" className="w-[140px]">Storage Parts</TabsTrigger>

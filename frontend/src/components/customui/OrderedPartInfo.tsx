@@ -9,7 +9,8 @@ interface OrderedPartInfoProp {
 }
 
 const OrderedPartInfo: React.FC<OrderedPartInfoProp> = ({ orderedPart }) => {
-  const profile = useAuth().profile
+  const { hasFeatureAccess } = useAuth();
+  const canSeeFinance = hasFeatureAccess("finance_visibility");
   
   return (
     <Card className="sm:col-span-2 pt-2 h-[50vh] overflow-y-scroll" x-chunk="dashboard-ordered-part-popup">
@@ -27,20 +28,20 @@ const OrderedPartInfo: React.FC<OrderedPartInfoProp> = ({ orderedPart }) => {
             <span className="font-semibold text-muted-foreground">Quantity</span>
             <span>{orderedPart.qty || '-'}</span>
           </li>
-          {(profile?.permission === 'admin' || profile?.permission=== 'finance') &&
+          {canSeeFinance &&
             <li className="flex items-center justify-between">
               <span className="font-semibold text-muted-foreground">Brand</span>
               <span>{orderedPart.brand || '-'}</span>
           </li>
           }
-          {(profile?.permission === 'admin' || profile?.permission=== 'finance') &&
+          {canSeeFinance &&
             <li className="flex items-center justify-between">
               <span className="font-semibold text-muted-foreground">Vendor</span>
               <span>{orderedPart.vendor || '-'}</span>
           </li>
           }
           {
-            (profile?.permission === 'admin' || profile?.permission=== 'finance') &&
+            canSeeFinance &&
             <li className="flex items-center justify-between">
               <span className="font-semibold text-muted-foreground">Cost/Unit</span>
               <span>{orderedPart.unit_cost ? `BDT ${orderedPart.unit_cost}` : '-'}</span>
@@ -73,8 +74,8 @@ const OrderedPartInfo: React.FC<OrderedPartInfoProp> = ({ orderedPart }) => {
             <span className="font-semibold text-muted-foreground">Note</span>
             <div>{orderedPart.note || '-'}</div>
           <Separator className="my-2" />
-          {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <span className="font-semibold text-muted-foreground">Office Note</span>}
-          {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <div>{orderedPart.note || '-'}</div>}
+          {canSeeFinance && <span className="font-semibold text-muted-foreground">Office Note</span>}
+          {canSeeFinance && <div>{orderedPart.note || '-'}</div>}
 
         </ul>
       </CardContent>

@@ -29,6 +29,7 @@ const ManageOrderPage = () => {
   const [partsLoading, setPartsLoading] = useState(true)
   const navigate = useNavigate();
   const profile = useAuth().profile
+  const {canAccessManageOrder} = useAuth()
   const [isManageOrderAuthorizedDialogOpen, setIsManageOrderAuthorizedDialogOpen] = useState<boolean>(false)
   const handleNavigationToOrderPage = () => {
     navigate("/orders");
@@ -50,10 +51,15 @@ const ManageOrderPage = () => {
       if (data) {
         const order = data
         setOrder(order);
-        if (profile && profile.permission && !managePermission(order.statuses.name,profile.permission))
+        // if (profile && profile.permission && !managePermission(order.statuses.name,profile.permission))
+        // {
+        //   setIsManageOrderAuthorizedDialogOpen(true)
+        // }
+        if (canAccessManageOrder(order.statuses.id)===false)
         {
           setIsManageOrderAuthorizedDialogOpen(true)
         }
+
       } else {
         toast.error("Order not found");
         navigate("/orders");
@@ -185,14 +191,6 @@ const ManageOrderPage = () => {
               <StatusTracker order={order} />
           </div>
         </div>
-        
-        {/* <OrderedPartsTable
-          mode="manage"
-          order={order}
-          parts = {parts}
-          current_status={order.statuses}
-        /> */}
-
         <ManageOrderedPartsSection
           order={order} 
           parts={parts}

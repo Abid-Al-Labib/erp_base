@@ -25,7 +25,8 @@ const PartInfo: React.FC<PartInfoProp> = ({id, created_at, name, unit, descripti
 
         <Card className="sm:col-span-2" x-chunk="dashboard-05-chunk-0">
             <CardHeader className="pb-3">
-                <div className='flex justify-between'>
+                {/* old expense lens code here needs to be replaces with business lens url */}
+                {/* <div className='flex justify-between'>
                     <CardTitle>Part Detail</CardTitle>
                     {profile && showExpenseLensPart(profile.permission) && 
                         <Button className='bg-cyan-600' onClick={()=>navigate(`/expenselens/${id}`)}>
@@ -33,7 +34,7 @@ const PartInfo: React.FC<PartInfoProp> = ({id, created_at, name, unit, descripti
                         </Button>
                     }
 
-                </div>
+                </div> */}
             </CardHeader>
             <Separator className="my-4" />
             <CardContent>
