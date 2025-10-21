@@ -697,6 +697,7 @@ export type Database = {
           project_id: number | null
           req_num: string | null
           src_factory: number | null
+          src_project_component_id: number | null
         }
         Insert: {
           created_at?: string
@@ -714,6 +715,7 @@ export type Database = {
           project_id?: number | null
           req_num?: string | null
           src_factory?: number | null
+          src_project_component_id?: number | null
         }
         Update: {
           created_at?: string
@@ -731,6 +733,7 @@ export type Database = {
           project_id?: number | null
           req_num?: string | null
           src_factory?: number | null
+          src_project_component_id?: number | null
         }
         Relationships: [
           {
@@ -815,6 +818,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_src_project_component_id_fkey"
+            columns: ["src_project_component_id"]
+            isOneToOne: false
+            referencedRelation: "project_components"
             referencedColumns: ["id"]
           },
         ]

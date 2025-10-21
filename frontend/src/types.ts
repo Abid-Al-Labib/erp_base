@@ -146,6 +146,7 @@ export type Order = {
     order_workflows: OrderWorkflow,
     src_factory: number | null,
     src_machine: number | null,
+    src_project_component_id: number | null,
     project_id: number | null,
     project_component_id: number | null,
 };
