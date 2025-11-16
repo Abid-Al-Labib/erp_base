@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { CircleUser, Menu } from "lucide-react";
+import { CircleUser, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,9 +8,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import UserDropdownPanel from "./UserDropdownPanel"; // adjust path if needed
+import { useTheme } from "@/context/ThemeContext";
 
 const NavigationBar = () => {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -145,8 +147,22 @@ const NavigationBar = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Profile dropdown */}
+      {/* Theme toggle and Profile dropdown */}
       <div className="flex justify-end w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="rounded-full"
+        >
+          {theme === "light" ? (
+            <Moon className="h-5 w-5" />
+          ) : (
+            <Sun className="h-5 w-5" />
+          )}
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">

@@ -629,7 +629,6 @@ const MachinePartsPage = () => {
                     canMachineInstantAdd ? (
                       <Button
                         onClick={() => setIsAddPartDialogOpen(true)}
-                        className="bg-blue-700 hover:bg-blue-800"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Part

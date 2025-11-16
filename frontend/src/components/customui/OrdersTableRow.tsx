@@ -34,21 +34,21 @@ const COMPLETED_STATUSES = new Set<string>([
 
 // Colors for non-completed statuses
 const STATUS_BADGE_STYLES: Record<string, string> = {
-  'Pending': 'bg-red-200 text-red-900',
+  'Pending': 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20',
 
   // In-progress steps
-  'Order Sent To Head Office': "bg-orange-100",
-  'Waiting For Quotation': "bg-orange-100",
-  'Budget Released': "bg-orange-100",
-  'Waiting For Purchase': "bg-orange-100",
-  'Purchase Complete': "bg-orange-100",
-  'Parts Sent To Factory': "bg-orange-100",
+  'Order Sent To Head Office': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Waiting For Quotation': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Budget Released': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Waiting For Purchase': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Purchase Complete': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Parts Sent To Factory': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
 };
 
 function getStatusBadgeClass(statusName: string): string {
-  if (COMPLETED_STATUSES.has(statusName)) return 'bg-green-100 text-green-900';
-  if (statusName === 'Pending') return 'bg-red-200 text-red-900';
-  return STATUS_BADGE_STYLES[statusName] ?? 'bg-orange-100 text-orange-900';
+  if (COMPLETED_STATUSES.has(statusName)) return 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20';
+  if (statusName === 'Pending') return 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20';
+  return STATUS_BADGE_STYLES[statusName] ?? 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20';
 }
 
 interface OrdersTableRowProps {

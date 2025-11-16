@@ -12,6 +12,7 @@ import StoragePage from "./pages/StoragePage";
 import MachinePage from "./pages/MachinePage";
 import ProjectsPage from "./pages/ProjectsPage";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import PrivateRoute from "./components/customui/routing/PrivateRouting";
 import InvoicePage from "./pages/InvoicePage";
 import ManagementPage from "./pages/ManagementPage";
@@ -23,8 +24,9 @@ import BusinessLensWizard from "./pages/BusinessLensWizardPage";
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
@@ -162,7 +164,8 @@ const App: React.FC = () => {
           <Route path="/PageDisabled" element={<DisabledPage />} />
         </Routes>
       </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

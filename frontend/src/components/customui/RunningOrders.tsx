@@ -14,6 +14,31 @@ type RunningOrdersProps = {
   projectComponent?: ProjectComponent | undefined;
 };
 
+// Matching OrdersTableRow badge styling
+const COMPLETED_STATUSES = new Set<string>([
+  'Parts Received',
+  'Transferred To Machine',
+  'Transferred To Storage',
+  'Transferred To Project',
+  'Transfer Completed',
+]);
+
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  'Pending': 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20',
+  'Order Sent To Head Office': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Waiting For Quotation': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Budget Released': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Waiting For Purchase': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Purchase Complete': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  'Parts Sent To Factory': "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
+};
+
+function getStatusBadgeClass(statusName: string): string {
+  if (COMPLETED_STATUSES.has(statusName)) return 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20';
+  if (statusName === 'Pending') return 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20';
+  return STATUS_BADGE_STYLES[statusName] ?? 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20';
+}
+
 const RunningOrders = ({ machine, factory, projectComponent }: RunningOrdersProps) => {
   const [runningOrders, setRunningOrders] = useState<Order[]>([]);
   const mode: 'machine' | 'factory' | 'projectComponent' | 'none' = machine?.id ? 'machine' : factory?.id ? 'factory' : projectComponent?.id ? 'projectComponent' : 'none';
@@ -106,7 +131,7 @@ const RunningOrders = ({ machine, factory, projectComponent }: RunningOrdersProp
                   {runningOrders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell>
-                        <Badge variant="secondary" className="bg-blue-100">
+                        <Badge variant="secondary" className="bg-primary/10">
                           <Link to={`/vieworder/${order.id}`}>{order.id}</Link>
                         </Badge>
                       </TableCell>
@@ -116,16 +141,7 @@ const RunningOrders = ({ machine, factory, projectComponent }: RunningOrdersProp
                         {order.order_note}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          className={
-                            order.statuses.name === "Parts Received"
-                              ? "bg-green-100"
-                              : order.statuses.name === "Pending"
-                                ? "bg-red-100"
-                                : "bg-orange-100"
-                          }
-                          variant="secondary"
-                        >
+                        <Badge className={getStatusBadgeClass(order.statuses.name)} variant="secondary">
                           {order.statuses.name}
                         </Badge>
                       </TableCell>

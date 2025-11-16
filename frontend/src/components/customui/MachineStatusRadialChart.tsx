@@ -36,8 +36,7 @@ export default function MachineStatusRadialChart({ running, notRunning }: Props)
       <CardContent className="flex flex-1 items-center pb-0">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto w-full max-w-[300px] pt-10 -mb-6"
-          style={{ height: 244 }}
+          className="mx-auto w-full max-w-[300px] pt-10 -mb-6 h-[244px]"
         >
           <RadialBarChart
             data={chartData}

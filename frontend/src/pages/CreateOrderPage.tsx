@@ -1757,12 +1757,12 @@ const CreateOrderPage = () => {
                                     {!tempOrderDetails ? (
                                         // Skeleton/Empty state before order initialization
                                         <div className="space-y-4 opacity-30">
-                                            <div className="h-4 bg-gray-200 rounded w-24"></div>
-                                            <div className="h-10 bg-gray-100 rounded"></div>
-                                            <div className="h-4 bg-gray-200 rounded w-16"></div>
-                                            <div className="h-10 bg-gray-100 rounded"></div>
-                                            <div className="h-4 bg-gray-200 rounded w-32"></div>
-                                            <div className="h-10 bg-gray-100 rounded opacity-50"></div>
+                                            <div className="h-4 bg-muted/50 rounded w-24"></div>
+                                            <div className="h-10 bg-muted/30 rounded"></div>
+                                            <div className="h-4 bg-muted/50 rounded w-16"></div>
+                                            <div className="h-10 bg-muted/30 rounded"></div>
+                                            <div className="h-4 bg-muted/50 rounded w-32"></div>
+                                            <div className="h-10 bg-muted/30 rounded opacity-50"></div>
                                         </div>
                                     ) : (
                                         // Active form when order is initialized
@@ -1970,7 +1970,8 @@ const CreateOrderPage = () => {
                                                         <DialogTrigger asChild>
                                                             <Button
                                                                 size="sm"
-                                                                className="w-full bg-white-950 border-blue-950 border-2 text-blue-950 hover:bg-blue-950 hover:text-white"
+                                                                className="w-full"
+                                                                variant="outline"
                                                                 disabled={!addPartEnabled}
                                                             >
                                                                 Create New Part
@@ -2009,10 +2010,10 @@ const CreateOrderPage = () => {
                             {!tempOrderDetails ? (
                                 // Skeleton/Empty state before order initialization
                                 <div className="space-y-3 opacity-20">
-                                    <div className="h-4 bg-gray-200 rounded w-32"></div>
-                                    <div className="h-4 bg-gray-100 rounded w-48"></div>
-                                    <div className="h-4 bg-gray-100 rounded w-40"></div>
-                                    <div className="h-4 bg-gray-100 rounded w-36"></div>
+                                    <div className="h-4 bg-muted/50 rounded w-32"></div>
+                                    <div className="h-4 bg-muted/30 rounded w-48"></div>
+                                    <div className="h-4 bg-muted/30 rounded w-40"></div>
+                                    <div className="h-4 bg-muted/30 rounded w-36"></div>
                                 </div>
                             ) : orderedParts.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
@@ -2087,9 +2088,9 @@ const CreateOrderPage = () => {
                                                             size="sm"
                                                             variant="ghost"
                                                             onClick={() => handleRemovePart(index)}
-                                                            className="h-6 w-6 p-0 hover:bg-red-100"
+                                                            className="h-6 w-6 p-0 hover:bg-destructive/10"
                                                         >
-                                                            <X className="h-3 w-3 text-red-600" />
+                                                            <X className="h-3 w-3 text-destructive" />
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>

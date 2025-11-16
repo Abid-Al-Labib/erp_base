@@ -98,7 +98,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                             {loading || !machine ? 'Machine Status' : machine.name}
                         </CardTitle>
                         {!loading && machine && (
-                            <div className="flex flex-col gap-2 text-sm text-gray-600 mt-2">
+                            <div className="flex flex-col gap-2 text-sm text-muted-foreground mt-2">
                                 <div>
                                     <span className="font-medium">Factory Section:</span> {machine.factory_sections?.name || "N/A"}
                                 </div>
@@ -109,7 +109,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                                     <span className="font-medium">Status:</span>
                                     <Badge 
                                         variant="secondary" 
-                                        className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-gray-800'}
+                                        className={machine.is_running ? 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20' : 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20'}
                                     >
                                         {machine.is_running ? "Active" : "Inactive"}
                                     </Badge>
@@ -121,9 +121,9 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                         <Button
                             onClick={handleToggleStatus}
                             disabled={updating || loading}
-                            variant="default"
+                            variant={machine.is_running ? "destructive" : "default"}
                             size="sm"
-                            className={`ml-4 ${machine.is_running ? 'bg-black text-white hover:bg-black/90' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                            className="ml-4"
                         >
                             {updating ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -143,13 +143,13 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <h4 className="font-medium text-gray-700 mb-2">Machine Conditions</h4>
+                        <h4 className="font-medium text-foreground mb-2">Machine Conditions</h4>
                         
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium min-w-[100px]">Running:</span>
                             <Badge 
                                 variant="secondary" 
-                                className={machine.is_running ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                                className={machine.is_running ? 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20' : 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20'}
                             >
                                 {machine.is_running ? "Running" : "Not Running"}
                             </Badge>
@@ -159,7 +159,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                             <span className="text-sm font-medium min-w-[100px]">Defective Parts:</span>
                             <Badge 
                                 variant="secondary" 
-                                className={hasDefectiveParts ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}
+                                className={hasDefectiveParts ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' : 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20'}
                             >
                                 {hasDefectiveParts ? "Has Defective Parts" : "No Defective Parts"}
                             </Badge>
@@ -169,7 +169,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
                             <span className="text-sm font-medium min-w-[100px]">Parts Status:</span>
                             <Badge 
                                 variant="secondary" 
-                                className={hasInsufficientParts ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}
+                                className={hasInsufficientParts ? 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20' : 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20'}
                             >
                                 {hasInsufficientParts ? "Insufficient Parts" : "Parts Sufficient"}
                             </Badge>

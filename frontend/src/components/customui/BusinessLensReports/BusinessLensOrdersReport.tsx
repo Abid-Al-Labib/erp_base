@@ -191,7 +191,7 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
         <Card>
           <CardHeader>
             <CardTitle>
-              <h1 className="text-4xl font-bold mb-3 text-cyan-600">BusinessLens</h1>
+              <h1 className="text-4xl font-bold mb-3 text-primary">BusinessLens</h1>
             </CardTitle>
             <div>Get instant insights on orders and spending patterns.</div>
           </CardHeader>
@@ -235,7 +235,7 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
               </div>
 
               <div className="flex gap-2">
-                <Button disabled={!startDate || !endDate} className="bg-cyan-600" onClick={generateReport}>
+                <Button disabled={!startDate || !endDate} onClick={generateReport}>
                   generate report
                 </Button>
                 <Button disabled={totalOrdersCount === 0 && purchaseExpenseTotal === 0} onClick={handlePrint}>
@@ -243,7 +243,7 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
                 </Button>
                 <Button
                   disabled={totalOrdersCount === 0 && purchaseExpenseTotal === 0 && !startDate && !endDate}
-                  className="bg-red-600"
+                  variant="destructive"
                   onClick={() => {
                     setStartDate(undefined);
                     setEndDate(undefined);
@@ -271,12 +271,12 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
 
         {loading ? (
           <div className="flex justify-center items-center mt-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500 border-solid" />
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-primary border-solid" />
           </div>
         ) : (
           (totalOrdersCount > 0 || purchaseExpenseTotal > 0) && (
             <div className="p-4" ref={exportRef}>
-              <div className="text-4xl mb-3 text-cyan-600">BusinessLens on Orders</div>
+              <div className="text-4xl mb-3 text-primary">BusinessLens on Orders</div>
               <Separator className="mb-6" />
 
               {/* SECTION 1: Orders overview (counts + pie) */}
@@ -309,7 +309,7 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
                         <CardHeader>
                         <CardTitle className="text-base">Orders by Type</CardTitle>
                         </CardHeader>            
-                    <CardContent style={{ height: 320 }}>
+                    <CardContent className="h-[320px]">
                       <div className="flex justify-between">
                         
                       </div>
@@ -329,7 +329,7 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
                       )}
                     
                     </CardContent>
-                        <div className="border rounded-md p-3 bg-white max-h-72 overflow-auto">
+                        <div className="border rounded-md p-3 bg-card max-h-72 overflow-auto">
                             <div className="text-xs font-medium mb-2">Legend</div>
                             <ul className="space-y-2 pr-1">
                                 {pieData.map((it, i) => (
@@ -337,7 +337,7 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
                                     <div className="flex items-center gap-2">
                                     <span
                                         className="inline-block w-3 h-3 rounded-sm"
-                                        style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                                        style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
                                     />
                                     <span className="whitespace-nowrap">{it.name}</span>
                                     </div>
@@ -373,18 +373,18 @@ const BusinessLensOrdersReport: React.FC<Props> = ({ start, end }) => {
                     <div className="text-sm text-muted-foreground">No purchase expense in this range.</div>
                   ) : (
                     <div className="border rounded-md overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                      <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-muted/50">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                               Factory
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                               Expense
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-card divide-y divide-border">
                           {expenseByFactory.map((r) => (
                             <tr key={r.id}>
                               <td className="px-6 py-3 text-sm">{r.label}</td>

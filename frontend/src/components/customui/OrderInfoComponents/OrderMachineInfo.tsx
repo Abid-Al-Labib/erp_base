@@ -48,10 +48,10 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
         const hasInactiveParts = orderedParts.some(part => part.unstable_type === 'INACTIVE');
         
         if (hasInactiveParts) {
-            return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Will be Inactive</Badge>
+            return <Badge variant="destructive">Will be Inactive</Badge>
         }
         
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Will remain Active</Badge>
+        return <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">Will remain Active</Badge>
     }
 
 
@@ -117,10 +117,10 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                                             const statusText = status === 'DEFECTIVE' ? 'Defective' : 
                                                               status === 'LESS' ? 'Less' : 
                                                               status === 'INACTIVE' ? 'Inactive' : 'Inactive';
-                                            const colorClass = status === 'DEFECTIVE' ? 'bg-red-100 text-red-600' :
-                                                              status === 'LESS' ? 'bg-yellow-100 text-yellow-600' :
-                                                              status === 'INACTIVE' ? 'bg-orange-100 text-orange-600' :
-                                                              'bg-orange-100 text-orange-600';
+                                            const colorClass = status === 'DEFECTIVE' ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' :
+                                                              status === 'LESS' ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' :
+                                                              status === 'INACTIVE' ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20' :
+                                                              'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20';
                                             
                                             return (
                                                 <Badge variant="outline" className={`text-xs px-1 py-0 ${colorClass}`}>
@@ -132,7 +132,7 @@ const OrderMachineInfo: React.FC<OrderMachineInfoProps> = ({ order, mode }) => {
                                         return (
                                           <div
                                             key={index}
-                                            className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded gap-2"
+                                            className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded gap-2"
                                           >
                                             <div className="flex items-center gap-2 flex-1">
                                                 <span className="font-medium">{part.parts.name}</span>

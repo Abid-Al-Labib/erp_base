@@ -130,7 +130,6 @@ const PartsPage = () => {
                                     <Dialog open={isAddPartPopupOpen} onOpenChange={setIsAddPartPopupOpen}>
                                         <DialogTrigger asChild>
                                             <Button 
-                                                className="bg-blue-950" 
                                                 disabled={!addPartEnabled}
                                             >
                                                 <PlusCircle className="h-3.5 w-3.5" />

@@ -142,9 +142,8 @@ export default function ToggleBarChart<T>({
                       y={y}
                       dy={4}
                       textAnchor="end"
-                      fill="#000000"
+                      className={`fill-foreground ${isClickable ? "clickable-label" : ""}`}
                       fontSize={12}
-                      className={isClickable ? "clickable-label" : ""}
                       onClick={() => {
                         if (isClickable) {
                           handleLabelClick(chartDataItem);

@@ -202,10 +202,10 @@ const OrderPage = () => {
 
                                     (<Button 
                                     size="sm" 
-                                    className="h-8 gap-1 bg-blue-950"
+                                    className="h-8 gap-1"
                                     disabled={!createOrderEnabled}
                                     onClick={()=>navigate("/createorder")}
-                                    >
+                                >
                                         <PlusCircle className="h-3.5 w-3.5" />
                                         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                             Create New Order

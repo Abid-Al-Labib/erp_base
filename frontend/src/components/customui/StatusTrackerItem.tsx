@@ -17,21 +17,21 @@ export const StatusTrackerItem: React.FC<StatusTrackerItemProp> = ({
   isCurrent,
 }) => {
   const borderClass = complete
-    ? "border-green-500"
+    ? "border-green-500 dark:border-green-600"
     : isCurrent
-    ? "border-yellow-500"
-    : "border-red-500";
+    ? "border-yellow-500 dark:border-yellow-600"
+    : "border-destructive";
 
   return (
     <div className={`grid gap-1 rounded-lg p-2 border-2 ${borderClass}`}>
       <div className="font-semibold flex justify-between text-sm">
         {status}
         {complete ? (
-          <Check className="text-green-500 mr-1 w-4 h-4" />
+          <Check className="text-green-500 dark:text-green-400 mr-1 w-4 h-4" />
         ) : isCurrent ? (
-          <div className="rounded-full bg-yellow-400 w-3 h-3 mr-1" />
+          <div className="rounded-full bg-yellow-400 dark:bg-yellow-500 w-3 h-3 mr-1" />
         ) : (
-          <X className="text-red-500 mr-1 w-4 h-4" />
+          <X className="text-destructive mr-1 w-4 h-4" />
         )}
       </div>
 

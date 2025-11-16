@@ -437,7 +437,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
       <SheetTrigger asChild>
         <Button 
           variant="outline" 
-          className={hasActiveFilters ? "bg-amber-100 text-yellow-800 hover:bg-yellow-200" : ""}
+          className={hasActiveFilters ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-500/20 border-yellow-500/20" : ""}
         >
           <Filter className="mr-2 h-4 w-4 md:mr-2" />
           <span className="hidden md:inline">Search & Filters</span>
@@ -644,7 +644,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
           <Button onClick={handleResetFilters} type="button" variant="outline">
             Reset Filters
           </Button>
-          <Button onClick={handleApplyFilters} type="submit" className="bg-blue-950 text-white">
+          <Button onClick={handleApplyFilters} type="submit">
             Apply Filters
           </Button>
         </SheetFooter>

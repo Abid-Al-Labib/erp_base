@@ -247,10 +247,10 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection, lo
                                                             variant="secondary"
                                                             className={`text-sm cursor-pointer ${
                                                                 hasDefective
-                                                                    ? "bg-yellow-100 text-yellow-700"
+                                                                    ? "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20"
                                                                     : machine.is_running
-                                                                        ? "bg-green-100 text-green-600"
-                                                                        : "bg-red-100 text-red-600"
+                                                                        ? "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20"
+                                                                        : "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20"
                                                             }`}
                                                             onClick={() => handleRowSelection?.(factoryId, sectionId, machine.id)}
                                                         >
@@ -263,7 +263,13 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection, lo
                                         <TableCell>
                                             <Badge 
                                                 variant="secondary" 
-                                                className={`text-sm ${runningCount === totalCount ? 'bg-green-100' : runningCount === 0 ? 'bg-red-100' : 'bg-orange-100'}`}
+                                                className={`text-sm ${
+                                                    runningCount === totalCount 
+                                                        ? 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20' 
+                                                        : runningCount === 0 
+                                                        ? 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20' 
+                                                        : 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20'
+                                                }`}
                                             >
                                                 {runningCount}/{totalCount} Running
                                             </Badge>
@@ -271,7 +277,11 @@ const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection, lo
                                         <TableCell>
                                             <Badge 
                                                 variant="secondary" 
-                                                className={`text-sm ${defectiveCount > 0 ? 'bg-yellow-100' : 'bg-green-100'}`}
+                                                className={`text-sm ${
+                                                    defectiveCount > 0 
+                                                        ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' 
+                                                        : 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20'
+                                                }`}
                                             >
                                                 {defectiveCount > 0 ? `${defectiveCount} Defective` : 'All Parts OK'}
                                             </Badge>
