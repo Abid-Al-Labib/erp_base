@@ -1,2 +1,2 @@
-# AkbarCottonMillTool
+# ERP
 A custom procurement and inventory management tool
