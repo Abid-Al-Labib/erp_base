@@ -1,0 +1,5285 @@
+import React, { useState } from 'react';
+import { useLoginMutation } from '@/features/auth/authApi';
+import { useGetWorkspacesQuery, useCreateWorkspaceMutation } from '@/features/workspaces/workspaceApi';
+import { useGetItemsQuery, useCreateItemMutation, useUpdateItemMutation, useDeleteItemMutation } from '@/features/items/itemsApi';
+import { useGetTagsQuery, useCreateTagMutation, useDeleteTagMutation } from '@/features/items/itemTagsApi';
+import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation, useDeleteAccountMutation } from '@/features/accounts/accountsApi';
+import { useGetTagsQuery as useGetAccountTagsQuery, useCreateTagMutation as useCreateAccountTagMutation, useDeleteTagMutation as useDeleteAccountTagMutation } from '@/features/accounts/accountTagsApi';
+import { useGetFactoriesQuery, useCreateFactoryMutation, useUpdateFactoryMutation, useDeleteFactoryMutation } from '@/features/factories/factoriesApi';
+import { useGetFactorySectionsQuery, useCreateFactorySectionMutation, useUpdateFactorySectionMutation, useDeleteFactorySectionMutation } from '@/features/factorySections/factorySectionsApi';
+import { useGetDepartmentsQuery, useCreateDepartmentMutation, useUpdateDepartmentMutation, useDeleteDepartmentMutation } from '@/features/departments/departmentsApi';
+import { useGetProjectsQuery, useCreateProjectMutation, useUpdateProjectMutation, useDeleteProjectMutation } from '@/features/projects/projectsApi';
+import { useGetProjectComponentsQuery, useCreateProjectComponentMutation, useUpdateProjectComponentMutation, useDeleteProjectComponentMutation } from '@/features/projectComponents/projectComponentsApi';
+import { useGetProjectComponentItemsQuery, useCreateProjectComponentItemMutation, useUpdateProjectComponentItemMutation, useDeleteProjectComponentItemMutation } from '@/features/projectComponentItems/projectComponentItemsApi';
+import { useGetProjectComponentTasksQuery, useCreateProjectComponentTaskMutation, useUpdateProjectComponentTaskMutation, useDeleteProjectComponentTaskMutation } from '@/features/projectComponentTasks/projectComponentTasksApi';
+import { useGetMiscellaneousProjectCostsQuery, useCreateMiscellaneousProjectCostMutation, useUpdateMiscellaneousProjectCostMutation, useDeleteMiscellaneousProjectCostMutation } from '@/features/miscellaneousProjectCosts/miscellaneousProjectCostsApi';
+import { useGetAccountInvoicesQuery, useCreateAccountInvoiceMutation, useUpdateAccountInvoiceMutation, useDeleteAccountInvoiceMutation } from '@/features/accountInvoices/accountInvoicesApi';
+import { useGetInvoicePaymentsByInvoiceQuery, useCreateInvoicePaymentMutation, useDeleteInvoicePaymentMutation } from '@/features/invoicePayments/invoicePaymentsApi';
+import { useGetSalesOrdersQuery, useGetSalesOrderByIdQuery, useCreateSalesOrderMutation, useUpdateSalesOrderMutation, useGetSalesOrderItemsQuery, useGetSalesOrderDeliveriesQuery } from '@/features/salesOrders/salesOrdersApi';
+import { useGetSalesDeliveriesQuery, useGetSalesDeliveryByIdQuery, useCreateSalesDeliveryMutation, useCompleteSalesDeliveryMutation, useGetSalesDeliveryItemsQuery } from '@/features/salesDeliveries/salesDeliveriesApi';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { setCredentials, setWorkspace, logout as logoutAction } from '@/features/auth/authSlice';
+import toast, { Toaster } from 'react-hot-toast';
+import type { Item } from '@/types/item';
+import type { Account } from '@/types/account';
+import type { Factory } from '@/types/factory';
+import type { FactorySection } from '@/types/factorySection';
+import type { Department } from '@/types/department';
+import type { Project } from '@/types/project';
+import type { ProjectComponent } from '@/types/projectComponent';
+import type { ProjectComponentItem } from '@/types/projectComponentItem';
+import type { ProjectComponentTask } from '@/types/projectComponentTask';
+import type { MiscellaneousProjectCost } from '@/types/miscellaneousProjectCost';
+import type { AccountInvoice } from '@/types/accountInvoice';
+import type { InvoicePayment } from '@/types/invoicePayment';
+import type { SalesOrder } from '@/types/salesOrder';
+import type { SalesDelivery } from '@/types/salesDelivery';
+
+const ApiTestPage: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { user, token, workspace, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceSlug, setWorkspaceSlug] = useState('');
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+
+  // Items state
+  const [itemName, setItemName] = useState('');
+  const [itemDescription, setItemDescription] = useState('');
+  const [itemUnit, setItemUnit] = useState('pcs');
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Tag management state
+  const [showTagManager, setShowTagManager] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagDescription, setNewTagDescription] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#6B7280');
+  const [managingTagsForItem, setManagingTagsForItem] = useState<Item | null>(null);
+  const [itemTagIds, setItemTagIds] = useState<number[]>([]);
+
+  const [login, { isLoading: isLoggingIn }] = useLoginMutation();
+  const [createWorkspace, { isLoading: isCreatingWorkspace }] = useCreateWorkspaceMutation();
+  const { data: workspaces, isLoading: isLoadingWorkspaces } = useGetWorkspacesQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+
+  // Items API hooks
+  const { data: items, isLoading: isLoadingItems, refetch: refetchItems } = useGetItemsQuery(
+    { skip: 0, limit: 50, search: searchQuery || undefined },
+    { skip: !workspace }
+  );
+  const [createItem, { isLoading: isCreatingItem }] = useCreateItemMutation();
+  const [updateItem, { isLoading: isUpdatingItem }] = useUpdateItemMutation();
+  const [deleteItem, { isLoading: isDeletingItem }] = useDeleteItemMutation();
+
+  // Tags API hooks
+  const { data: tags, isLoading: isLoadingTags } = useGetTagsQuery(undefined, {
+    skip: !workspace
+  });
+  const [createTag, { isLoading: isCreatingTag }] = useCreateTagMutation();
+  const [deleteTag, { isLoading: isDeletingTag }] = useDeleteTagMutation();
+
+  // Accounts state
+  const [accountName, setAccountName] = useState('');
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPhone, setAccountPhone] = useState('');
+  const [accountAddress, setAccountAddress] = useState('');
+  const [accountSelectedTagIds, setAccountSelectedTagIds] = useState<number[]>([]);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
+
+  // Account Tag management state
+  const [showAccountTagManager, setShowAccountTagManager] = useState(false);
+  const [newAccountTagName, setNewAccountTagName] = useState('');
+  const [newAccountTagDescription, setNewAccountTagDescription] = useState('');
+  const [newAccountTagColor, setNewAccountTagColor] = useState('#6B7280');
+
+  // Accounts API hooks
+  const { data: accounts, isLoading: isLoadingAccounts, refetch: refetchAccounts } = useGetAccountsQuery(
+    { skip: 0, limit: 50, search: accountSearchQuery || undefined },
+    { skip: !workspace }
+  );
+  const [createAccount, { isLoading: isCreatingAccount }] = useCreateAccountMutation();
+  const [updateAccount, { isLoading: isUpdatingAccount }] = useUpdateAccountMutation();
+  const [deleteAccount, { isLoading: isDeletingAccount }] = useDeleteAccountMutation();
+
+  // Account Tags API hooks
+  const { data: accountTags, isLoading: isLoadingAccountTags } = useGetAccountTagsQuery(undefined, {
+    skip: !workspace
+  });
+  const [createAccountTag, { isLoading: isCreatingAccountTag }] = useCreateAccountTagMutation();
+  const [deleteAccountTag, { isLoading: isDeletingAccountTag }] = useDeleteAccountTagMutation();
+
+  // Factories state
+  const [factoryName, setFactoryName] = useState('');
+  const [factoryAbbreviation, setFactoryAbbreviation] = useState('');
+  const [editingFactory, setEditingFactory] = useState<Factory | null>(null);
+  const [factorySearchQuery, setFactorySearchQuery] = useState('');
+
+  // Factories API hooks
+  const { data: factories, isLoading: isLoadingFactories, refetch: refetchFactories } = useGetFactoriesQuery(
+    { skip: 0, limit: 50, search: factorySearchQuery || undefined },
+    { skip: !workspace }
+  );
+  const [createFactory, { isLoading: isCreatingFactory }] = useCreateFactoryMutation();
+  const [updateFactory, { isLoading: isUpdatingFactory }] = useUpdateFactoryMutation();
+  const [deleteFactory, { isLoading: isDeletingFactory }] = useDeleteFactoryMutation();
+
+  // Factory Sections state
+  const [sectionName, setSectionName] = useState('');
+  const [sectionFactoryId, setSectionFactoryId] = useState<number | null>(null);
+  const [editingSection, setEditingSection] = useState<FactorySection | null>(null);
+  const [sectionSearchQuery, setSectionSearchQuery] = useState('');
+  const [sectionFilterFactoryId, setSectionFilterFactoryId] = useState<number | null>(null);
+
+  // Factory Sections API hooks
+  const { data: sections, isLoading: isLoadingSections, refetch: refetchSections } = useGetFactorySectionsQuery(
+    {
+      skip: 0,
+      limit: 50,
+      search: sectionSearchQuery || undefined,
+      factory_id: sectionFilterFactoryId || undefined
+    },
+    { skip: !workspace }
+  );
+  const [createSection, { isLoading: isCreatingSection }] = useCreateFactorySectionMutation();
+  const [updateSection, { isLoading: isUpdatingSection }] = useUpdateFactorySectionMutation();
+  const [deleteSection, { isLoading: isDeletingSection }] = useDeleteFactorySectionMutation();
+
+  // Departments state
+  const [departmentName, setDepartmentName] = useState('');
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [departmentSearchQuery, setDepartmentSearchQuery] = useState('');
+
+  // Departments API hooks
+  const { data: departments, isLoading: isLoadingDepartments, refetch: refetchDepartments } = useGetDepartmentsQuery(
+    { skip: 0, limit: 50, search: departmentSearchQuery || undefined },
+    { skip: !workspace }
+  );
+  const [createDepartment, { isLoading: isCreatingDepartment }] = useCreateDepartmentMutation();
+  const [updateDepartment, { isLoading: isUpdatingDepartment }] = useUpdateDepartmentMutation();
+  const [deleteDepartment, { isLoading: isDeletingDepartment }] = useDeleteDepartmentMutation();
+
+  // Projects state
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [projectBudget, setProjectBudget] = useState('');
+  const [projectDeadline, setProjectDeadline] = useState('');
+  const [projectFactoryId, setProjectFactoryId] = useState('');
+  const [projectPriority, setProjectPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [projectStatus, setProjectStatus] = useState<'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'>('PLANNING');
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  // Projects API hooks
+  const { data: projects, isLoading: isLoadingProjects, refetch: refetchProjects } = useGetProjectsQuery(
+    { skip: 0, limit: 50 },
+    { skip: !workspace }
+  );
+  const [createProject, { isLoading: isCreatingProject }] = useCreateProjectMutation();
+  const [updateProject, { isLoading: isUpdatingProject }] = useUpdateProjectMutation();
+  const [deleteProject, { isLoading: isDeletingProject }] = useDeleteProjectMutation();
+
+  // Project Components state
+  const [componentName, setComponentName] = useState('');
+  const [componentDescription, setComponentDescription] = useState('');
+  const [componentProjectId, setComponentProjectId] = useState('');
+  const [componentBudget, setComponentBudget] = useState('');
+  const [componentDeadline, setComponentDeadline] = useState('');
+  const [componentStatus, setComponentStatus] = useState<'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'>('PLANNING');
+  const [editingComponent, setEditingComponent] = useState<ProjectComponent | null>(null);
+  const [filterComponentProjectId, setFilterComponentProjectId] = useState<number | null>(null);
+
+  // Project Components API hooks
+  const { data: projectComponents, isLoading: isLoadingComponents, refetch: refetchComponents } = useGetProjectComponentsQuery(
+    { skip: 0, limit: 50, project_id: filterComponentProjectId || undefined },
+    { skip: !workspace }
+  );
+  const [createComponent, { isLoading: isCreatingComponent }] = useCreateProjectComponentMutation();
+  const [updateComponent, { isLoading: isUpdatingComponent }] = useUpdateProjectComponentMutation();
+  const [deleteComponent, { isLoading: isDeletingComponent }] = useDeleteProjectComponentMutation();
+
+  // Project Component Items state
+  const [componentItemComponentId, setComponentItemComponentId] = useState('');
+  const [componentItemItemId, setComponentItemItemId] = useState('');
+  const [componentItemQty, setComponentItemQty] = useState('');
+  const [editingComponentItem, setEditingComponentItem] = useState<ProjectComponentItem | null>(null);
+  const [filterComponentItemComponentId, setFilterComponentItemComponentId] = useState<number | null>(null);
+
+  // Project Component Items API hooks
+  const { data: projectComponentItems, isLoading: isLoadingComponentItems, refetch: refetchComponentItems } = useGetProjectComponentItemsQuery(
+    { skip: 0, limit: 50, project_component_id: filterComponentItemComponentId || undefined },
+    { skip: !workspace }
+  );
+  const [createComponentItem, { isLoading: isCreatingComponentItem }] = useCreateProjectComponentItemMutation();
+  const [updateComponentItem, { isLoading: isUpdatingComponentItem }] = useUpdateProjectComponentItemMutation();
+  const [deleteComponentItem, { isLoading: isDeletingComponentItem }] = useDeleteProjectComponentItemMutation();
+
+  // Project Component Tasks state
+  const [taskName, setTaskName] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [taskComponentId, setTaskComponentId] = useState('');
+  const [taskIsNote, setTaskIsNote] = useState(false);
+  const [taskPriority, setTaskPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [editingTask, setEditingTask] = useState<ProjectComponentTask | null>(null);
+  const [filterTaskComponentId, setFilterTaskComponentId] = useState<number | null>(null);
+
+  // Project Component Tasks API hooks
+  const { data: projectComponentTasks, isLoading: isLoadingTasks, refetch: refetchTasks } = useGetProjectComponentTasksQuery(
+    { skip: 0, limit: 50, project_component_id: filterTaskComponentId || undefined },
+    { skip: !workspace }
+  );
+  const [createTask, { isLoading: isCreatingTask }] = useCreateProjectComponentTaskMutation();
+  const [updateTask, { isLoading: isUpdatingTask }] = useUpdateProjectComponentTaskMutation();
+  const [deleteTask, { isLoading: isDeletingTask }] = useDeleteProjectComponentTaskMutation();
+
+  // Miscellaneous Project Costs state
+  const [costName, setCostName] = useState('');
+  const [costDescription, setCostDescription] = useState('');
+  const [costAmount, setCostAmount] = useState('');
+  const [costProjectId, setCostProjectId] = useState('');
+  const [costComponentId, setCostComponentId] = useState('');
+  const [editingCost, setEditingCost] = useState<MiscellaneousProjectCost | null>(null);
+  const [filterCostProjectId, setFilterCostProjectId] = useState<number | null>(null);
+  const [filterCostComponentId, setFilterCostComponentId] = useState<number | null>(null);
+
+  // Miscellaneous Project Costs API hooks
+  const { data: miscellaneousCosts, isLoading: isLoadingCosts, refetch: refetchCosts } = useGetMiscellaneousProjectCostsQuery(
+    {
+      skip: 0,
+      limit: 50,
+      project_id: filterCostProjectId || undefined,
+      project_component_id: filterCostComponentId || undefined
+    },
+    { skip: !workspace }
+  );
+  const [createCost, { isLoading: isCreatingCost }] = useCreateMiscellaneousProjectCostMutation();
+  const [updateCost, { isLoading: isUpdatingCost }] = useUpdateMiscellaneousProjectCostMutation();
+  const [deleteCost, { isLoading: isDeletingCost }] = useDeleteMiscellaneousProjectCostMutation();
+
+  // Invoice state
+  const [invoiceAccountId, setInvoiceAccountId] = useState('');
+  const [invoiceType, setInvoiceType] = useState<'payable' | 'receivable'>('payable');
+  const [invoiceAmount, setInvoiceAmount] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dueDate, setDueDate] = useState('');
+  const [invoiceDescription, setInvoiceDescription] = useState('');
+  const [editingInvoice, setEditingInvoice] = useState<AccountInvoice | null>(null);
+  const [selectedInvoiceForPayments, setSelectedInvoiceForPayments] = useState<AccountInvoice | null>(null);
+
+  // Payment state
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+
+  // Invoices API hooks
+  const { data: invoices, isLoading: isLoadingInvoices, refetch: refetchInvoices } = useGetAccountInvoicesQuery(
+    { skip: 0, limit: 50 },
+    { skip: !workspace }
+  );
+  const [createInvoice, { isLoading: isCreatingInvoice }] = useCreateAccountInvoiceMutation();
+  const [updateInvoice, { isLoading: isUpdatingInvoice }] = useUpdateAccountInvoiceMutation();
+  const [deleteInvoice, { isLoading: isDeletingInvoice }] = useDeleteAccountInvoiceMutation();
+
+  // Payments API hooks
+  const { data: payments, isLoading: isLoadingPayments, refetch: refetchPayments } = useGetInvoicePaymentsByInvoiceQuery(
+    { invoice_id: selectedInvoiceForPayments?.id || 0 },
+    { skip: !selectedInvoiceForPayments }
+  );
+  const [createPayment, { isLoading: isCreatingPayment }] = useCreateInvoicePaymentMutation();
+  const [deletePayment, { isLoading: isDeletingPayment }] = useDeleteInvoicePaymentMutation();
+
+  // Sales Orders state
+  const [salesOrderAccountId, setSalesOrderAccountId] = useState('');
+  const [salesOrderFactoryId, setSalesOrderFactoryId] = useState('');
+  const [salesOrderDate, setSalesOrderDate] = useState(new Date().toISOString().split('T')[0]);
+  const [salesOrderQuotationDate, setSalesOrderQuotationDate] = useState('');
+  const [salesOrderExpectedDeliveryDate, setSalesOrderExpectedDeliveryDate] = useState('');
+  const [salesOrderNotes, setSalesOrderNotes] = useState('');
+  const [salesOrderItems, setSalesOrderItems] = useState<Array<{ item_id: number; quantity_ordered: number; unit_price: number; notes?: string }>>([]);
+  // Note: total_amount is calculated automatically from items
+  const [salesOrderItemId, setSalesOrderItemId] = useState('');
+  const [salesOrderItemQty, setSalesOrderItemQty] = useState('');
+  const [salesOrderItemPrice, setSalesOrderItemPrice] = useState('');
+  const [salesOrderItemNotes, setSalesOrderItemNotes] = useState('');
+  const [editingSalesOrder, setEditingSalesOrder] = useState<SalesOrder | null>(null);
+  const [selectedSalesOrderForDetails, setSelectedSalesOrderForDetails] = useState<SalesOrder | null>(null);
+
+  // Sales Deliveries state
+  const [deliverySalesOrderId, setDeliverySalesOrderId] = useState('');
+  const [deliveryScheduledDate, setDeliveryScheduledDate] = useState('');
+  const [deliveryTrackingNumber, setDeliveryTrackingNumber] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [deliveryItems, setDeliveryItems] = useState<Array<{ sales_order_item_id: number; quantity_delivered: number; notes?: string }>>([]);
+  const [deliveryItemSalesOrderItemId, setDeliveryItemSalesOrderItemId] = useState('');
+  const [deliveryItemQty, setDeliveryItemQty] = useState('');
+  const [deliveryItemNotes, setDeliveryItemNotes] = useState('');
+  const [selectedDeliveryForDetails, setSelectedDeliveryForDetails] = useState<SalesDelivery | null>(null);
+  const [filterDeliveryStatus, setFilterDeliveryStatus] = useState<'planned' | 'delivered' | 'cancelled' | ''>('');
+
+  // Sales Orders API hooks
+  const { data: salesOrders, isLoading: isLoadingSalesOrders, refetch: refetchSalesOrders } = useGetSalesOrdersQuery(
+    { skip: 0, limit: 50 },
+    { skip: !workspace }
+  );
+  const [createSalesOrder, { isLoading: isCreatingSalesOrder }] = useCreateSalesOrderMutation();
+  const [updateSalesOrder, { isLoading: isUpdatingSalesOrder }] = useUpdateSalesOrderMutation();
+
+  // Sales Deliveries API hooks
+  const { data: salesDeliveries, isLoading: isLoadingSalesDeliveries, refetch: refetchSalesDeliveries } = useGetSalesDeliveriesQuery(
+    { skip: 0, limit: 50, delivery_status: filterDeliveryStatus || undefined },
+    { skip: !workspace }
+  );
+  const [createSalesDelivery, { isLoading: isCreatingSalesDelivery }] = useCreateSalesDeliveryMutation();
+  const [completeSalesDelivery, { isLoading: isCompletingSalesDelivery }] = useCompleteSalesDeliveryMutation();
+
+  // Conditional queries for selected sales order/delivery details
+  const { data: selectedSalesOrderItems, refetch: refetchSelectedSalesOrderItems } = useGetSalesOrderItemsQuery(
+    selectedSalesOrderForDetails?.id || 0,
+    { skip: !selectedSalesOrderForDetails }
+  );
+  const { data: selectedSalesOrderDeliveries, refetch: refetchSelectedSalesOrderDeliveries } = useGetSalesOrderDeliveriesQuery(
+    selectedSalesOrderForDetails?.id || 0,
+    { skip: !selectedSalesOrderForDetails }
+  );
+  const { data: selectedDeliveryItems, refetch: refetchSelectedDeliveryItems } = useGetSalesDeliveryItemsQuery(
+    selectedDeliveryForDetails?.id || 0,
+    { skip: !selectedDeliveryForDetails }
+  );
+
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const result = await login({ email, password }).unwrap();
+
+      // Store user and token (NO workspace yet - user selects after)
+      dispatch(setCredentials({
+        user: result.user,
+        token: result.access_token,
+      }));
+
+      toast.success(`Login successful! Welcome ${result.user.name}. Select a workspace below.`);
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Login failed';
+      toast.error(errorMessage);
+      console.error('Login error:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    dispatch(logoutAction());
+    toast.success('Logged out successfully');
+  };
+
+  const handleSelectWorkspace = (selectedWorkspace: any) => {
+    dispatch(setWorkspace({
+      id: selectedWorkspace.id,
+      name: selectedWorkspace.name,
+      role: selectedWorkspace.role,
+      status: 'active', // Default to active since user can access it
+    }));
+    toast.success(`Switched to workspace: ${selectedWorkspace.name}`);
+  };
+
+  const handleWorkspaceNameChange = (name: string) => {
+    setWorkspaceName(name);
+    // Auto-generate slug from name
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    setWorkspaceSlug(slug);
+  };
+
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!workspaceName || !workspaceSlug) {
+      toast.error('Please provide workspace name and slug');
+      return;
+    }
+
+    try {
+      const result = await createWorkspace({
+        name: workspaceName,
+        slug: workspaceSlug,
+      }).unwrap();
+
+      toast.success(`Workspace "${result.name}" created successfully!`);
+      setWorkspaceName('');
+      setWorkspaceSlug('');
+      setShowCreateWorkspace(false);
+    } catch (error: any) {
+      console.error('Create workspace error - FULL ERROR:', error);
+      console.error('Error data:', error.data);
+      console.error('Error status:', error.status);
+      const errorMessage = error.data?.detail || error.data?.message || 'Failed to create workspace';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Items handlers
+  const handleCreateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!itemName || !itemUnit) {
+      toast.error('Please provide item name and unit');
+      return;
+    }
+
+    try {
+      const result = await createItem({
+        name: itemName,
+        description: itemDescription || null,
+        unit: itemUnit,
+        tag_ids: selectedTagIds,
+      }).unwrap();
+
+      toast.success(`Item "${result.name}" created successfully!`);
+      setItemName('');
+      setItemDescription('');
+      setItemUnit('pcs');
+      setSelectedTagIds([]);
+      refetchItems();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create item';
+      toast.error(errorMessage);
+      console.error('Create item error:', error);
+    }
+  };
+
+  const handleEditItem = (item: Item) => {
+    setEditingItem(item);
+    setItemName(item.name);
+    setItemDescription(item.description || '');
+    setItemUnit(item.unit);
+    setSelectedTagIds(item.tags?.map(t => t.id) || []);
+  };
+
+  const handleUpdateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingItem) return;
+
+    try {
+      const result = await updateItem({
+        id: editingItem.id,
+        data: {
+          name: itemName,
+          description: itemDescription || null,
+          unit: itemUnit,
+          tag_ids: selectedTagIds,
+        },
+      }).unwrap();
+
+      toast.success(`Item "${result.name}" updated successfully!`);
+      setEditingItem(null);
+      setItemName('');
+      setItemDescription('');
+      setItemUnit('pcs');
+      setSelectedTagIds([]);
+      refetchItems();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to update item';
+      toast.error(errorMessage);
+      console.error('Update item error:', error);
+    }
+  };
+
+  const handleDeleteItem = async (item: Item) => {
+    if (!confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteItem(item.id).unwrap();
+      toast.success(`Item "${item.name}" deleted successfully!`);
+      refetchItems();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete item';
+      toast.error(errorMessage);
+      console.error('Delete item error:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setItemName('');
+    setItemDescription('');
+    setItemUnit('pcs');
+    setSelectedTagIds([]);
+  };
+
+  // Tag handlers
+  const handleCreateTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newTagName) {
+      toast.error('Please provide tag name');
+      return;
+    }
+
+    try {
+      await createTag({
+        name: newTagName,
+        description: newTagDescription || undefined,
+        color: newTagColor,
+      }).unwrap();
+
+      toast.success(`Tag "${newTagName}" created successfully!`);
+      setNewTagName('');
+      setNewTagDescription('');
+      setNewTagColor('#6B7280');
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create tag';
+      toast.error(errorMessage);
+      console.error('Create tag error:', error);
+    }
+  };
+
+  const handleDeleteTag = async (tagId: number, tagName: string, isSystemTag: boolean) => {
+    if (isSystemTag) {
+      toast.error('System tags cannot be deleted');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete the tag "${tagName}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteTag(tagId).unwrap();
+      toast.success(`Tag "${tagName}" deleted successfully!`);
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete tag';
+      toast.error(errorMessage);
+      console.error('Delete tag error:', error);
+    }
+  };
+
+  const handleManageItemTags = (item: Item) => {
+    setManagingTagsForItem(item);
+    setItemTagIds(item.tags?.map(t => t.id) || []);
+  };
+
+  const handleSaveItemTags = async () => {
+    if (!managingTagsForItem) return;
+
+    try {
+      await updateItem({
+        id: managingTagsForItem.id,
+        data: {
+          tag_ids: itemTagIds,
+        },
+      }).unwrap();
+
+      toast.success(`Tags updated for "${managingTagsForItem.name}"`);
+      setManagingTagsForItem(null);
+      setItemTagIds([]);
+      refetchItems();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to update tags';
+      toast.error(errorMessage);
+      console.error('Update tags error:', error);
+    }
+  };
+
+  // Account handlers
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!accountName) {
+      toast.error('Please provide account name');
+      return;
+    }
+
+    try {
+      await createAccount({
+        name: accountName,
+        primary_email: accountEmail || undefined,
+        primary_phone: accountPhone || undefined,
+        address: accountAddress || undefined,
+        tag_ids: accountSelectedTagIds,
+      }).unwrap();
+
+      toast.success(`Account "${accountName}" created successfully!`);
+      setAccountName('');
+      setAccountEmail('');
+      setAccountPhone('');
+      setAccountAddress('');
+      setAccountSelectedTagIds([]);
+      refetchAccounts();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create account';
+      toast.error(errorMessage);
+      console.error('Create account error:', error);
+    }
+  };
+
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setAccountName(account.name);
+    setAccountEmail(account.primary_email || '');
+    setAccountPhone(account.primary_phone || '');
+    setAccountAddress(account.address || '');
+    setAccountSelectedTagIds(account.tags?.map(t => t.id) || []);
+  };
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingAccount) return;
+
+    try {
+      await updateAccount({
+        id: editingAccount.id,
+        data: {
+          name: accountName || undefined,
+          primary_email: accountEmail || undefined,
+          primary_phone: accountPhone || undefined,
+          address: accountAddress || undefined,
+          tag_ids: accountSelectedTagIds,
+        },
+      }).unwrap();
+
+      toast.success(`Account "${accountName}" updated successfully!`);
+      handleCancelAccountEdit();
+      refetchAccounts();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to update account';
+      toast.error(errorMessage);
+      console.error('Update account error:', error);
+    }
+  };
+
+  const handleDeleteAccount = async (account: Account) => {
+    if (!confirm(`Are you sure you want to delete "${account.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteAccount(account.id).unwrap();
+      toast.success(`Account "${account.name}" deleted successfully!`);
+      refetchAccounts();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete account';
+      toast.error(errorMessage);
+      console.error('Delete account error:', error);
+    }
+  };
+
+  const handleCancelAccountEdit = () => {
+    setEditingAccount(null);
+    setAccountName('');
+    setAccountEmail('');
+    setAccountPhone('');
+    setAccountAddress('');
+    setAccountSelectedTagIds([]);
+  };
+
+  // Account Tag handlers
+  const handleCreateAccountTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newAccountTagName) {
+      toast.error('Please provide tag name');
+      return;
+    }
+
+    try {
+      await createAccountTag({
+        name: newAccountTagName,
+        description: newAccountTagDescription || undefined,
+        color: newAccountTagColor,
+      }).unwrap();
+
+      toast.success(`Account tag "${newAccountTagName}" created successfully!`);
+      setNewAccountTagName('');
+      setNewAccountTagDescription('');
+      setNewAccountTagColor('#6B7280');
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create account tag';
+      toast.error(errorMessage);
+      console.error('Create account tag error:', error);
+    }
+  };
+
+  const handleDeleteAccountTag = async (tagId: number, tagName: string, isSystemTag: boolean) => {
+    if (isSystemTag) {
+      toast.error('System tags cannot be deleted');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete the tag "${tagName}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteAccountTag(tagId).unwrap();
+      toast.success(`Account tag "${tagName}" deleted successfully!`);
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete account tag';
+      toast.error(errorMessage);
+      console.error('Delete account tag error:', error);
+    }
+  };
+
+  // Factory handlers
+  const handleCreateFactory = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!factoryName || !factoryAbbreviation) {
+      toast.error('Please provide factory name and abbreviation');
+      return;
+    }
+
+    try {
+      await createFactory({
+        name: factoryName,
+        abbreviation: factoryAbbreviation,
+      }).unwrap();
+      toast.success(`Factory "${factoryName}" created successfully!`);
+      setFactoryName('');
+      setFactoryAbbreviation('');
+      refetchFactories();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create factory';
+      toast.error(errorMessage);
+      console.error('Create factory error:', error);
+    }
+  };
+
+  const handleEditFactory = (factory: Factory) => {
+    setEditingFactory(factory);
+    setFactoryName(factory.name);
+    setFactoryAbbreviation(factory.abbreviation);
+  };
+
+  const handleUpdateFactory = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingFactory || !factoryName || !factoryAbbreviation) {
+      toast.error('Please provide factory name and abbreviation');
+      return;
+    }
+
+    try {
+      await updateFactory({
+        id: editingFactory.id,
+        data: {
+          name: factoryName,
+          abbreviation: factoryAbbreviation,
+        },
+      }).unwrap();
+      toast.success(`Factory "${factoryName}" updated successfully!`);
+      handleCancelFactoryEdit();
+      refetchFactories();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to update factory';
+      toast.error(errorMessage);
+      console.error('Update factory error:', error);
+    }
+  };
+
+  const handleCancelFactoryEdit = () => {
+    setEditingFactory(null);
+    setFactoryName('');
+    setFactoryAbbreviation('');
+  };
+
+  const handleDeleteFactory = async (factory: Factory) => {
+    if (!confirm(`Are you sure you want to delete "${factory.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteFactory(factory.id).unwrap();
+      toast.success(`Factory "${factory.name}" deleted successfully!`);
+      refetchFactories();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete factory';
+      toast.error(errorMessage);
+      console.error('Delete factory error:', error);
+    }
+  };
+
+  // Factory Section handlers
+  const handleCreateSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!sectionName || !sectionFactoryId) {
+      toast.error('Please provide section name and select a factory');
+      return;
+    }
+
+    try {
+      await createSection({
+        name: sectionName,
+        factory_id: sectionFactoryId,
+      }).unwrap();
+      toast.success(`Section "${sectionName}" created successfully!`);
+      setSectionName('');
+      setSectionFactoryId(null);
+      refetchSections();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create section';
+      toast.error(errorMessage);
+      console.error('Create section error:', error);
+    }
+  };
+
+  const handleEditSection = (section: FactorySection) => {
+    setEditingSection(section);
+    setSectionName(section.name);
+    setSectionFactoryId(section.factory_id);
+  };
+
+  const handleUpdateSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingSection || !sectionName || !sectionFactoryId) {
+      toast.error('Please provide section name and select a factory');
+      return;
+    }
+
+    try {
+      await updateSection({
+        id: editingSection.id,
+        data: {
+          name: sectionName,
+          factory_id: sectionFactoryId,
+        },
+      }).unwrap();
+      toast.success(`Section "${sectionName}" updated successfully!`);
+      handleCancelSectionEdit();
+      refetchSections();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to update section';
+      toast.error(errorMessage);
+      console.error('Update section error:', error);
+    }
+  };
+
+  const handleCancelSectionEdit = () => {
+    setEditingSection(null);
+    setSectionName('');
+    setSectionFactoryId(null);
+  };
+
+  const handleDeleteSection = async (section: FactorySection) => {
+    if (!confirm(`Are you sure you want to delete "${section.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteSection(section.id).unwrap();
+      toast.success(`Section "${section.name}" deleted successfully!`);
+      refetchSections();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete section';
+      toast.error(errorMessage);
+      console.error('Delete section error:', error);
+    }
+  };
+
+  // Department handlers
+  const handleCreateDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!departmentName.trim()) {
+      toast.error('Please enter department name');
+      return;
+    }
+
+    try {
+      if (editingDepartment) {
+        // Update existing department
+        await updateDepartment({
+          id: editingDepartment.id,
+          data: { name: departmentName }
+        }).unwrap();
+        toast.success(`Department "${departmentName}" updated successfully!`);
+        setEditingDepartment(null);
+      } else {
+        // Create new department
+        await createDepartment({ name: departmentName }).unwrap();
+        toast.success(`Department "${departmentName}" created successfully!`);
+      }
+
+      // Reset form
+      setDepartmentName('');
+      refetchDepartments();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingDepartment ? 'update' : 'create'} department`;
+      toast.error(errorMessage);
+      console.error('Department error:', error);
+    }
+  };
+
+  const handleEditDepartment = (department: Department) => {
+    setEditingDepartment(department);
+    setDepartmentName(department.name);
+  };
+
+  const handleCancelEditDepartment = () => {
+    setEditingDepartment(null);
+    setDepartmentName('');
+  };
+
+  const handleDeleteDepartment = async (department: Department) => {
+    if (!confirm(`Are you sure you want to delete "${department.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteDepartment(department.id).unwrap();
+      toast.success(`Department "${department.name}" deleted successfully!`);
+      refetchDepartments();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete department';
+      toast.error(errorMessage);
+      console.error('Delete department error:', error);
+    }
+  };
+
+  // Project handlers
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!projectName.trim() || !projectDescription.trim() || !projectFactoryId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const projectData = {
+        factory_id: parseInt(projectFactoryId),
+        name: projectName,
+        description: projectDescription,
+        budget: projectBudget ? parseFloat(projectBudget) : null,
+        deadline: projectDeadline ? `${projectDeadline}T00:00:00` : null,
+        priority: projectPriority,
+        status: projectStatus
+      };
+
+      if (editingProject) {
+        // Update existing project
+        await updateProject({
+          id: editingProject.id,
+          data: projectData
+        }).unwrap();
+        toast.success(`Project "${projectName}" updated successfully!`);
+        setEditingProject(null);
+      } else {
+        // Create new project
+        await createProject(projectData).unwrap();
+        toast.success(`Project "${projectName}" created successfully!`);
+      }
+
+      // Reset form
+      setProjectName('');
+      setProjectDescription('');
+      setProjectBudget('');
+      setProjectDeadline('');
+      setProjectFactoryId('');
+      setProjectPriority('MEDIUM');
+      setProjectStatus('PLANNING');
+      refetchProjects();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingProject ? 'update' : 'create'} project`;
+      toast.error(errorMessage);
+      console.error('Project error:', error);
+    }
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setProjectName(project.name);
+    setProjectDescription(project.description);
+    setProjectBudget(project.budget?.toString() || '');
+    setProjectDeadline(project.deadline ? project.deadline.split('T')[0] : '');
+    setProjectFactoryId(project.factory_id.toString());
+    setProjectPriority(project.priority);
+    setProjectStatus(project.status);
+  };
+
+  const handleCancelEditProject = () => {
+    setEditingProject(null);
+    setProjectName('');
+    setProjectDescription('');
+    setProjectBudget('');
+    setProjectDeadline('');
+    setProjectFactoryId('');
+    setProjectPriority('MEDIUM');
+    setProjectStatus('PLANNING');
+  };
+
+  const handleDeleteProject = async (project: Project) => {
+    if (!confirm(`Are you sure you want to delete "${project.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteProject(project.id).unwrap();
+      toast.success(`Project "${project.name}" deleted successfully!`);
+      refetchProjects();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete project';
+      toast.error(errorMessage);
+      console.error('Delete project error:', error);
+    }
+  };
+
+  // Project Component handlers
+  const handleCreateComponent = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!componentName.trim() || !componentProjectId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const componentData = {
+        project_id: parseInt(componentProjectId),
+        name: componentName,
+        description: componentDescription || null,
+        budget: componentBudget ? parseFloat(componentBudget) : null,
+        deadline: componentDeadline ? `${componentDeadline}T00:00:00` : null,
+        status: componentStatus
+      };
+
+      if (editingComponent) {
+        await updateComponent({
+          id: editingComponent.id,
+          data: componentData
+        }).unwrap();
+        toast.success(`Component "${componentName}" updated successfully!`);
+        setEditingComponent(null);
+      } else {
+        await createComponent(componentData).unwrap();
+        toast.success(`Component "${componentName}" created successfully!`);
+        // Set filter to show components of the project we just created for
+        setFilterComponentProjectId(parseInt(componentProjectId));
+      }
+
+      setComponentName('');
+      setComponentDescription('');
+      setComponentProjectId('');
+      setComponentBudget('');
+      setComponentDeadline('');
+      setComponentStatus('PLANNING');
+      refetchComponents();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingComponent ? 'update' : 'create'} component`;
+      toast.error(errorMessage);
+      console.error('Component error:', error);
+    }
+  };
+
+  const handleEditComponent = (component: ProjectComponent) => {
+    setEditingComponent(component);
+    setComponentName(component.name);
+    setComponentDescription(component.description || '');
+    setComponentProjectId(component.project_id.toString());
+    setComponentBudget(component.budget?.toString() || '');
+    setComponentDeadline(component.deadline ? component.deadline.split('T')[0] : '');
+    setComponentStatus(component.status);
+  };
+
+  const handleCancelEditComponent = () => {
+    setEditingComponent(null);
+    setComponentName('');
+    setComponentDescription('');
+    setComponentProjectId('');
+    setComponentBudget('');
+    setComponentDeadline('');
+    setComponentStatus('PLANNING');
+  };
+
+  const handleDeleteComponent = async (component: ProjectComponent) => {
+    if (!confirm(`Are you sure you want to delete "${component.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteComponent(component.id).unwrap();
+      toast.success(`Component "${component.name}" deleted successfully!`);
+      refetchComponents();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete component';
+      toast.error(errorMessage);
+      console.error('Delete component error:', error);
+    }
+  };
+
+  // Project Component Item handlers
+  const handleCreateComponentItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!componentItemComponentId || !componentItemItemId || !componentItemQty) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const itemData = {
+        project_component_id: parseInt(componentItemComponentId),
+        item_id: parseInt(componentItemItemId),
+        qty: parseInt(componentItemQty)
+      };
+
+      if (editingComponentItem) {
+        await updateComponentItem({
+          id: editingComponentItem.id,
+          data: { qty: parseInt(componentItemQty) }
+        }).unwrap();
+        toast.success('Component item updated successfully!');
+        setEditingComponentItem(null);
+      } else {
+        await createComponentItem(itemData).unwrap();
+        toast.success('Component item created successfully!');
+        // Set filter to show items of the component we just created for
+        setFilterComponentItemComponentId(parseInt(componentItemComponentId));
+      }
+
+      setComponentItemComponentId('');
+      setComponentItemItemId('');
+      setComponentItemQty('');
+      refetchComponentItems();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingComponentItem ? 'update' : 'create'} component item`;
+      toast.error(errorMessage);
+      console.error('Component item error:', error);
+    }
+  };
+
+  const handleEditComponentItem = (item: ProjectComponentItem) => {
+    setEditingComponentItem(item);
+    setComponentItemComponentId(item.project_component_id.toString());
+    setComponentItemItemId(item.item_id.toString());
+    setComponentItemQty(item.qty.toString());
+  };
+
+  const handleCancelEditComponentItem = () => {
+    setEditingComponentItem(null);
+    setComponentItemComponentId('');
+    setComponentItemItemId('');
+    setComponentItemQty('');
+  };
+
+  const handleDeleteComponentItem = async (item: ProjectComponentItem) => {
+    if (!confirm(`Are you sure you want to delete this component item?`)) {
+      return;
+    }
+
+    try {
+      await deleteComponentItem(item.id).unwrap();
+      toast.success('Component item deleted successfully!');
+      refetchComponentItems();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete component item';
+      toast.error(errorMessage);
+      console.error('Delete component item error:', error);
+    }
+  };
+
+  // Project Component Task handlers
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!taskName.trim() || !taskDescription.trim() || !taskComponentId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const taskData = {
+        project_component_id: parseInt(taskComponentId),
+        name: taskName,
+        description: taskDescription,
+        is_note: taskIsNote,
+        task_priority: taskPriority
+      };
+
+      if (editingTask) {
+        await updateTask({
+          id: editingTask.id,
+          data: taskData
+        }).unwrap();
+        toast.success(`Task "${taskName}" updated successfully!`);
+        setEditingTask(null);
+      } else {
+        await createTask(taskData).unwrap();
+        toast.success(`Task "${taskName}" created successfully!`);
+        // Set filter to show tasks of the component we just created for
+        setFilterTaskComponentId(parseInt(taskComponentId));
+      }
+
+      setTaskName('');
+      setTaskDescription('');
+      setTaskComponentId('');
+      setTaskIsNote(false);
+      setTaskPriority('MEDIUM');
+      refetchTasks();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingTask ? 'update' : 'create'} task`;
+      toast.error(errorMessage);
+      console.error('Task error:', error);
+    }
+  };
+
+  const handleEditTask = (task: ProjectComponentTask) => {
+    setEditingTask(task);
+    setTaskName(task.name);
+    setTaskDescription(task.description);
+    setTaskComponentId(task.project_component_id.toString());
+    setTaskIsNote(task.is_note);
+    setTaskPriority(task.task_priority || 'MEDIUM');
+  };
+
+  const handleCancelEditTask = () => {
+    setEditingTask(null);
+    setTaskName('');
+    setTaskDescription('');
+    setTaskComponentId('');
+    setTaskIsNote(false);
+    setTaskPriority('MEDIUM');
+  };
+
+  const handleDeleteTask = async (task: ProjectComponentTask) => {
+    if (!confirm(`Are you sure you want to delete "${task.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteTask(task.id).unwrap();
+      toast.success(`Task "${task.name}" deleted successfully!`);
+      refetchTasks();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete task';
+      toast.error(errorMessage);
+      console.error('Delete task error:', error);
+    }
+  };
+
+  const handleToggleTaskComplete = async (task: ProjectComponentTask) => {
+    try {
+      await updateTask({
+        id: task.id,
+        data: { is_completed: !task.is_completed }
+      }).unwrap();
+      toast.success(`Task marked as ${!task.is_completed ? 'completed' : 'incomplete'}!`);
+      refetchTasks();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to update task';
+      toast.error(errorMessage);
+      console.error('Toggle task error:', error);
+    }
+  };
+
+  // Miscellaneous Cost handlers
+  const handleCreateCost = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!costName.trim() || !costAmount) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const costData = {
+        name: costName,
+        description: costDescription || null,
+        amount: parseFloat(costAmount),
+        project_id: costProjectId ? parseInt(costProjectId) : null,
+        project_component_id: costComponentId ? parseInt(costComponentId) : null
+      };
+
+      if (editingCost) {
+        await updateCost({
+          id: editingCost.id,
+          data: costData
+        }).unwrap();
+        toast.success(`Cost "${costName}" updated successfully!`);
+        setEditingCost(null);
+      } else {
+        await createCost(costData).unwrap();
+        toast.success(`Cost "${costName}" created successfully!`);
+        // Set filter to show costs we just created
+        if (costComponentId) {
+          setFilterCostComponentId(parseInt(costComponentId));
+        } else if (costProjectId) {
+          setFilterCostProjectId(parseInt(costProjectId));
+          setFilterCostComponentId(null);
+        }
+      }
+
+      setCostName('');
+      setCostDescription('');
+      setCostAmount('');
+      setCostProjectId('');
+      setCostComponentId('');
+      refetchCosts();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingCost ? 'update' : 'create'} cost`;
+      toast.error(errorMessage);
+      console.error('Cost error:', error);
+    }
+  };
+
+  const handleEditCost = (cost: MiscellaneousProjectCost) => {
+    setEditingCost(cost);
+    setCostName(cost.name);
+    setCostDescription(cost.description || '');
+    setCostAmount(cost.amount.toString());
+    setCostProjectId(cost.project_id?.toString() || '');
+    setCostComponentId(cost.project_component_id?.toString() || '');
+  };
+
+  const handleCancelEditCost = () => {
+    setEditingCost(null);
+    setCostName('');
+    setCostDescription('');
+    setCostAmount('');
+    setCostProjectId('');
+    setCostComponentId('');
+  };
+
+  const handleDeleteCost = async (cost: MiscellaneousProjectCost) => {
+    if (!confirm(`Are you sure you want to delete "${cost.name}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteCost(cost.id).unwrap();
+      toast.success(`Cost "${cost.name}" deleted successfully!`);
+      refetchCosts();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete cost';
+      toast.error(errorMessage);
+      console.error('Delete cost error:', error);
+    }
+  };
+
+  // Invoice handlers
+  const handleCreateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!invoiceAccountId || !invoiceAmount || !invoiceDate) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const invoiceData = {
+        account_id: parseInt(invoiceAccountId),
+        invoice_type: invoiceType,
+        invoice_amount: parseFloat(invoiceAmount),
+        invoice_number: invoiceNumber || undefined,
+        invoice_date: invoiceDate,
+        due_date: dueDate || undefined,
+        description: invoiceDescription || undefined,
+      };
+
+      if (editingInvoice) {
+        await updateInvoice({
+          id: editingInvoice.id,
+          data: invoiceData
+        }).unwrap();
+        toast.success('Invoice updated successfully!');
+        setEditingInvoice(null);
+      } else {
+        await createInvoice(invoiceData).unwrap();
+        toast.success('Invoice created successfully!');
+      }
+
+      // Reset form
+      setInvoiceAccountId('');
+      setInvoiceType('payable');
+      setInvoiceAmount('');
+      setInvoiceNumber('');
+      setInvoiceDate(new Date().toISOString().split('T')[0]);
+      setDueDate('');
+      setInvoiceDescription('');
+      refetchInvoices();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || `Failed to ${editingInvoice ? 'update' : 'create'} invoice`;
+      toast.error(errorMessage);
+      console.error('Invoice error:', error);
+    }
+  };
+
+  const handleEditInvoice = (invoice: AccountInvoice) => {
+    setEditingInvoice(invoice);
+    setInvoiceAccountId(invoice.account_id.toString());
+    setInvoiceType(invoice.invoice_type);
+    setInvoiceAmount(invoice.invoice_amount.toString());
+    setInvoiceNumber(invoice.invoice_number || '');
+    setInvoiceDate(invoice.invoice_date);
+    setDueDate(invoice.due_date || '');
+    setInvoiceDescription(invoice.description || '');
+  };
+
+  const handleCancelEditInvoice = () => {
+    setEditingInvoice(null);
+    setInvoiceAccountId('');
+    setInvoiceType('payable');
+    setInvoiceAmount('');
+    setInvoiceNumber('');
+    setInvoiceDate(new Date().toISOString().split('T')[0]);
+    setDueDate('');
+    setInvoiceDescription('');
+  };
+
+  const handleDeleteInvoice = async (invoice: AccountInvoice) => {
+    if (invoice.paid_amount > 0) {
+      toast.error('Cannot delete invoice with existing payments');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete invoice #${invoice.invoice_number || invoice.id}?`)) {
+      return;
+    }
+
+    try {
+      await deleteInvoice(invoice.id).unwrap();
+      toast.success('Invoice deleted successfully!');
+      refetchInvoices();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete invoice';
+      toast.error(errorMessage);
+      console.error('Delete invoice error:', error);
+    }
+  };
+
+  const handleViewPayments = (invoice: AccountInvoice) => {
+    setSelectedInvoiceForPayments(invoice);
+  };
+
+  const handleClosePayments = () => {
+    setSelectedInvoiceForPayments(null);
+  };
+
+  // Payment handlers
+  const handleCreatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedInvoiceForPayments || !paymentAmount || !paymentDate) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await createPayment({
+        invoice_id: selectedInvoiceForPayments.id,
+        payment_amount: parseFloat(paymentAmount),
+        payment_date: paymentDate,
+        payment_method: paymentMethod || undefined,
+        payment_reference: paymentReference || undefined,
+        notes: paymentNotes || undefined,
+      }).unwrap();
+      toast.success('Payment recorded successfully!');
+
+      // Reset form
+      setPaymentAmount('');
+      setPaymentDate(new Date().toISOString().split('T')[0]);
+      setPaymentMethod('');
+      setPaymentReference('');
+      setPaymentNotes('');
+      refetchPayments();
+      refetchInvoices(); // Refresh invoices to show updated status
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to record payment';
+      toast.error(errorMessage);
+      console.error('Payment error:', error);
+    }
+  };
+
+  const handleDeletePayment = async (paymentId: number) => {
+    if (!confirm('Are you sure you want to delete this payment?')) {
+      return;
+    }
+
+    try {
+      await deletePayment(paymentId).unwrap();
+      toast.success('Payment deleted successfully!');
+      refetchPayments();
+      refetchInvoices(); // Refresh invoices to show updated status
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to delete payment';
+      toast.error(errorMessage);
+      console.error('Delete payment error:', error);
+    }
+  };
+
+  // Sales Order handlers
+  const handleAddSalesOrderItem = () => {
+    if (!salesOrderItemId || !salesOrderItemQty || !salesOrderItemPrice) {
+      toast.error('Please fill in all item fields');
+      return;
+    }
+
+    const newItem = {
+      item_id: parseInt(salesOrderItemId),
+      quantity_ordered: parseFloat(salesOrderItemQty),
+      unit_price: parseFloat(salesOrderItemPrice),
+      notes: salesOrderItemNotes || undefined,
+    };
+
+    setSalesOrderItems([...salesOrderItems, newItem]);
+    setSalesOrderItemId('');
+    setSalesOrderItemQty('');
+    setSalesOrderItemPrice('');
+    setSalesOrderItemNotes('');
+    toast.success('Item added to order');
+  };
+
+  const handleRemoveSalesOrderItem = (index: number) => {
+    setSalesOrderItems(salesOrderItems.filter((_, i) => i !== index));
+  };
+
+  const handleCreateSalesOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!salesOrderAccountId || !salesOrderFactoryId || salesOrderItems.length === 0) {
+      toast.error('Please fill in all required fields and add at least one item');
+      return;
+    }
+
+    try {
+      await createSalesOrder({
+        order: {
+          account_id: parseInt(salesOrderAccountId),
+          factory_id: parseInt(salesOrderFactoryId),
+          order_date: salesOrderDate,
+          quotation_sent_date: salesOrderQuotationDate || undefined,
+          expected_delivery_date: salesOrderExpectedDeliveryDate || undefined,
+          notes: salesOrderNotes || undefined,
+        },
+        items: salesOrderItems,
+      }).unwrap();
+      toast.success('Sales order created successfully!');
+
+      // Reset form
+      setSalesOrderAccountId('');
+      setSalesOrderFactoryId('');
+      setSalesOrderDate(new Date().toISOString().split('T')[0]);
+      setSalesOrderQuotationDate('');
+      setSalesOrderExpectedDeliveryDate('');
+      setSalesOrderNotes('');
+      setSalesOrderItems([]);
+      refetchSalesOrders();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create sales order';
+      toast.error(errorMessage);
+      console.error('Sales order error:', error);
+    }
+  };
+
+  const handleViewSalesOrderDetails = (order: SalesOrder) => {
+    setSelectedSalesOrderForDetails(order);
+  };
+
+  const handleCloseSalesOrderDetails = () => {
+    setSelectedSalesOrderForDetails(null);
+  };
+
+  // Sales Delivery handlers
+  const handleAddDeliveryItem = () => {
+    if (!deliveryItemSalesOrderItemId || !deliveryItemQty) {
+      toast.error('Please fill in Sales Order Item ID and Quantity');
+      return;
+    }
+
+    const newItem = {
+      sales_order_item_id: parseInt(deliveryItemSalesOrderItemId),
+      quantity_delivered: parseFloat(deliveryItemQty),
+      notes: deliveryItemNotes || undefined,
+      // Note: item_id will be derived from sales_order_item by backend
+    };
+
+    setDeliveryItems([...deliveryItems, newItem]);
+    setDeliveryItemSalesOrderItemId('');
+    setDeliveryItemQty('');
+    setDeliveryItemNotes('');
+    toast.success('Item added to delivery');
+  };
+
+  const handleRemoveDeliveryItem = (index: number) => {
+    setDeliveryItems(deliveryItems.filter((_, i) => i !== index));
+  };
+
+  const handleCreateSalesDelivery = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!deliverySalesOrderId || deliveryItems.length === 0) {
+      toast.error('Please select a sales order and add at least one item');
+      return;
+    }
+
+    try {
+      await createSalesDelivery({
+        delivery: {
+          sales_order_id: parseInt(deliverySalesOrderId),
+          scheduled_date: deliveryScheduledDate || undefined,
+          tracking_number: deliveryTrackingNumber || undefined,
+          notes: deliveryNotes || undefined,
+        },
+        items: deliveryItems,
+      }).unwrap();
+      toast.success('Sales delivery created successfully!');
+
+      // Reset form
+      setDeliverySalesOrderId('');
+      setDeliveryScheduledDate('');
+      setDeliveryTrackingNumber('');
+      setDeliveryNotes('');
+      setDeliveryItems([]);
+      refetchSalesDeliveries();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to create delivery';
+      toast.error(errorMessage);
+      console.error('Delivery error:', error);
+    }
+  };
+
+  const handleCompleteDelivery = async (deliveryId: number) => {
+    if (!confirm('Are you sure you want to mark this delivery as completed? This will update inventory.')) {
+      return;
+    }
+
+    try {
+      const result = await completeSalesDelivery(deliveryId).unwrap();
+      toast.success('Delivery completed successfully!');
+      if (result.messages && result.messages.length > 0) {
+        result.messages.forEach((msg: string) => toast.info(msg));
+      }
+      refetchSalesDeliveries();
+      refetchSalesOrders();
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Failed to complete delivery';
+      toast.error(errorMessage);
+      console.error('Complete delivery error:', error);
+    }
+  };
+
+  const handleViewDeliveryDetails = (delivery: SalesDelivery) => {
+    setSelectedDeliveryForDetails(delivery);
+  };
+
+  const handleCloseDeliveryDetails = () => {
+    setSelectedDeliveryForDetails(null);
+  };
+
+  // Helper function to get factory name by ID
+  const getFactoryName = (factoryId: number): string => {
+    const factory = factories?.find(f => f.id === factoryId);
+    return factory ? factory.name : 'Unknown Factory';
+  };
+
+  // Helper function to get account name by ID
+  const getAccountName = (accountId: number): string => {
+    const account = accounts?.find(a => a.id === accountId);
+    return account ? account.name : 'Unknown Account';
+  };
+
+  // Helper function to get item name by ID
+  const getItemName = (itemId: number): string => {
+    const item = items?.find(i => i.id === itemId);
+    return item ? item.name : 'Unknown Item';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <Toaster position="top-right" />
+
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">API Connection Test</h1>
+
+        {/* Connection Status */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Connection Status</h2>
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <span className="font-medium mr-2">API URL:</span>
+              <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                {import.meta.env.VITE_API_URL || 'Not configured'}
+              </code>
+            </div>
+            <div className="flex items-center">
+              <span className="font-medium mr-2">Authentication:</span>
+              <span className={`px-2 py-1 rounded text-sm ${isAuthenticated ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {isAuthenticated ? 'Authenticated' : 'Not authenticated'}
+              </span>
+            </div>
+            {token && (
+              <div className="flex items-center">
+                <span className="font-medium mr-2">Token:</span>
+                <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                  {token.substring(0, 20)}...
+                </code>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Login Form */}
+        {!isAuthenticated && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Login Test</h2>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="user@example.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {isLoggingIn ? 'Logging in...' : 'Test Login'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* User Info */}
+        {isAuthenticated && user && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">User Information</h2>
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-medium text-gray-700">Name:</span>
+                  <p className="text-gray-900">{user.name}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Email:</span>
+                  <p className="text-gray-900">{user.email}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Permission:</span>
+                  <p className="text-gray-900">{user.permission}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Position:</span>
+                  <p className="text-gray-900">{user.position}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="mt-4 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+
+        {/* Workspaces */}
+        {isAuthenticated && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Workspaces</h2>
+              <button
+                onClick={() => setShowCreateWorkspace(!showCreateWorkspace)}
+                className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+              >
+                {showCreateWorkspace ? 'Cancel' : '+ Create Workspace'}
+              </button>
+            </div>
+
+            {/* Create Workspace Form */}
+            {showCreateWorkspace && (
+              <form onSubmit={handleCreateWorkspace} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="font-semibold mb-3">Create New Workspace</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Workspace Name
+                    </label>
+                    <input
+                      type="text"
+                      value={workspaceName}
+                      onChange={(e) => handleWorkspaceNameChange(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="My Company"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug (auto-generated)
+                    </label>
+                    <input
+                      type="text"
+                      value={workspaceSlug}
+                      onChange={(e) => setWorkspaceSlug(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="my-company"
+                      pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                      title="Lowercase letters, numbers, and hyphens only"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Lowercase letters, numbers, and hyphens only
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isCreatingWorkspace}
+                    className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isCreatingWorkspace ? 'Creating...' : 'Create Workspace'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {isLoadingWorkspaces ? (
+              <p className="text-gray-600">Loading workspaces...</p>
+            ) : workspaces && workspaces.length > 0 ? (
+              <div className="space-y-3">
+                {workspaces.map((ws) => (
+                  <div key={ws.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{ws.name}</h3>
+                        <div className="mt-2 space-y-1 text-sm text-gray-600">
+                          <p>Slug: <span className="font-medium text-gray-900">{ws.slug}</span></p>
+                          <p>Role: <span className="font-medium text-gray-900">{ws.role}</span></p>
+                          <p>Subscription: <span className="font-medium text-gray-900">{ws.subscription_status}</span></p>
+                          {ws.is_owner && (
+                            <p className="text-blue-600 font-medium">👑 Owner</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${workspace?.id === ws.id
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                          }`}>
+                          {workspace?.id === ws.id ? 'Active' : 'Available'}
+                        </span>
+                        {workspace?.id !== ws.id && (
+                          <button
+                            onClick={() => handleSelectWorkspace(ws)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Select
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No workspaces found</p>
+            )}
+          </div>
+        )}
+
+        {/* Items Section (Parts/Inventory Management) */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Items Management (Active Workspace: {workspace.name})
+              </h2>
+              <button
+                onClick={() => setShowTagManager(!showTagManager)}
+                className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+              >
+                {showTagManager ? 'Hide' : 'Manage'} Tags
+              </button>
+            </div>
+
+            {/* Tag Management Section */}
+            {showTagManager && (
+              <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                <h3 className="font-semibold mb-3 text-indigo-900">Tag Management</h3>
+
+                {/* Create Tag Form */}
+                <form onSubmit={handleCreateTag} className="mb-4 p-3 bg-white rounded border border-indigo-100">
+                  <h4 className="text-sm font-medium mb-2">Create New Tag</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
+                        placeholder="Tag Name (e.g., Hardware)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <div>
+                      <textarea
+                        value={newTagDescription}
+                        onChange={(e) => setNewTagDescription(e.target.value)}
+                        placeholder="Description (optional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={newTagColor}
+                        onChange={(e) => setNewTagColor(e.target.value)}
+                        className="w-12 h-10 border border-gray-300 rounded-md cursor-pointer"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isCreatingTag}
+                        className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:bg-gray-400 text-sm"
+                      >
+                        {isCreatingTag ? 'Creating...' : 'Create Tag'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Tags List */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Existing Tags</h4>
+                  {isLoadingTags ? (
+                    <p className="text-sm text-gray-600">Loading tags...</p>
+                  ) : tags && tags.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {tags.map((tag) => (
+                        <div
+                          key={tag.id}
+                          className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
+                        >
+                          <span
+                            className="text-sm px-2 py-1 rounded-full text-white flex-1 text-center"
+                            style={{ backgroundColor: tag.color || '#6B7280' }}
+                          >
+                            {tag.name}
+                            {tag.is_system_tag && <span className="ml-1 text-xs">(System)</span>}
+                          </span>
+                          {!tag.is_system_tag && (
+                            <button
+                              onClick={() => handleDeleteTag(tag.id, tag.name, tag.is_system_tag)}
+                              className="ml-2 text-red-600 hover:text-red-800 text-xs"
+                              title="Delete tag"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">No tags available</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Create/Edit Item Form */}
+            <form onSubmit={editingItem ? handleUpdateItem : handleCreateItem} className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-semibold mb-3">{editingItem ? 'Edit Item' : 'Create New Item'}</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Item Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., Cotton Yarn"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unit *
+                  </label>
+                  <select
+                    value={itemUnit}
+                    onChange={(e) => setItemUnit(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  >
+                    <option value="pcs">Pieces (pcs)</option>
+                    <option value="kg">Kilograms (kg)</option>
+                    <option value="L">Liters (L)</option>
+                    <option value="m">Meters (m)</option>
+                    <option value="box">Box</option>
+                    <option value="set">Set</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    value={itemDescription}
+                    onChange={(e) => setItemDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tags (Select all that apply)
+                  </label>
+                  {isLoadingTags ? (
+                    <p className="text-sm text-gray-500">Loading tags...</p>
+                  ) : tags && tags.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {tags.map((tag) => (
+                        <label key={tag.id} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedTagIds.includes(tag.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTagIds([...selectedTagIds, tag.id]);
+                              } else {
+                                setSelectedTagIds(selectedTagIds.filter(id => id !== tag.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <span
+                            className="text-sm px-2 py-1 rounded-full text-white"
+                            style={{ backgroundColor: tag.color || '#6B7280' }}
+                          >
+                            {tag.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No tags available</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="submit"
+                  disabled={isCreatingItem || isUpdatingItem}
+                  className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {editingItem ? (isUpdatingItem ? 'Updating...' : 'Update Item') : (isCreatingItem ? 'Creating...' : 'Create Item')}
+                </button>
+                {editingItem && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Search items by name..."
+              />
+            </div>
+
+            {/* Items List */}
+            <div>
+              <h3 className="font-semibold mb-3">Items List</h3>
+              {isLoadingItems ? (
+                <p className="text-gray-600">Loading items...</p>
+              ) : items && items.length > 0 ? (
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <div key={item.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg">{item.name}</h4>
+                        <div className="mt-1 space-y-1 text-sm text-gray-600">
+                          <p>Unit: <span className="font-medium text-gray-900">{item.unit}</span></p>
+                          {item.description && <p>Description: <span className="text-gray-700">{item.description}</span></p>}
+                          {item.tags && item.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {item.tags.map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="text-xs px-2 py-1 rounded-full text-white"
+                                  style={{ backgroundColor: tag.color || '#6B7280' }}
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-xs">
+                            Status: <span className={`font-medium ${item.is_active ? 'text-green-600' : 'text-red-600'}`}>
+                              {item.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleManageItemTags(item)}
+                          className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700"
+                        >
+                          Tags
+                        </button>
+                        <button
+                          onClick={() => handleEditItem(item)}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item)}
+                          disabled={isDeletingItem}
+                          className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No items found. Create your first item above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Accounts Section */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Accounts Management (Active Workspace: {workspace.name})
+              </h2>
+              <button
+                onClick={() => setShowAccountTagManager(!showAccountTagManager)}
+                className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700"
+              >
+                {showAccountTagManager ? 'Hide' : 'Manage'} Account Tags
+              </button>
+            </div>
+
+            {/* Account Tag Management Section */}
+            {showAccountTagManager && (
+              <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h3 className="font-semibold mb-3 text-purple-900">Account Tag Management</h3>
+
+                {/* Create Account Tag Form */}
+                <form onSubmit={handleCreateAccountTag} className="mb-4 p-3 bg-white rounded border border-purple-100">
+                  <h4 className="text-sm font-medium mb-2">Create New Account Tag</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={newAccountTagName}
+                        onChange={(e) => setNewAccountTagName(e.target.value)}
+                        placeholder="Tag Name (e.g., Supplier)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <div>
+                      <textarea
+                        value={newAccountTagDescription}
+                        onChange={(e) => setNewAccountTagDescription(e.target.value)}
+                        placeholder="Description (optional)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={newAccountTagColor}
+                        onChange={(e) => setNewAccountTagColor(e.target.value)}
+                        className="w-12 h-10 border border-gray-300 rounded-md cursor-pointer"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isCreatingAccountTag}
+                        className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 text-sm"
+                      >
+                        {isCreatingAccountTag ? 'Creating...' : 'Create Tag'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Account Tags List */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Existing Account Tags</h4>
+                  {isLoadingAccountTags ? (
+                    <p className="text-sm text-gray-600">Loading account tags...</p>
+                  ) : accountTags && accountTags.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {accountTags.map((tag) => (
+                        <div
+                          key={tag.id}
+                          className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
+                        >
+                          <span
+                            className="text-sm px-2 py-1 rounded-full text-white flex-1 text-center"
+                            style={{ backgroundColor: tag.color || '#6B7280' }}
+                          >
+                            {tag.name}
+                            {tag.is_system_tag && <span className="ml-1 text-xs">(System)</span>}
+                          </span>
+                          {!tag.is_system_tag && (
+                            <button
+                              onClick={() => handleDeleteAccountTag(tag.id, tag.name, tag.is_system_tag)}
+                              className="ml-2 text-red-600 hover:text-red-800 text-xs"
+                              title="Delete tag"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">No account tags available</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Create/Edit Account Form */}
+            <form onSubmit={editingAccount ? handleUpdateAccount : handleCreateAccount} className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-semibold mb-3">{editingAccount ? 'Edit Account' : 'Create New Account'}</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Account Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., ABC Suppliers"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={accountEmail}
+                    onChange={(e) => setAccountEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., contact@abc.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={accountPhone}
+                    onChange={(e) => setAccountPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., +1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={accountAddress}
+                    onChange={(e) => setAccountAddress(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., 123 Main St, City"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags
+                  </label>
+                  {accountTags && accountTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {accountTags.map((tag) => (
+                        <label key={tag.id} className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={accountSelectedTagIds.includes(tag.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAccountSelectedTagIds([...accountSelectedTagIds, tag.id]);
+                              } else {
+                                setAccountSelectedTagIds(accountSelectedTagIds.filter(id => id !== tag.id));
+                              }
+                            }}
+                            className="mr-1"
+                          />
+                          <span
+                            className="text-xs px-2 py-1 rounded-full text-white"
+                            style={{ backgroundColor: tag.color || '#6B7280' }}
+                          >
+                            {tag.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No tags available. Create tags first.</p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="submit"
+                  disabled={editingAccount ? isUpdatingAccount : isCreatingAccount}
+                  className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {editingAccount ? (isUpdatingAccount ? 'Updating...' : 'Update Account') : (isCreatingAccount ? 'Creating...' : 'Create Account')}
+                </button>
+                {editingAccount && (
+                  <button
+                    type="button"
+                    onClick={handleCancelAccountEdit}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={accountSearchQuery}
+                onChange={(e) => setAccountSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Search accounts by name..."
+              />
+            </div>
+
+            {/* Accounts List */}
+            <div>
+              <h3 className="font-semibold mb-3">Accounts List</h3>
+              {isLoadingAccounts ? (
+                <p className="text-gray-600">Loading accounts...</p>
+              ) : accounts && accounts.length > 0 ? (
+                <div className="space-y-2">
+                  {accounts.map((account) => (
+                    <div key={account.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg">{account.name}</h4>
+                        <div className="mt-1 space-y-1 text-sm text-gray-600">
+                          {account.primary_email && <p>Email: <span className="font-medium text-gray-900">{account.primary_email}</span></p>}
+                          {account.primary_phone && <p>Phone: <span className="font-medium text-gray-900">{account.primary_phone}</span></p>}
+                          {account.address && <p>Address: <span className="text-gray-700">{account.address}</span></p>}
+                          {account.tags && account.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {account.tags.map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="text-xs px-2 py-1 rounded-full text-white"
+                                  style={{ backgroundColor: tag.color || '#6B7280' }}
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-xs">
+                            Status: <span className={`font-medium ${account.is_active ? 'text-green-600' : 'text-red-600'}`}>
+                              {account.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditAccount(account)}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAccount(account)}
+                          disabled={isDeletingAccount}
+                          className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No accounts found. Create your first account above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Factories Section */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Factories Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Edit Factory Form */}
+            <form onSubmit={editingFactory ? handleUpdateFactory : handleCreateFactory} className="mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Factory Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={factoryName}
+                    onChange={(e) => setFactoryName(e.target.value)}
+                    placeholder="Factory Name"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Abbreviation <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={factoryAbbreviation}
+                    onChange={(e) => setFactoryAbbreviation(e.target.value)}
+                    placeholder="Abbreviation (e.g., F1, F2)"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingFactory || isUpdatingFactory}
+                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {editingFactory ? 'Update Factory' : 'Create Factory'}
+                </button>
+                {editingFactory && (
+                  <button
+                    type="button"
+                    onClick={handleCancelFactoryEdit}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={factorySearchQuery}
+                onChange={(e) => setFactorySearchQuery(e.target.value)}
+                placeholder="Search factories by name or abbreviation..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Factories List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Factories List</h3>
+              {isLoadingFactories ? (
+                <p className="text-gray-600">Loading factories...</p>
+              ) : factories && factories.length > 0 ? (
+                <div className="space-y-3">
+                  {factories.map((factory) => (
+                    <div
+                      key={factory.id}
+                      className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">
+                            {factory.name}
+                            <span className="ml-2 text-sm text-gray-500">({factory.abbreviation})</span>
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ID: {factory.id}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditFactory(factory)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFactory(factory)}
+                            disabled={isDeletingFactory}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No factories found. Create your first factory above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Factory Sections Section */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Factory Sections Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Edit Factory Section Form */}
+            <form onSubmit={editingSection ? handleUpdateSection : handleCreateSection} className="mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Section Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={sectionName}
+                    onChange={(e) => setSectionName(e.target.value)}
+                    placeholder="Section Name (e.g., Spinning, Weaving)"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Factory <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={sectionFactoryId || ''}
+                    onChange={(e) => setSectionFactoryId(e.target.value ? Number(e.target.value) : null)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select a factory...</option>
+                    {factories && factories.map(factory => (
+                      <option key={factory.id} value={factory.id}>
+                        {factory.name} ({factory.abbreviation})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingSection || isUpdatingSection}
+                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {editingSection ? 'Update Section' : 'Create Section'}
+                </button>
+                {editingSection && (
+                  <button
+                    type="button"
+                    onClick={handleCancelSectionEdit}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Search and Filter */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <input
+                  type="text"
+                  value={sectionSearchQuery}
+                  onChange={(e) => setSectionSearchQuery(e.target.value)}
+                  placeholder="Search sections by name..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <select
+                  value={sectionFilterFactoryId || ''}
+                  onChange={(e) => setSectionFilterFactoryId(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">All Factories</option>
+                  {factories && factories.map(factory => (
+                    <option key={factory.id} value={factory.id}>
+                      {factory.name} ({factory.abbreviation})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Sections List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Factory Sections List</h3>
+              {isLoadingSections ? (
+                <p className="text-gray-600">Loading sections...</p>
+              ) : sections && sections.length > 0 ? (
+                <div className="space-y-3">
+                  {sections.map((section) => (
+                    <div
+                      key={section.id}
+                      className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">
+                            {section.name}
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Factory: {getFactoryName(section.factory_id)}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ID: {section.id}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditSection(section)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSection(section)}
+                            disabled={isDeletingSection}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No sections found. Create your first section above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Departments Management */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Departments Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Update Department Form */}
+            <form onSubmit={handleCreateDepartment} className="mb-6">
+              <div className="grid grid-cols-1 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department Name
+                  </label>
+                  <input
+                    type="text"
+                    value={departmentName}
+                    onChange={(e) => setDepartmentName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Finance, Production, HR"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingDepartment || isUpdatingDepartment}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {isCreatingDepartment || isUpdatingDepartment
+                    ? (editingDepartment ? 'Updating...' : 'Creating...')
+                    : (editingDepartment ? 'Update Department' : 'Create Department')}
+                </button>
+                {editingDepartment && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditDepartment}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={departmentSearchQuery}
+                onChange={(e) => setDepartmentSearchQuery(e.target.value)}
+                placeholder="Search departments by name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Departments List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Departments</h3>
+              {isLoadingDepartments ? (
+                <p className="text-gray-600">Loading departments...</p>
+              ) : departments && departments.length > 0 ? (
+                <div className="space-y-2">
+                  {departments.map((department) => (
+                    <div key={department.id} className="border border-gray-200 rounded p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">{department.name}</p>
+                          <p className="text-xs text-gray-500">ID: {department.id}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditDepartment(department)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDepartment(department)}
+                            disabled={isDeletingDepartment}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No departments found. Create your first department above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Projects Management */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Projects Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Update Project Form */}
+            <form onSubmit={handleCreateProject} className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., New Factory Building"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Factory *
+                  </label>
+                  <select
+                    value={projectFactoryId}
+                    onChange={(e) => setProjectFactoryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select a factory</option>
+                    {factories?.map((factory) => (
+                      <option key={factory.id} value={factory.id}>
+                        {factory.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Project description"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={projectBudget}
+                    onChange={(e) => setProjectBudget(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 100000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={projectDeadline}
+                    onChange={(e) => setProjectDeadline(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={projectPriority}
+                    onChange={(e) => setProjectPriority(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={projectStatus}
+                    onChange={(e) => setProjectStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="PLANNING">Planning</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="ON_HOLD">On Hold</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingProject || isUpdatingProject}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {isCreatingProject || isUpdatingProject
+                    ? (editingProject ? 'Updating...' : 'Creating...')
+                    : (editingProject ? 'Update Project' : 'Create Project')}
+                </button>
+                {editingProject && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditProject}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Projects List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Projects</h3>
+              {isLoadingProjects ? (
+                <p className="text-gray-600">Loading projects...</p>
+              ) : projects && projects.length > 0 ? (
+                <div className="space-y-2">
+                  {projects.map((project) => (
+                    <div key={project.id} className="border border-gray-200 rounded p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900">{project.name}</p>
+                            <span className={`px-2 py-0.5 text-xs rounded ${project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                project.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
+                                  project.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                              }`}>
+                              {project.status}
+                            </span>
+                            <span className={`px-2 py-0.5 text-xs rounded ${project.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                              project.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                project.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                              }`}>
+                              {project.priority}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{project.description}</p>
+                          <div className="flex gap-4 text-xs text-gray-500">
+                            <span>ID: {project.id}</span>
+                            <span>Factory: {project.factory_id}</span>
+                            {project.budget && <span>Budget: ${project.budget.toLocaleString()}</span>}
+                            {project.deadline && <span>Deadline: {new Date(project.deadline).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditProject(project)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProject(project)}
+                            disabled={isDeletingProject}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No projects found. Create your first project above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Project Components Management */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Project Components Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Update Component Form */}
+            <form onSubmit={handleCreateComponent} className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Component Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={componentName}
+                    onChange={(e) => setComponentName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project *
+                  </label>
+                  <select
+                    value={componentProjectId}
+                    onChange={(e) => setComponentProjectId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select a project</option>
+                    {projects?.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={componentDescription}
+                    onChange={(e) => setComponentDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={componentBudget}
+                    onChange={(e) => setComponentBudget(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={componentDeadline}
+                    onChange={(e) => setComponentDeadline(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={componentStatus}
+                    onChange={(e) => setComponentStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="PLANNING">Planning</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="ON_HOLD">On Hold</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingComponent || isUpdatingComponent}
+                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {editingComponent ? 'Update Component' : 'Create Component'}
+                </button>
+                {editingComponent && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditComponent}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Filter */}
+            <div className="mb-4">
+              <select
+                value={filterComponentProjectId || ''}
+                onChange={(e) => setFilterComponentProjectId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">All Projects</option>
+                {projects?.map(project => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Components List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Components ({projectComponents?.length || 0})</h3>
+              {isLoadingComponents ? (
+                <p className="text-gray-600">Loading components...</p>
+              ) : projectComponents && projectComponents.length > 0 ? (
+                <div className="space-y-3">
+                  {projectComponents.map((component) => (
+                    <div key={component.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{component.name}</p>
+                          <p className="text-sm text-gray-600 mb-2">{component.description}</p>
+                          <div className="flex gap-4 text-xs text-gray-500">
+                            <span>ID: {component.id}</span>
+                            <span>Project: {component.project_id}</span>
+                            <span>Status: {component.status}</span>
+                            {component.budget && <span>Budget: ${component.budget.toLocaleString()}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditComponent(component)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteComponent(component)}
+                            disabled={isDeletingComponent}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No components found. Create your first component above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Project Component Items Management */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Project Component Items Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Update Component Item Form */}
+            <form onSubmit={handleCreateComponentItem} className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Component *
+                  </label>
+                  <select
+                    value={componentItemComponentId}
+                    onChange={(e) => setComponentItemComponentId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select a component</option>
+                    {projectComponents?.map((component) => (
+                      <option key={component.id} value={component.id}>
+                        {component.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Item *
+                  </label>
+                  <select
+                    value={componentItemItemId}
+                    onChange={(e) => setComponentItemItemId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select an item</option>
+                    {items?.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    value={componentItemQty}
+                    onChange={(e) => setComponentItemQty(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingComponentItem || isUpdatingComponentItem}
+                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {editingComponentItem ? 'Update Item' : 'Create Item'}
+                </button>
+                {editingComponentItem && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditComponentItem}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Filter */}
+            <div className="mb-4">
+              <select
+                value={filterComponentItemComponentId || ''}
+                onChange={(e) => setFilterComponentItemComponentId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">All Components</option>
+                {projectComponents?.map(component => (
+                  <option key={component.id} value={component.id}>
+                    {component.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Component Items List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Component Items ({projectComponentItems?.length || 0})</h3>
+              {isLoadingComponentItems ? (
+                <p className="text-gray-600">Loading component items...</p>
+              ) : projectComponentItems && projectComponentItems.length > 0 ? (
+                <div className="space-y-3">
+                  {projectComponentItems.map((item) => (
+                    <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex gap-4 text-sm text-gray-700">
+                            <span>ID: {item.id}</span>
+                            <span>Component: {item.project_component_id}</span>
+                            <span>Item: {item.item_id}</span>
+                            <span className="font-medium">Qty: {item.qty}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditComponentItem(item)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteComponentItem(item)}
+                            disabled={isDeletingComponentItem}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No component items found. Create your first component item above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Project Component Tasks Management */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Project Component Tasks Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Update Task Form */}
+            <form onSubmit={handleCreateTask} className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Task Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={taskName}
+                    onChange={(e) => setTaskName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Component *
+                  </label>
+                  <select
+                    value={taskComponentId}
+                    onChange={(e) => setTaskComponentId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select a component</option>
+                    {projectComponents?.map((component) => (
+                      <option key={component.id} value={component.id}>
+                        {component.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    value={taskDescription}
+                    onChange={(e) => setTaskDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={taskPriority}
+                    onChange={(e) => setTaskPriority(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={taskIsNote}
+                      onChange={(e) => setTaskIsNote(e.target.checked)}
+                      className="mr-2 h-4 w-4"
+                    />
+                    <span className="text-sm text-gray-700">Is Note</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingTask || isUpdatingTask}
+                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {editingTask ? 'Update Task' : 'Create Task'}
+                </button>
+                {editingTask && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditTask}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Filter */}
+            <div className="mb-4">
+              <select
+                value={filterTaskComponentId || ''}
+                onChange={(e) => setFilterTaskComponentId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">All Components</option>
+                {projectComponents?.map(component => (
+                  <option key={component.id} value={component.id}>
+                    {component.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tasks List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Tasks ({projectComponentTasks?.length || 0})</h3>
+              {isLoadingTasks ? (
+                <p className="text-gray-600">Loading tasks...</p>
+              ) : projectComponentTasks && projectComponentTasks.length > 0 ? (
+                <div className="space-y-3">
+                  {projectComponentTasks.map((task) => (
+                    <div key={task.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <input
+                              type="checkbox"
+                              checked={task.is_completed}
+                              onChange={() => handleToggleTaskComplete(task)}
+                              className="h-4 w-4"
+                            />
+                            <p className={`font-medium ${task.is_completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                              {task.name}
+                            </p>
+                            {task.is_note && <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">Note</span>}
+                            {task.task_priority && (
+                              <span className={`px-2 py-0.5 text-xs rounded ${task.task_priority === 'URGENT' ? 'bg-red-100 text-red-800' :
+                                task.task_priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                                  task.task_priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-600'
+                                }`}>
+                                {task.task_priority}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+                          <div className="flex gap-4 text-xs text-gray-500">
+                            <span>ID: {task.id}</span>
+                            <span>Component: {task.project_component_id}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task)}
+                            disabled={isDeletingTask}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No tasks found. Create your first task above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Miscellaneous Project Costs Management */}
+        {workspace && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Miscellaneous Project Costs Management (Active Workspace: {workspace.name})
+            </h2>
+
+            {/* Create/Update Cost Form */}
+            <form onSubmit={handleCreateCost} className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cost Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={costName}
+                    onChange={(e) => setCostName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={costAmount}
+                    onChange={(e) => setCostAmount(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={costDescription}
+                    onChange={(e) => setCostDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project (optional)
+                  </label>
+                  <select
+                    value={costProjectId}
+                    onChange={(e) => setCostProjectId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">None</option>
+                    {projects?.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Component (optional)
+                  </label>
+                  <select
+                    value={costComponentId}
+                    onChange={(e) => setCostComponentId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">None</option>
+                    {projectComponents?.map((component) => (
+                      <option key={component.id} value={component.id}>
+                        {component.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isCreatingCost || isUpdatingCost}
+                  className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {editingCost ? 'Update Cost' : 'Create Cost'}
+                </button>
+                {editingCost && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditCost}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Filters */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <select
+                  value={filterCostProjectId || ''}
+                  onChange={(e) => setFilterCostProjectId(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">All Projects</option>
+                  {projects?.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
+                  value={filterCostComponentId || ''}
+                  onChange={(e) => setFilterCostComponentId(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">All Components</option>
+                  {projectComponents?.map(component => (
+                    <option key={component.id} value={component.id}>
+                      {component.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Costs List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Costs ({miscellaneousCosts?.length || 0})</h3>
+              {isLoadingCosts ? (
+                <p className="text-gray-600">Loading costs...</p>
+              ) : miscellaneousCosts && miscellaneousCosts.length > 0 ? (
+                <div className="space-y-3">
+                  {miscellaneousCosts.map((cost) => (
+                    <div key={cost.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900">{cost.name}</p>
+                            <span className="px-2 py-1 text-sm bg-green-100 text-green-800 rounded font-medium">
+                              ${cost.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{cost.description}</p>
+                          <div className="flex gap-4 text-xs text-gray-500">
+                            <span>ID: {cost.id}</span>
+                            {cost.project_id && <span>Project: {cost.project_id}</span>}
+                            {cost.project_component_id && <span>Component: {cost.project_component_id}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditCost(cost)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCost(cost)}
+                            disabled={isDeletingCost}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No costs found. Create your first cost above!</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="bg-blue-50 rounded-lg p-6 mt-6">
+          <h3 className="font-semibold text-blue-900 mb-2">Test Instructions:</h3>
+          <ol className="list-decimal list-inside space-y-1 text-blue-800 text-sm">
+            <li>Enter your email and password from the backend</li>
+            <li>Click "Test Login" to authenticate with the FastAPI backend</li>
+            <li>If successful, you'll see your user info and workspaces</li>
+            <li>Click "Select" on a workspace to activate it for API calls</li>
+            <li>Click "+ Create Workspace" to create a new workspace</li>
+            <li>Once a workspace is selected, test Items APIs: Create, Edit, Delete, Search</li>
+            <li>Check the browser console for detailed request/response data</li>
+          </ol>
+        </div>
+      </div>
+
+      {/* Tag Management Modal */}
+      {managingTagsForItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">
+                Manage Tags: {managingTagsForItem.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setManagingTagsForItem(null);
+                  setItemTagIds([]);
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-3">
+                Select tags to assign to this item:
+              </p>
+              {isLoadingTags ? (
+                <p className="text-sm text-gray-500">Loading tags...</p>
+              ) : tags && tags.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {tags.map((tag) => (
+                    <label key={tag.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={itemTagIds.includes(tag.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setItemTagIds([...itemTagIds, tag.id]);
+                          } else {
+                            setItemTagIds(itemTagIds.filter(id => id !== tag.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <span
+                        className="text-sm px-2 py-1 rounded-full text-white"
+                        style={{ backgroundColor: tag.color || '#6B7280' }}
+                      >
+                        {tag.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No tags available</p>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-end mt-6">
+              <button
+                onClick={() => {
+                  setManagingTagsForItem(null);
+                  setItemTagIds([]);
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveItemTags}
+                disabled={isUpdatingItem}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+              >
+                {isUpdatingItem ? 'Saving...' : 'Save Tags'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Invoices Section */}
+      {workspace && (
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Account Invoices (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* Create/Update Invoice Form */}
+          <form onSubmit={handleCreateInvoice} className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-semibold mb-3 text-blue-900">{editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account *</label>
+                <select
+                  value={invoiceAccountId}
+                  onChange={(e) => setInvoiceAccountId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">Select Account</option>
+                  {accounts?.map((account) => (
+                    <option key={account.id} value={account.id}>{account.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Type *</label>
+                <select
+                  value={invoiceType}
+                  onChange={(e) => setInvoiceType(e.target.value as 'payable' | 'receivable')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="payable">Payable (We Owe)</option>
+                  <option value="receivable">Receivable (They Owe)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={invoiceAmount}
+                  onChange={(e) => setInvoiceAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="e.g., 1000.00"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
+                <input
+                  type="text"
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="e.g., INV-2025-001"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Date *</label>
+                <input
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={invoiceDescription}
+                  onChange={(e) => setInvoiceDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Invoice description"
+                  rows={2}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                type="submit"
+                disabled={isCreatingInvoice || isUpdatingInvoice}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {isCreatingInvoice || isUpdatingInvoice ? 'Saving...' : editingInvoice ? 'Update Invoice' : 'Create Invoice'}
+              </button>
+              {editingInvoice && (
+                <button
+                  type="button"
+                  onClick={handleCancelEditInvoice}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Invoices List */}
+          <div>
+            <h3 className="font-semibold mb-3">Invoices</h3>
+            {isLoadingInvoices ? (
+              <p className="text-gray-600">Loading invoices...</p>
+            ) : invoices && invoices.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3">
+                {invoices.map((invoice) => {
+                  const account = accounts?.find(a => a.id === invoice.account_id);
+                  return (
+                    <div key={invoice.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-semibold text-lg">
+                            {invoice.invoice_type === 'payable' ? '📤 Payable' : '📥 Receivable'} - {account?.name || 'Unknown Account'}
+                          </h4>
+                          <p className="text-sm text-gray-600">Invoice #: {invoice.invoice_number || invoice.id}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditInvoice(invoice)}
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleViewPayments(invoice)}
+                            className="text-green-600 hover:text-green-800 text-sm"
+                          >
+                            Payments
+                          </button>
+                          <button
+                            onClick={() => handleDeleteInvoice(invoice)}
+                            disabled={invoice.paid_amount > 0}
+                            className="text-red-600 hover:text-red-800 text-sm disabled:text-gray-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-4 text-sm mt-2">
+                        <div>
+                          <span className="text-gray-600">Amount:</span>
+                          <span className="ml-1 font-medium">${invoice.invoice_amount}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Paid:</span>
+                          <span className="ml-1 font-medium">${invoice.paid_amount}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Outstanding:</span>
+                          <span className="ml-1 font-medium">${invoice.outstanding_amount}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Status:</span>
+                          <span className={`ml-1 px-2 py-1 rounded text-xs ${invoice.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                            invoice.payment_status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                              invoice.payment_status === 'overdue' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                            }`}>
+                            {invoice.payment_status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm mt-2">
+                        <div>
+                          <span className="text-gray-600">Invoice Date:</span>
+                          <span className="ml-1">{invoice.invoice_date}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Due Date:</span>
+                          <span className="ml-1">{invoice.due_date || 'N/A'}</span>
+                        </div>
+                      </div>
+                      {invoice.description && (
+                        <p className="text-sm text-gray-600 mt-2">{invoice.description}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600">No invoices found</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Payments Modal */}
+      {selectedInvoiceForPayments && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                Payments for Invoice #{selectedInvoiceForPayments.invoice_number || selectedInvoiceForPayments.id}
+              </h2>
+              <button
+                onClick={handleClosePayments}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Invoice Summary */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Total Amount:</span>
+                  <span className="ml-1 font-semibold">${selectedInvoiceForPayments.invoice_amount}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Paid:</span>
+                  <span className="ml-1 font-semibold text-green-600">${selectedInvoiceForPayments.paid_amount}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Outstanding:</span>
+                  <span className="ml-1 font-semibold text-red-600">${selectedInvoiceForPayments.outstanding_amount}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Add Payment Form */}
+            {selectedInvoiceForPayments.outstanding_amount > 0 && (
+              <form onSubmit={handleCreatePayment} className="mb-6 p-4 bg-green-50 rounded-lg">
+                <h3 className="font-semibold mb-3 text-green-900">Record New Payment</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Amount *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      max={selectedInvoiceForPayments.outstanding_amount}
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="e.g., 500.00"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date *</label>
+                    <input
+                      type="date"
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <input
+                      type="text"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="e.g., Bank Transfer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+                    <input
+                      type="text"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="e.g., CHQ-12345"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="Payment notes"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isCreatingPayment}
+                  className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {isCreatingPayment ? 'Recording...' : 'Record Payment'}
+                </button>
+              </form>
+            )}
+
+            {/* Payments List */}
+            <div>
+              <h3 className="font-semibold mb-3">Payment History</h3>
+              {isLoadingPayments ? (
+                <p className="text-gray-600">Loading payments...</p>
+              ) : payments && payments.length > 0 ? (
+                <div className="space-y-2">
+                  {payments.map((payment) => (
+                    <div key={payment.id} className="border rounded p-3 bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-green-600">${payment.payment_amount}</p>
+                          <p className="text-sm text-gray-600">Date: {payment.payment_date}</p>
+                          {payment.payment_method && (
+                            <p className="text-sm text-gray-600">Method: {payment.payment_method}</p>
+                          )}
+                          {payment.payment_reference && (
+                            <p className="text-sm text-gray-600">Ref: {payment.payment_reference}</p>
+                          )}
+                          {payment.notes && (
+                            <p className="text-sm text-gray-600 italic">Note: {payment.notes}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeletePayment(payment.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No payments recorded yet</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sales Management Section */}
+      {workspace && (
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Sales Management (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* Sales Orders Section */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">Sales Orders</h3>
+
+            {/* Create Sales Order Form */}
+            <form onSubmit={handleCreateSalesOrder} className="mb-6 p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold mb-3 text-blue-900">Create New Sales Order</h4>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Account *</label>
+                  <select
+                    value={salesOrderAccountId}
+                    onChange={(e) => setSalesOrderAccountId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">Select Customer</option>
+                    {accounts?.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Factory *</label>
+                  <select
+                    value={salesOrderFactoryId}
+                    onChange={(e) => setSalesOrderFactoryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">Select Factory</option>
+                    {factories?.map((factory) => (
+                      <option key={factory.id} value={factory.id}>
+                        {factory.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Order Date *</label>
+                  <input
+                    type="date"
+                    value={salesOrderDate}
+                    onChange={(e) => setSalesOrderDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quotation Sent Date</label>
+                  <input
+                    type="date"
+                    value={salesOrderQuotationDate}
+                    onChange={(e) => setSalesOrderQuotationDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expected Delivery Date</label>
+                  <input
+                    type="date"
+                    value={salesOrderExpectedDeliveryDate}
+                    onChange={(e) => setSalesOrderExpectedDeliveryDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={salesOrderNotes}
+                    onChange={(e) => setSalesOrderNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    rows={2}
+                    placeholder="Order notes"
+                  />
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div className="border-t pt-4">
+                <h5 className="font-medium mb-3">Order Items</h5>
+
+                {/* Add Item Form */}
+                <div className="grid grid-cols-5 gap-3 mb-3">
+                  <div>
+                    <select
+                      value={salesOrderItemId}
+                      onChange={(e) => setSalesOrderItemId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="">Select Item</option>
+                      {items?.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={salesOrderItemQty}
+                      onChange={(e) => setSalesOrderItemQty(e.target.value)}
+                      placeholder="Quantity"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={salesOrderItemPrice}
+                      onChange={(e) => setSalesOrderItemPrice(e.target.value)}
+                      placeholder="Unit Price"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={salesOrderItemNotes}
+                      onChange={(e) => setSalesOrderItemNotes(e.target.value)}
+                      placeholder="Notes (optional)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleAddSalesOrderItem}
+                      className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 text-sm"
+                    >
+                      Add Item
+                    </button>
+                  </div>
+                </div>
+
+                {/* Items List */}
+                {salesOrderItems.length > 0 && (
+                  <div className="space-y-2">
+                    {salesOrderItems.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-white border rounded">
+                        <div className="flex-1">
+                          <span className="font-medium">{getItemName(item.item_id)}</span>
+                          <span className="text-sm text-gray-600 ml-2">
+                            Qty: {item.quantity_ordered} × ${item.unit_price} = ${(item.quantity_ordered * item.unit_price).toFixed(2)}
+                          </span>
+                          {item.notes && <span className="text-xs text-gray-500 ml-2">({item.notes})</span>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSalesOrderItem(index)}
+                          className="text-red-600 hover:text-red-800 text-sm ml-2"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingSalesOrder}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {isCreatingSalesOrder ? 'Creating...' : 'Create Sales Order'}
+              </button>
+            </form>
+
+            {/* Sales Orders List */}
+            <div>
+              <h4 className="font-medium mb-3">Sales Orders List</h4>
+              {isLoadingSalesOrders ? (
+                <p className="text-gray-600">Loading sales orders...</p>
+              ) : salesOrders && salesOrders.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {salesOrders.map((order) => (
+                    <div key={order.id} className="border rounded p-3 bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-semibold text-blue-600">
+                            {order.sales_order_number || `Order #${order.id}`}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Customer: {getAccountName(order.account_id)} | Factory: {getFactoryName(order.factory_id)}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Total: ${order.total_amount} | Delivered: {order.is_fully_delivered ? 'Yes' : 'No'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Order Date: {order.order_date}
+                            {order.expected_delivery_date && ` | Expected: ${order.expected_delivery_date}`}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleViewSalesOrderDetails(order)}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No sales orders found</p>
+              )}
+            </div>
+          </div>
+
+          {/* Sales Deliveries Section */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-green-900 mb-4">Sales Deliveries</h3>
+
+            {/* Filter by Status */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+              <select
+                value={filterDeliveryStatus}
+                onChange={(e) => setFilterDeliveryStatus(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">All Statuses</option>
+                <option value="planned">Planned</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {/* Create Sales Delivery Form */}
+            <form onSubmit={handleCreateSalesDelivery} className="mb-6 p-4 bg-green-50 rounded-lg">
+              <h4 className="font-semibold mb-3 text-green-900">Create New Delivery</h4>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sales Order *</label>
+                  <select
+                    value={deliverySalesOrderId}
+                    onChange={(e) => setDeliverySalesOrderId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">Select Sales Order</option>
+                    {salesOrders?.map((order) => (
+                      <option key={order.id} value={order.id}>
+                        {order.sales_order_number || `Order #${order.id}`} - {getAccountName(order.account_id)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Scheduled Date</label>
+                  <input
+                    type="date"
+                    value={deliveryScheduledDate}
+                    onChange={(e) => setDeliveryScheduledDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Number</label>
+                  <input
+                    type="text"
+                    value={deliveryTrackingNumber}
+                    onChange={(e) => setDeliveryTrackingNumber(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="e.g., TRACK-12345"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    rows={2}
+                    placeholder="Delivery notes"
+                  />
+                </div>
+              </div>
+
+              {/* Delivery Items */}
+              <div className="border-t pt-4">
+                <h5 className="font-medium mb-3">Delivery Items</h5>
+                <p className="text-sm text-gray-600 mb-3">
+                  Items must reference a Sales Order Item ID from the parent order.
+                </p>
+
+                {/* Add Item Form */}
+                <div className="grid grid-cols-4 gap-3 mb-3">
+                  <div>
+                    <input
+                      type="number"
+                      value={deliveryItemSalesOrderItemId}
+                      onChange={(e) => setDeliveryItemSalesOrderItemId(e.target.value)}
+                      placeholder="Sales Order Item ID"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={deliveryItemQty}
+                      onChange={(e) => setDeliveryItemQty(e.target.value)}
+                      placeholder="Quantity"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={deliveryItemNotes}
+                      onChange={(e) => setDeliveryItemNotes(e.target.value)}
+                      placeholder="Notes (optional)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleAddDeliveryItem}
+                      className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 text-sm"
+                    >
+                      Add Item
+                    </button>
+                  </div>
+                </div>
+
+                {/* Items List */}
+                {deliveryItems.length > 0 && (
+                  <div className="space-y-2">
+                    {deliveryItems.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-white border rounded">
+                        <div className="flex-1">
+                          <span className="font-medium">Sales Order Item #{item.sales_order_item_id}</span>
+                          <span className="text-sm text-gray-600 ml-2">
+                            Qty: {item.quantity_delivered}
+                          </span>
+                          {item.notes && <span className="text-xs text-gray-500 ml-2">({item.notes})</span>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDeliveryItem(index)}
+                          className="text-red-600 hover:text-red-800 text-sm ml-2"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingSalesDelivery}
+                className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+              >
+                {isCreatingSalesDelivery ? 'Creating...' : 'Create Delivery'}
+              </button>
+            </form>
+
+            {/* Sales Deliveries List */}
+            <div>
+              <h4 className="font-medium mb-3">Deliveries List</h4>
+              {isLoadingSalesDeliveries ? (
+                <p className="text-gray-600">Loading deliveries...</p>
+              ) : salesDeliveries && salesDeliveries.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {salesDeliveries.map((delivery) => (
+                    <div key={delivery.id} className="border rounded p-3 bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-semibold text-green-600">
+                            {delivery.delivery_number || `Delivery #${delivery.id}`}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Status: <span className={`px-2 py-0.5 rounded text-xs ${delivery.delivery_status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              delivery.delivery_status === 'planned' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                              {delivery.delivery_status.toUpperCase()}
+                            </span>
+                          </p>
+                          {delivery.scheduled_date && (
+                            <p className="text-xs text-gray-500">Scheduled: {delivery.scheduled_date}</p>
+                          )}
+                          {delivery.actual_delivery_date && (
+                            <p className="text-xs text-gray-500">Delivered: {delivery.actual_delivery_date}</p>
+                          )}
+                          {delivery.tracking_number && (
+                            <p className="text-xs text-gray-500">Tracking: {delivery.tracking_number}</p>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleViewDeliveryDetails(delivery)}
+                            className="text-green-600 hover:text-green-800 text-sm"
+                          >
+                            View Details
+                          </button>
+                          {delivery.delivery_status === 'planned' && (
+                            <button
+                              onClick={() => handleCompleteDelivery(delivery.id)}
+                              disabled={isCompletingSalesDelivery}
+                              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400"
+                            >
+                              Complete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No deliveries found</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sales Order Details Modal */}
+      {selectedSalesOrderForDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                Sales Order Details: {selectedSalesOrderForDetails.sales_order_number || `#${selectedSalesOrderForDetails.id}`}
+              </h2>
+              <button
+                onClick={handleCloseSalesOrderDetails}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Order Summary */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Customer:</span>
+                  <span className="ml-1 font-semibold">{getAccountName(selectedSalesOrderForDetails.account_id)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Total Amount:</span>
+                  <span className="ml-1 font-semibold">${selectedSalesOrderForDetails.total_amount}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Fully Delivered:</span>
+                  <span className={`ml-1 font-semibold ${selectedSalesOrderForDetails.is_fully_delivered ? 'text-green-600' : 'text-orange-600'}`}>
+                    {selectedSalesOrderForDetails.is_fully_delivered ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div className="mb-4">
+              <h3 className="font-semibold mb-3">Order Items</h3>
+              {selectedSalesOrderItems && selectedSalesOrderItems.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedSalesOrderItems.map((item: any) => (
+                    <div key={item.id} className="border rounded p-3 bg-gray-50">
+                      <p className="font-medium">{getItemName(item.item_id)}</p>
+                      <p className="text-sm text-gray-600">
+                        Ordered: {item.quantity_ordered} | Delivered: {item.quantity_delivered} |
+                        Remaining: {item.quantity_ordered - item.quantity_delivered}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Unit Price: ${item.unit_price} | Total: ${item.line_total}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">Loading items...</p>
+              )}
+            </div>
+
+            {/* Deliveries */}
+            <div>
+              <h3 className="font-semibold mb-3">Deliveries</h3>
+              {selectedSalesOrderDeliveries && selectedSalesOrderDeliveries.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedSalesOrderDeliveries.map((delivery: any) => (
+                    <div key={delivery.id} className="border rounded p-3 bg-gray-50">
+                      <p className="font-medium text-green-600">
+                        {delivery.delivery_number || `Delivery #${delivery.id}`}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Status: {delivery.delivery_status}
+                        {delivery.scheduled_date && ` | Scheduled: ${delivery.scheduled_date}`}
+                        {delivery.actual_delivery_date && ` | Delivered: ${delivery.actual_delivery_date}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No deliveries yet</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Details Modal */}
+      {selectedDeliveryForDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                Delivery Details: {selectedDeliveryForDetails.delivery_number || `#${selectedDeliveryForDetails.id}`}
+              </h2>
+              <button
+                onClick={handleCloseDeliveryDetails}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Delivery Summary */}
+            <div className="bg-green-50 rounded-lg p-4 mb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Status:</span>
+                  <span className={`ml-1 px-2 py-0.5 rounded text-xs ${selectedDeliveryForDetails.delivery_status === 'delivered' ? 'bg-green-100 text-green-800' :
+                    selectedDeliveryForDetails.delivery_status === 'planned' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                    {selectedDeliveryForDetails.delivery_status.toUpperCase()}
+                  </span>
+                </div>
+                {selectedDeliveryForDetails.tracking_number && (
+                  <div>
+                    <span className="text-gray-600">Tracking:</span>
+                    <span className="ml-1 font-semibold">{selectedDeliveryForDetails.tracking_number}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Delivery Items */}
+            <div>
+              <h3 className="font-semibold mb-3">Delivery Items</h3>
+              {selectedDeliveryItems && selectedDeliveryItems.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedDeliveryItems.map((item: any) => (
+                    <div key={item.id} className="border rounded p-3 bg-gray-50">
+                      <p className="font-medium">{getItemName(item.item_id)}</p>
+                      <p className="text-sm text-gray-600">
+                        Quantity Delivered: {item.quantity_delivered}
+                      </p>
+                      {item.notes && (
+                        <p className="text-sm text-gray-600 italic">Note: {item.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">Loading items...</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Sales Management Section */}
+      {workspace && (
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Sales Management (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* Create Sales Order Form */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-semibold mb-3 text-blue-900">Create Sales Order</h3>
+            <form onSubmit={handleCreateSalesOrder} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Account *
+                  </label>
+                  <select
+                    value={salesOrderAccountId}
+                    onChange={(e) => setSalesOrderAccountId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Account</option>
+                    {accounts?.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Factory *
+                  </label>
+                  <select
+                    value={salesOrderFactoryId}
+                    onChange={(e) => setSalesOrderFactoryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Factory</option>
+                    {factories?.map((factory) => (
+                      <option key={factory.id} value={factory.id}>
+                        {factory.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Order Date
+                  </label>
+                  <input
+                    type="date"
+                    value={salesOrderDate}
+                    onChange={(e) => setSalesOrderDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quotation Sent Date
+                  </label>
+                  <input
+                    type="date"
+                    value={salesOrderQuotationDate}
+                    onChange={(e) => setSalesOrderQuotationDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expected Delivery Date
+                  </label>
+                  <input
+                    type="date"
+                    value={salesOrderExpectedDeliveryDate}
+                    onChange={(e) => setSalesOrderExpectedDeliveryDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={salesOrderNotes}
+                  onChange={(e) => setSalesOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={2}
+                />
+              </div>
+
+              {/* Order Items */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-2">Order Items</h4>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  <select
+                    value={salesOrderItemId}
+                    onChange={(e) => setSalesOrderItemId(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Item</option>
+                    {items?.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Quantity"
+                    value={salesOrderItemQty}
+                    onChange={(e) => setSalesOrderItemQty(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Unit Price"
+                    value={salesOrderItemPrice}
+                    onChange={(e) => setSalesOrderItemPrice(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddSalesOrderItem}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Add Item
+                  </button>
+                </div>
+
+                {salesOrderItems.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {salesOrderItems.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="text-sm">
+                          Item #{item.item_id} - Qty: {item.quantity_ordered} @ ${item.unit_price}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSalesOrderItem(index)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingSalesOrder}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {isCreatingSalesOrder ? 'Creating...' : 'Create Sales Order'}
+              </button>
+            </form>
+          </div>
+
+          {/* Sales Orders List */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Sales Orders</h3>
+            {isLoadingSalesOrders ? (
+              <p className="text-gray-600">Loading sales orders...</p>
+            ) : salesOrders && salesOrders.length > 0 ? (
+              <div className="space-y-2">
+                {salesOrders.map((order) => (
+                  <div key={order.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-lg">{order.sales_order_number}</h4>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${order.is_fully_delivered
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                            {order.is_fully_delivered ? 'Fully Delivered' : 'Pending Delivery'}
+                          </span>
+                          {order.is_invoiced && (
+                            <span className="px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+                              Invoiced
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Account: #{order.account_id} | Factory: #{order.factory_id}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Order Date: {new Date(order.order_date).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">
+                          Total: ${order.total_amount}
+                        </p>
+                        {order.notes && (
+                          <p className="text-sm text-gray-600 mt-1">Notes: {order.notes}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleViewSalesOrderDetails(order)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No sales orders found</p>
+            )}
+          </div>
+
+          {/* Create Sales Delivery Form */}
+          <div className="mb-6 p-4 bg-green-50 rounded-lg">
+            <h3 className="font-semibold mb-3 text-green-900">Create Sales Delivery</h3>
+            <form onSubmit={handleCreateSalesDelivery} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sales Order *
+                  </label>
+                  <select
+                    value={deliverySalesOrderId}
+                    onChange={(e) => setDeliverySalesOrderId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  >
+                    <option value="">Select Sales Order</option>
+                    {salesOrders?.map((order) => (
+                      <option key={order.id} value={order.id}>
+                        {order.sales_order_number} - ${order.total_amount}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled Date
+                  </label>
+                  <input
+                    type="date"
+                    value={deliveryScheduledDate}
+                    onChange={(e) => setDeliveryScheduledDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tracking Number
+                </label>
+                <input
+                  type="text"
+                  value={deliveryTrackingNumber}
+                  onChange={(e) => setDeliveryTrackingNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  rows={2}
+                />
+              </div>
+
+              {/* Delivery Items */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-2">Delivery Items</h4>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  <input
+                    type="number"
+                    placeholder="Sales Order Item ID"
+                    value={deliveryItemSalesOrderItemId}
+                    onChange={(e) => setDeliveryItemSalesOrderItemId(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Quantity"
+                    value={deliveryItemQty}
+                    onChange={(e) => setDeliveryItemQty(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddDeliveryItem}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Add Item
+                  </button>
+                </div>
+
+                {deliveryItems.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {deliveryItems.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="text-sm">
+                          Order Item #{item.sales_order_item_id} - Item #{item.item_id} - Qty: {item.quantity_delivered}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDeliveryItem(index)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingSalesDelivery}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+              >
+                {isCreatingSalesDelivery ? 'Creating...' : 'Create Delivery'}
+              </button>
+            </form>
+          </div>
+
+          {/* Sales Deliveries List */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold">Sales Deliveries</h3>
+              <select
+                value={filterDeliveryStatus}
+                onChange={(e) => setFilterDeliveryStatus(e.target.value as any)}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="">All Statuses</option>
+                <option value="planned">Planned</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            {isLoadingSalesDeliveries ? (
+              <p className="text-gray-600">Loading deliveries...</p>
+            ) : salesDeliveries && salesDeliveries.length > 0 ? (
+              <div className="space-y-2">
+                {salesDeliveries.map((delivery) => (
+                  <div key={delivery.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-lg">{delivery.delivery_number}</h4>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${delivery.delivery_status === 'delivered'
+                            ? 'bg-green-100 text-green-800'
+                            : delivery.delivery_status === 'cancelled'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                            {delivery.delivery_status.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Sales Order: #{delivery.sales_order_id}
+                        </p>
+                        {delivery.scheduled_date && (
+                          <p className="text-sm text-gray-600">
+                            Scheduled: {new Date(delivery.scheduled_date).toLocaleDateString()}
+                          </p>
+                        )}
+                        {delivery.actual_delivery_date && (
+                          <p className="text-sm text-gray-600">
+                            Delivered: {new Date(delivery.actual_delivery_date).toLocaleDateString()}
+                          </p>
+                        )}
+                        {delivery.tracking_number && (
+                          <p className="text-sm text-gray-600">
+                            Tracking: {delivery.tracking_number}
+                          </p>
+                        )}
+                        {delivery.notes && (
+                          <p className="text-sm text-gray-600 mt-1">Notes: {delivery.notes}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        {delivery.delivery_status === 'planned' && (
+                          <button
+                            onClick={() => handleCompleteDelivery(delivery.id)}
+                            disabled={isCompletingSalesDelivery}
+                            className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm disabled:bg-gray-400"
+                          >
+                            Complete
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleViewDeliveryDetails(delivery)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No deliveries found</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Sales Order Details Modal */}
+      {selectedSalesOrderForDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-semibold">
+                Sales Order Details: {selectedSalesOrderForDetails.sales_order_number}
+              </h3>
+              <button
+                onClick={handleCloseSalesOrderDetails}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4 p-4 bg-gray-50 rounded">
+              <p className="text-sm"><strong>Account:</strong> #{selectedSalesOrderForDetails.account_id}</p>
+              <p className="text-sm"><strong>Factory:</strong> #{selectedSalesOrderForDetails.factory_id}</p>
+              <p className="text-sm"><strong>Order Date:</strong> {new Date(selectedSalesOrderForDetails.order_date).toLocaleDateString()}</p>
+              <p className="text-sm"><strong>Total Amount:</strong> ${selectedSalesOrderForDetails.total_amount}</p>
+              <p className="text-sm"><strong>Status:</strong> {selectedSalesOrderForDetails.is_fully_delivered ? 'Fully Delivered' : 'Pending Delivery'}</p>
+            </div>
+
+            <div className="mb-4">
+              <h4 className="font-semibold mb-2">Order Items</h4>
+              {selectedSalesOrderItems && selectedSalesOrderItems.length > 0 ? (
+                <div className="space-y-1">
+                  {selectedSalesOrderItems.map((item) => (
+                    <div key={item.id} className="border rounded p-2 text-sm">
+                      <p><strong>Item:</strong> #{item.item_id}</p>
+                      <p><strong>Ordered:</strong> {item.quantity_ordered} | <strong>Delivered:</strong> {item.quantity_delivered}</p>
+                      <p><strong>Unit Price:</strong> ${item.unit_price} | <strong>Total:</strong> ${item.line_total}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-sm">No items found</p>
+              )}
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Deliveries</h4>
+              {selectedSalesOrderDeliveries && selectedSalesOrderDeliveries.length > 0 ? (
+                <div className="space-y-1">
+                  {selectedSalesOrderDeliveries.map((delivery) => (
+                    <div key={delivery.id} className="border rounded p-2 text-sm">
+                      <p><strong>{delivery.delivery_number}</strong> - {delivery.delivery_status}</p>
+                      {delivery.scheduled_date && (
+                        <p>Scheduled: {new Date(delivery.scheduled_date).toLocaleDateString()}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-sm">No deliveries found</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Details Modal */}
+      {selectedDeliveryForDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-semibold">
+                Delivery Details: {selectedDeliveryForDetails.delivery_number}
+              </h3>
+              <button
+                onClick={handleCloseDeliveryDetails}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4 p-4 bg-gray-50 rounded">
+              <p className="text-sm"><strong>Sales Order:</strong> #{selectedDeliveryForDetails.sales_order_id}</p>
+              <p className="text-sm"><strong>Status:</strong> {selectedDeliveryForDetails.delivery_status}</p>
+              {selectedDeliveryForDetails.scheduled_date && (
+                <p className="text-sm"><strong>Scheduled:</strong> {new Date(selectedDeliveryForDetails.scheduled_date).toLocaleDateString()}</p>
+              )}
+              {selectedDeliveryForDetails.actual_delivery_date && (
+                <p className="text-sm"><strong>Delivered:</strong> {new Date(selectedDeliveryForDetails.actual_delivery_date).toLocaleDateString()}</p>
+              )}
+              {selectedDeliveryForDetails.tracking_number && (
+                <p className="text-sm"><strong>Tracking:</strong> {selectedDeliveryForDetails.tracking_number}</p>
+              )}
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Delivery Items</h4>
+              {selectedDeliveryItems && selectedDeliveryItems.length > 0 ? (
+                <div className="space-y-1">
+                  {selectedDeliveryItems.map((item) => (
+                    <div key={item.id} className="border rounded p-2 text-sm">
+                      <p><strong>Item:</strong> #{item.item_id}</p>
+                      <p><strong>Sales Order Item:</strong> #{item.sales_order_item_id}</p>
+                      <p><strong>Quantity Delivered:</strong> {item.quantity_delivered}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-sm">No items found</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ApiTestPage;

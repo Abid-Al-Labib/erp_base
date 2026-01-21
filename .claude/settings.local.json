@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(git mv:*)",
+      "Bash(find:*)",
+      "Bash(alembic revision:*)",
+      "Bash(python add_department_columns.py:*)",
+      "Bash(python add_factory_columns.py:*)",
+      "Bash(python add_project_audit_columns.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
