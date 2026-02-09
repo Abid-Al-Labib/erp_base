@@ -7,3 +7,4 @@ export * from './projectComponent';
 export * from './projectComponentItem';
 export * from './projectComponentTask';
 export * from './miscellaneousProjectCost';
+export * from './production';
