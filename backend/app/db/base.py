@@ -46,3 +46,9 @@ from app.models.account_tag_assignment import AccountTagAssignment
 from app.models.account_invoice import AccountInvoice
 from app.models.invoice_payment import InvoicePayment
 from app.models.financial_audit_log import FinancialAuditLog
+# Production
+from app.models.production_line import ProductionLine
+from app.models.production_formula import ProductionFormula
+from app.models.production_formula_item import ProductionFormulaItem
+from app.models.production_batch import ProductionBatch
+from app.models.production_batch_item import ProductionBatchItem

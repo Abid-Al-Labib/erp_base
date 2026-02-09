@@ -23,16 +23,16 @@ class ProductionFormulaItem(Base):
     item_role = Column(String(20), nullable=False, index=True)
     # Valid values: 'input', 'output', 'waste', 'byproduct'
     # 'input' - Raw materials consumed
-    # 'output' - Finished goods produced (usually matches formula.output_item_id)
-    # 'waste' - Expected waste/scrap generated
+    # 'output' - Finished goods produced
+    # 'waste' - Waste/scrap generated during production
     # 'byproduct' - Secondary products that can be sold/reused
 
     # Quantity per formula batch
-    quantity = Column(Integer, nullable=False)  # Amount per formula.output_quantity
+    quantity = Column(Integer, nullable=False)  # Base quantity for this item
     unit = Column(String(20), nullable=True)  # kg, L, pcs, etc. (informational, item has base unit)
 
     # Optional fields
-    is_optional = Column(Boolean, default=False, nullable=False)  # Is this input optional?
+    is_optional = Column(Boolean, default=False, nullable=False)  # Is this item optional?
     tolerance_percentage = Column(Numeric(5, 2), nullable=True)  # ±% allowed variance (e.g., 5.00 = ±5%)
 
     # Relationships
