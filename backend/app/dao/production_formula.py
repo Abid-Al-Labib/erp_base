@@ -58,29 +58,6 @@ class ProductionFormulaDAO(BaseDAO[ProductionFormula, ProductionFormulaCreate, P
             .first()
         )
 
-    def get_by_output_item(
-        self, db: Session, *, output_item_id: int, workspace_id: int
-    ) -> List[ProductionFormula]:
-        """
-        Get all formulas that produce a specific item (SECURITY-CRITICAL)
-
-        Args:
-            db: Database session
-            output_item_id: Output item ID
-            workspace_id: Workspace ID to filter by
-
-        Returns:
-            List of production formulas
-        """
-        return (
-            db.query(ProductionFormula)
-            .filter(
-                ProductionFormula.workspace_id == workspace_id,
-                ProductionFormula.output_item_id == output_item_id
-            )
-            .all()
-        )
-
     def get_active_by_workspace(
         self, db: Session, *, workspace_id: int, skip: int = 0, limit: int = 100
     ) -> List[ProductionFormula]:
@@ -107,29 +84,27 @@ class ProductionFormulaDAO(BaseDAO[ProductionFormula, ProductionFormulaCreate, P
             .all()
         )
 
-    def get_default_for_item(
-        self, db: Session, *, output_item_id: int, workspace_id: int
-    ) -> Optional[ProductionFormula]:
+    def get_default_formulas(
+        self, db: Session, *, workspace_id: int
+    ) -> List[ProductionFormula]:
         """
-        Get default formula for a specific output item (SECURITY-CRITICAL)
+        Get all default formulas in a workspace (SECURITY-CRITICAL)
 
         Args:
             db: Database session
-            output_item_id: Output item ID
             workspace_id: Workspace ID to filter by
 
         Returns:
-            Default production formula or None
+            List of default production formulas
         """
         return (
             db.query(ProductionFormula)
             .filter(
                 ProductionFormula.workspace_id == workspace_id,
-                ProductionFormula.output_item_id == output_item_id,
                 ProductionFormula.is_default == True,
                 ProductionFormula.is_active == True
             )
-            .first()
+            .all()
         )
 
     def get_by_id_and_workspace(

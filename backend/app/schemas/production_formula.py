@@ -10,8 +10,6 @@ class ProductionFormulaBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     version: int = Field(default=1, ge=1)
-    output_item_id: int
-    output_quantity: int = Field(..., gt=0)
     estimated_duration_minutes: Optional[int] = Field(None, ge=0)
     is_active: bool = True
     is_default: bool = False
@@ -26,7 +24,6 @@ class ProductionFormulaUpdate(BaseModel):
     """Production formula update schema"""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
-    output_quantity: Optional[int] = Field(None, gt=0)
     estimated_duration_minutes: Optional[int] = Field(None, ge=0)
     is_active: Optional[bool] = None
     is_default: Optional[bool] = None

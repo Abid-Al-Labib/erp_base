@@ -17,6 +17,13 @@ import { useGetAccountInvoicesQuery, useCreateAccountInvoiceMutation, useUpdateA
 import { useGetInvoicePaymentsByInvoiceQuery, useCreateInvoicePaymentMutation, useDeleteInvoicePaymentMutation } from '@/features/invoicePayments/invoicePaymentsApi';
 import { useGetSalesOrdersQuery, useGetSalesOrderByIdQuery, useCreateSalesOrderMutation, useUpdateSalesOrderMutation, useGetSalesOrderItemsQuery, useGetSalesOrderDeliveriesQuery } from '@/features/salesOrders/salesOrdersApi';
 import { useGetSalesDeliveriesQuery, useGetSalesDeliveryByIdQuery, useCreateSalesDeliveryMutation, useCompleteSalesDeliveryMutation, useGetSalesDeliveryItemsQuery } from '@/features/salesDeliveries/salesDeliveriesApi';
+import {
+  useGetProductionLinesQuery, useCreateProductionLineMutation, useUpdateProductionLineMutation, useDeleteProductionLineMutation,
+  useGetProductionFormulasQuery, useCreateProductionFormulaMutation, useDeleteProductionFormulaMutation,
+  useGetFormulaItemsQuery, useAddFormulaItemMutation, useRemoveFormulaItemMutation,
+  useGetProductionBatchesQuery, useCreateProductionBatchMutation, useStartBatchMutation, useCompleteBatchMutation, useCancelBatchMutation,
+  useGetBatchItemsQuery, useAddBatchItemMutation, useUpdateBatchItemMutation,
+} from '@/features/production/productionApi';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { setCredentials, setWorkspace, logout as logoutAction } from '@/features/auth/authSlice';
 import toast, { Toaster } from 'react-hot-toast';
@@ -34,6 +41,7 @@ import type { AccountInvoice } from '@/types/accountInvoice';
 import type { InvoicePayment } from '@/types/invoicePayment';
 import type { SalesOrder } from '@/types/salesOrder';
 import type { SalesDelivery } from '@/types/salesDelivery';
+import type { ProductionLine, ProductionFormula, ProductionBatch } from '@/types/production';
 
 const ApiTestPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -353,6 +361,92 @@ const ApiTestPage: React.FC = () => {
     selectedDeliveryForDetails?.id || 0,
     { skip: !selectedDeliveryForDetails }
   );
+
+  // ─── Production Module State ─────────────────────────────────────
+  // Production Lines
+  const [prodLineName, setProdLineName] = useState('');
+  const [prodLineDescription, setProdLineDescription] = useState('');
+  const [prodLineFactoryId, setProdLineFactoryId] = useState('');
+  const [prodLineMachineId, setProdLineMachineId] = useState('');
+  const [editingProdLine, setEditingProdLine] = useState<ProductionLine | null>(null);
+
+  // Production Formulas
+  const [formulaCode, setFormulaCode] = useState('');
+  const [formulaName, setFormulaName] = useState('');
+  const [formulaDescription, setFormulaDescription] = useState('');
+  const [formulaDuration, setFormulaDuration] = useState('');
+  const [formulaIsDefault, setFormulaIsDefault] = useState(false);
+  const [selectedFormula, setSelectedFormula] = useState<ProductionFormula | null>(null);
+
+  // Formula Items (for adding to selected formula)
+  const [fiItemId, setFiItemId] = useState('');
+  const [fiRole, setFiRole] = useState<'input' | 'output' | 'waste' | 'byproduct'>('input');
+  const [fiQuantity, setFiQuantity] = useState('');
+  const [fiUnit, setFiUnit] = useState('');
+
+  // Production Batches
+  const [batchLineId, setBatchLineId] = useState('');
+  const [batchFormulaId, setBatchFormulaId] = useState('');
+  const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
+  const [batchShift, setBatchShift] = useState('');
+  const [batchNotes, setBatchNotes] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState<ProductionBatch | null>(null);
+  const [batchFilterStatus, setBatchFilterStatus] = useState('');
+
+  // Batch workflow
+  const [startTargetQty, setStartTargetQty] = useState('');
+  const [completeActualQty, setCompleteActualQty] = useState('');
+  const [completeActualDuration, setCompleteActualDuration] = useState('');
+  const [completeNotes, setCompleteNotes] = useState('');
+  const [cancelNotes, setCancelNotes] = useState('');
+
+  // Batch Items (for adding to selected batch)
+  const [biItemId, setBiItemId] = useState('');
+  const [biRole, setBiRole] = useState<'input' | 'output' | 'waste' | 'byproduct'>('input');
+  const [biExpectedQty, setBiExpectedQty] = useState('');
+  const [biActualQty, setBiActualQty] = useState('');
+
+  // ─── Production API Hooks ────────────────────────────────────────
+  const { data: productionLines, isLoading: isLoadingProdLines, refetch: refetchProdLines } = useGetProductionLinesQuery(
+    { skip: 0, limit: 50 },
+    { skip: !workspace }
+  );
+  const [createProdLine, { isLoading: isCreatingProdLine }] = useCreateProductionLineMutation();
+  const [updateProdLine] = useUpdateProductionLineMutation();
+  const [deleteProdLine] = useDeleteProductionLineMutation();
+
+  const { data: productionFormulas, isLoading: isLoadingFormulas, refetch: refetchFormulas } = useGetProductionFormulasQuery(
+    { skip: 0, limit: 50 },
+    { skip: !workspace }
+  );
+  const [createFormula, { isLoading: isCreatingFormula }] = useCreateProductionFormulaMutation();
+  const [deleteFormula] = useDeleteProductionFormulaMutation();
+
+  const { data: formulaItems, refetch: refetchFormulaItems } = useGetFormulaItemsQuery(
+    { formulaId: selectedFormula?.id || 0 },
+    { skip: !selectedFormula }
+  );
+  const [addFormulaItem] = useAddFormulaItemMutation();
+  const [removeFormulaItem] = useRemoveFormulaItemMutation();
+
+  const { data: productionBatches, isLoading: isLoadingBatches, refetch: refetchBatches } = useGetProductionBatchesQuery(
+    { skip: 0, limit: 50, status: batchFilterStatus || undefined },
+    { skip: !workspace }
+  );
+  const [createBatch, { isLoading: isCreatingBatch }] = useCreateProductionBatchMutation();
+  const [startBatch] = useStartBatchMutation();
+  const [completeBatch] = useCompleteBatchMutation();
+  const [cancelBatch] = useCancelBatchMutation();
+
+  const { data: batchItems, refetch: refetchBatchItems } = useGetBatchItemsQuery(
+    { batchId: selectedBatch?.id || 0 },
+    { skip: !selectedBatch }
+  );
+  const [addBatchItem] = useAddBatchItemMutation();
+  const [updateBatchItem] = useUpdateBatchItemMutation();
+
+  // Track actual quantities being edited for batch items (key = batch_item_id, value = actual_qty string)
+  const [batchItemActualQtys, setBatchItemActualQtys] = useState<Record<number, string>>({});
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -1699,6 +1793,240 @@ const ApiTestPage: React.FC = () => {
   const getItemName = (itemId: number): string => {
     const item = items?.find(i => i.id === itemId);
     return item ? item.name : 'Unknown Item';
+  };
+
+  const getLineName = (lineId: number): string => {
+    const line = productionLines?.find(l => l.id === lineId);
+    return line ? line.name : `Line #${lineId}`;
+  };
+
+  const getFormulaName = (formulaId: number): string => {
+    const formula = productionFormulas?.find(f => f.id === formulaId);
+    return formula ? `${formula.formula_code} - ${formula.name}` : `Formula #${formulaId}`;
+  };
+
+  // ─── Production Line Handlers ──────────────────────────────────
+  const handleCreateProdLine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createProdLine({
+        name: prodLineName,
+        factory_id: parseInt(prodLineFactoryId),
+        machine_id: prodLineMachineId ? parseInt(prodLineMachineId) : undefined,
+        description: prodLineDescription || undefined,
+      }).unwrap();
+      toast.success('Production line created!');
+      setProdLineName(''); setProdLineDescription(''); setProdLineFactoryId(''); setProdLineMachineId('');
+      refetchProdLines();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create production line');
+    }
+  };
+
+  const handleDeleteProdLine = async (id: number) => {
+    try {
+      await deleteProdLine(id).unwrap();
+      toast.success('Production line deleted');
+      refetchProdLines();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete');
+    }
+  };
+
+  // ─── Production Formula Handlers ───────────────────────────────
+  const handleCreateFormula = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createFormula({
+        formula_code: formulaCode,
+        name: formulaName,
+        description: formulaDescription || undefined,
+        estimated_duration_minutes: formulaDuration ? parseInt(formulaDuration) : undefined,
+        is_default: formulaIsDefault,
+      }).unwrap();
+      toast.success('Formula created!');
+      setFormulaCode(''); setFormulaName(''); setFormulaDescription('');
+      setFormulaDuration(''); setFormulaIsDefault(false);
+      refetchFormulas();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create formula');
+    }
+  };
+
+  const handleDeleteFormula = async (id: number) => {
+    try {
+      await deleteFormula(id).unwrap();
+      toast.success('Formula deleted');
+      if (selectedFormula?.id === id) setSelectedFormula(null);
+      refetchFormulas();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete');
+    }
+  };
+
+  const handleAddFormulaItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFormula) return;
+    try {
+      await addFormulaItem({
+        formulaId: selectedFormula.id,
+        data: {
+          formula_id: selectedFormula.id,
+          item_id: parseInt(fiItemId),
+          item_role: fiRole,
+          quantity: parseInt(fiQuantity),
+          unit: fiUnit || undefined,
+        },
+      }).unwrap();
+      toast.success('Item added to formula!');
+      setFiItemId(''); setFiQuantity(''); setFiUnit('');
+      refetchFormulaItems();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to add formula item');
+    }
+  };
+
+  const handleRemoveFormulaItem = async (id: number) => {
+    try {
+      await removeFormulaItem(id).unwrap();
+      toast.success('Formula item removed');
+      refetchFormulaItems();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to remove');
+    }
+  };
+
+  // ─── Production Batch Handlers ─────────────────────────────────
+  const handleCreateBatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createBatch({
+        production_line_id: parseInt(batchLineId),
+        formula_id: batchFormulaId ? parseInt(batchFormulaId) : undefined,
+        batch_date: batchDate,
+        shift: batchShift || undefined,
+        notes: batchNotes || undefined,
+      }).unwrap();
+      toast.success('Batch created!');
+      setBatchLineId(''); setBatchFormulaId(''); setBatchShift(''); setBatchNotes('');
+      refetchBatches();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create batch');
+    }
+  };
+
+  const handleStartBatch = async (batchId: number) => {
+    try {
+      const updatedBatch = await startBatch({
+        id: batchId,
+        data: { target_output_quantity: startTargetQty ? parseInt(startTargetQty) : undefined },
+      }).unwrap();
+      toast.success('Batch started! Items populated from formula.');
+      setStartTargetQty('');
+      setBatchItemActualQtys({}); // Clear any previous edits
+      refetchBatches();
+      // Auto-select this batch to show the populated items
+      setSelectedBatch(updatedBatch);
+      // Refetch batch items after a short delay to ensure cache is updated
+      setTimeout(() => refetchBatchItems(), 100);
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to start batch');
+    }
+  };
+
+  // Handler to update actual quantity for a batch item
+  const handleUpdateBatchItemActualQty = async (batchItemId: number) => {
+    const actualQtyStr = batchItemActualQtys[batchItemId];
+    if (actualQtyStr === undefined || actualQtyStr === '') {
+      toast.error('Please enter an actual quantity');
+      return;
+    }
+    try {
+      await updateBatchItem({
+        id: batchItemId,
+        data: { actual_quantity: parseInt(actualQtyStr) },
+      }).unwrap();
+      toast.success('Actual quantity updated');
+      refetchBatchItems();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update');
+    }
+  };
+
+  // Handler to update all batch item actual quantities at once
+  const handleSaveAllActualQuantities = async () => {
+    const entries = Object.entries(batchItemActualQtys).filter(([_, val]) => val !== '');
+    if (entries.length === 0) {
+      toast.error('No actual quantities entered');
+      return;
+    }
+    try {
+      for (const [idStr, qtyStr] of entries) {
+        await updateBatchItem({
+          id: parseInt(idStr),
+          data: { actual_quantity: parseInt(qtyStr) },
+        }).unwrap();
+      }
+      toast.success(`Updated ${entries.length} item(s)`);
+      refetchBatchItems();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to save quantities');
+    }
+  };
+
+  const handleCompleteBatch = async (batchId: number) => {
+    try {
+      await completeBatch({
+        id: batchId,
+        data: {
+          actual_output_quantity: completeActualQty ? parseInt(completeActualQty) : undefined,
+          actual_duration_minutes: completeActualDuration ? parseInt(completeActualDuration) : undefined,
+          notes: completeNotes || undefined,
+        },
+      }).unwrap();
+      toast.success('Batch completed!');
+      setCompleteActualQty(''); setCompleteActualDuration(''); setCompleteNotes('');
+      refetchBatches();
+      if (selectedBatch?.id === batchId) refetchBatchItems();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to complete batch');
+    }
+  };
+
+  const handleCancelBatch = async (batchId: number) => {
+    try {
+      await cancelBatch({
+        id: batchId,
+        data: { notes: cancelNotes || undefined },
+      }).unwrap();
+      toast.success('Batch cancelled');
+      setCancelNotes('');
+      refetchBatches();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to cancel batch');
+    }
+  };
+
+  const handleAddBatchItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBatch) return;
+    try {
+      await addBatchItem({
+        batchId: selectedBatch.id,
+        data: {
+          batch_id: selectedBatch.id,
+          item_id: parseInt(biItemId),
+          item_role: biRole,
+          expected_quantity: biExpectedQty ? parseInt(biExpectedQty) : undefined,
+          actual_quantity: biActualQty ? parseInt(biActualQty) : undefined,
+        },
+      }).unwrap();
+      toast.success('Item added to batch!');
+      setBiItemId(''); setBiExpectedQty(''); setBiActualQty('');
+      refetchBatchItems();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to add batch item');
+    }
   };
 
   return (
@@ -5275,6 +5603,501 @@ const ApiTestPage: React.FC = () => {
                 <p className="text-gray-600 text-sm">No items found</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          PRODUCTION MODULE TESTING
+          ═══════════════════════════════════════════════════════════════ */}
+      {workspace && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Production Module (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* ─── Production Lines Section ─────────────────────────── */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-green-900 mb-4">Production Lines</h3>
+
+            <form onSubmit={handleCreateProdLine} className="mb-6 p-4 bg-green-50 rounded-lg">
+              <h4 className="font-semibold mb-3 text-green-900">Create Production Line</h4>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <input type="text" value={prodLineName} onChange={(e) => setProdLineName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" required placeholder="e.g., Yarn Line 1" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Factory *</label>
+                  <select value={prodLineFactoryId} onChange={(e) => setProdLineFactoryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    <option value="">Select Factory</option>
+                    {factories?.map((f) => (<option key={f.id} value={f.id}>{f.name}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Machine ID (optional)</label>
+                  <input type="number" value={prodLineMachineId} onChange={(e) => setProdLineMachineId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Leave empty for standalone" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input type="text" value={prodLineDescription} onChange={(e) => setProdLineDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Optional description" />
+                </div>
+              </div>
+              <button type="submit" disabled={isCreatingProdLine}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400">
+                {isCreatingProdLine ? 'Creating...' : 'Create Production Line'}
+              </button>
+            </form>
+
+            <div>
+              <h4 className="font-medium mb-3">Production Lines List</h4>
+              {isLoadingProdLines ? (
+                <p className="text-gray-600">Loading...</p>
+              ) : productionLines && productionLines.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {productionLines.map((line) => (
+                    <div key={line.id} className="border rounded p-3 bg-gray-50 flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-green-700">{line.name}</p>
+                        <p className="text-sm text-gray-600">
+                          Factory: {getFactoryName(line.factory_id)}
+                          {line.machine_id && ` | Machine: #${line.machine_id}`}
+                          {' | '}{line.is_active ? '✓ Active' : '✗ Inactive'}
+                        </p>
+                        {line.description && <p className="text-xs text-gray-500">{line.description}</p>}
+                      </div>
+                      <button onClick={() => handleDeleteProdLine(line.id)}
+                        className="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No production lines found</p>
+              )}
+            </div>
+          </div>
+
+          {/* ─── Production Formulas Section ──────────────────────── */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-purple-900 mb-4">Production Formulas</h3>
+
+            <form onSubmit={handleCreateFormula} className="mb-6 p-4 bg-purple-50 rounded-lg">
+              <h4 className="font-semibold mb-3 text-purple-900">Create Production Formula</h4>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Formula Code *</label>
+                  <input type="text" value={formulaCode} onChange={(e) => setFormulaCode(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" required placeholder="e.g., YARN-001" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <input type="text" value={formulaName} onChange={(e) => setFormulaName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" required placeholder="e.g., Cotton Yarn Formula" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Est. Duration (minutes)</label>
+                  <input type="number" value={formulaDuration} onChange={(e) => setFormulaDuration(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Optional" />
+                </div>
+                <div className="flex items-center pt-6">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={formulaIsDefault} onChange={(e) => setFormulaIsDefault(e.target.checked)} />
+                    <span className="text-sm font-medium text-gray-700">Set as default formula</span>
+                  </label>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea value={formulaDescription} onChange={(e) => setFormulaDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" rows={2} placeholder="Optional" />
+                </div>
+              </div>
+              <button type="submit" disabled={isCreatingFormula}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400">
+                {isCreatingFormula ? 'Creating...' : 'Create Formula'}
+              </button>
+            </form>
+
+            <div className="mb-4">
+              <h4 className="font-medium mb-3">Formulas List</h4>
+              {isLoadingFormulas ? (
+                <p className="text-gray-600">Loading...</p>
+              ) : productionFormulas && productionFormulas.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {productionFormulas.map((formula) => (
+                    <div key={formula.id} className="border rounded p-3 bg-gray-50 flex justify-between items-start">
+                      <div className="flex-1 cursor-pointer" onClick={() => setSelectedFormula(selectedFormula?.id === formula.id ? null : formula)}>
+                        <p className="font-semibold text-purple-700">
+                          {formula.formula_code} - {formula.name}
+                          {formula.is_default && <span className="ml-2 text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Default</span>}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {formula.estimated_duration_minutes && `~${formula.estimated_duration_minutes} min | `}
+                          v{formula.version}
+                          {' | '}{formula.is_active ? '✓ Active' : '✗ Inactive'}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setSelectedFormula(selectedFormula?.id === formula.id ? null : formula)}
+                          className="text-blue-600 hover:text-blue-800 text-sm">
+                          {selectedFormula?.id === formula.id ? 'Close' : 'Items'}
+                        </button>
+                        <button onClick={() => handleDeleteFormula(formula.id)}
+                          className="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No formulas found</p>
+              )}
+            </div>
+
+            {/* Formula Items Panel */}
+            {selectedFormula && (
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-semibold mb-3 text-purple-900">
+                  Items for: {selectedFormula.formula_code} - {selectedFormula.name}
+                </h4>
+
+                <form onSubmit={handleAddFormulaItem} className="grid grid-cols-5 gap-3 mb-4">
+                  <select value={fiItemId} onChange={(e) => setFiItemId(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm" required>
+                    <option value="">Select Item</option>
+                    {items?.map((item) => (<option key={item.id} value={item.id}>{item.name}</option>))}
+                  </select>
+                  <select value={fiRole} onChange={(e) => setFiRole(e.target.value as any)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                    <option value="input">Input</option>
+                    <option value="output">Output</option>
+                    <option value="waste">Waste</option>
+                    <option value="byproduct">Byproduct</option>
+                  </select>
+                  <input type="number" value={fiQuantity} onChange={(e) => setFiQuantity(e.target.value)}
+                    placeholder="Quantity" className="px-3 py-2 border border-gray-300 rounded-md text-sm" required />
+                  <input type="text" value={fiUnit} onChange={(e) => setFiUnit(e.target.value)}
+                    placeholder="Unit (kg, L...)" className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                  <button type="submit" className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 text-sm">
+                    Add
+                  </button>
+                </form>
+
+                {formulaItems && formulaItems.length > 0 ? (
+                  <div className="space-y-1">
+                    {formulaItems.map((fi) => (
+                      <div key={fi.id} className="flex items-center justify-between p-2 bg-white border rounded text-sm">
+                        <div>
+                          <span className={`font-medium px-2 py-0.5 rounded text-xs mr-2 ${
+                            fi.item_role === 'input' ? 'bg-blue-100 text-blue-800' :
+                            fi.item_role === 'output' ? 'bg-green-100 text-green-800' :
+                            fi.item_role === 'waste' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>{fi.item_role}</span>
+                          {getItemName(fi.item_id)} - Qty: {fi.quantity}{fi.unit ? ` ${fi.unit}` : ''}
+                          {fi.is_optional && ' (optional)'}
+                        </div>
+                        <button onClick={() => handleRemoveFormulaItem(fi.id)}
+                          className="text-red-600 hover:text-red-800 text-xs">Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No items in this formula yet</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ─── Production Batches Section ───────────────────────── */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-orange-900 mb-4">Production Batches</h3>
+
+            <form onSubmit={handleCreateBatch} className="mb-6 p-4 bg-orange-50 rounded-lg">
+              <h4 className="font-semibold mb-3 text-orange-900">Create Production Batch</h4>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Production Line *</label>
+                  <select value={batchLineId} onChange={(e) => setBatchLineId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    <option value="">Select Line</option>
+                    {productionLines?.filter(l => l.is_active).map((line) => (
+                      <option key={line.id} value={line.id}>{line.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Formula (optional)</label>
+                  <select value={batchFormulaId} onChange={(e) => setBatchFormulaId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <option value="">No formula (simple mode)</option>
+                    {productionFormulas?.filter(f => f.is_active).map((f) => (
+                      <option key={f.id} value={f.id}>{f.formula_code} - {f.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Date *</label>
+                  <input type="date" value={batchDate} onChange={(e) => setBatchDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+                  <select value={batchShift} onChange={(e) => setBatchShift(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <option value="">No shift</option>
+                    <option value="morning">Morning</option>
+                    <option value="afternoon">Afternoon</option>
+                    <option value="night">Night</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea value={batchNotes} onChange={(e) => setBatchNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md" rows={2} placeholder="Optional" />
+                </div>
+              </div>
+              <button type="submit" disabled={isCreatingBatch}
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400">
+                {isCreatingBatch ? 'Creating...' : 'Create Batch (Draft)'}
+              </button>
+            </form>
+
+            {/* Batch Filter */}
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-sm font-medium">Filter by status:</span>
+              <select value={batchFilterStatus} onChange={(e) => { setBatchFilterStatus(e.target.value); }}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                <option value="">All</option>
+                <option value="draft">Draft</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <button onClick={() => refetchBatches()} className="text-blue-600 hover:text-blue-800 text-sm">Refresh</button>
+            </div>
+
+            {/* Batches List */}
+            <div className="mb-4">
+              <h4 className="font-medium mb-3">Batches List</h4>
+              {isLoadingBatches ? (
+                <p className="text-gray-600">Loading...</p>
+              ) : productionBatches && productionBatches.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {productionBatches.map((batch) => (
+                    <div key={batch.id} className="border rounded p-3 bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 cursor-pointer" onClick={() => setSelectedBatch(selectedBatch?.id === batch.id ? null : batch)}>
+                          <p className="font-semibold text-orange-700">
+                            {batch.batch_number}
+                            <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
+                              batch.status === 'draft' ? 'bg-gray-200 text-gray-800' :
+                              batch.status === 'in_progress' ? 'bg-blue-200 text-blue-800' :
+                              batch.status === 'completed' ? 'bg-green-200 text-green-800' :
+                              'bg-red-200 text-red-800'
+                            }`}>{batch.status}</span>
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Line: {getLineName(batch.production_line_id)}
+                            {batch.formula_id && ` | Formula: ${getFormulaName(batch.formula_id)}`}
+                            {' | '}{batch.batch_date}
+                            {batch.shift && ` | ${batch.shift}`}
+                          </p>
+                          {batch.status === 'completed' && (
+                            <p className="text-sm text-gray-600">
+                              Expected: {batch.expected_output_quantity ?? 'N/A'} | Actual: {batch.actual_output_quantity ?? 'N/A'}
+                              {batch.efficiency_percentage != null && ` | Efficiency: ${batch.efficiency_percentage}%`}
+                              {batch.output_variance_percentage != null && ` | Variance: ${batch.output_variance_percentage}%`}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 flex-shrink-0">
+                          {batch.status === 'draft' && (
+                            <button onClick={() => handleStartBatch(batch.id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium">Start</button>
+                          )}
+                          {batch.status === 'in_progress' && (
+                            <button onClick={() => handleCompleteBatch(batch.id)}
+                              className="text-green-600 hover:text-green-800 text-sm font-medium">Complete</button>
+                          )}
+                          {(batch.status === 'draft' || batch.status === 'in_progress') && (
+                            <button onClick={() => handleCancelBatch(batch.id)}
+                              className="text-red-600 hover:text-red-800 text-sm">Cancel</button>
+                          )}
+                          <button onClick={() => setSelectedBatch(selectedBatch?.id === batch.id ? null : batch)}
+                            className="text-gray-600 hover:text-gray-800 text-sm">
+                            {selectedBatch?.id === batch.id ? 'Close' : 'Items'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No batches found</p>
+              )}
+            </div>
+
+            {/* Batch Workflow Controls */}
+            <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-orange-50 rounded-lg">
+              <div>
+                <h5 className="font-medium text-sm mb-2">Start Batch Options</h5>
+                <p className="text-xs text-gray-500 mb-2">When starting a batch with a formula, items will be auto-populated based on the target quantity.</p>
+                <input type="number" value={startTargetQty} onChange={(e) => setStartTargetQty(e.target.value)}
+                  placeholder="Target output qty (optional)" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                <p className="text-xs text-gray-400 mt-1">Leave empty to use formula's base output quantity</p>
+              </div>
+              <div>
+                <h5 className="font-medium text-sm mb-2">Complete Batch Options</h5>
+                <p className="text-xs text-gray-500 mb-2">Enter final actuals when completing a batch. Variance will be calculated.</p>
+                <input type="number" value={completeActualQty} onChange={(e) => setCompleteActualQty(e.target.value)}
+                  placeholder="Actual output qty" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-1" />
+                <input type="number" value={completeActualDuration} onChange={(e) => setCompleteActualDuration(e.target.value)}
+                  placeholder="Actual duration (min)" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-1" />
+                <input type="text" value={completeNotes} onChange={(e) => setCompleteNotes(e.target.value)}
+                  placeholder="Completion notes" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+              </div>
+              <div>
+                <h5 className="font-medium text-sm mb-2">Cancel Batch Options</h5>
+                <input type="text" value={cancelNotes} onChange={(e) => setCancelNotes(e.target.value)}
+                  placeholder="Cancellation reason" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+              </div>
+            </div>
+
+            {/* Batch Items Panel */}
+            {selectedBatch && (
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="mb-4">
+                  <h4 className="font-semibold text-orange-900">
+                    Batch: {selectedBatch.batch_number}
+                    <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
+                      selectedBatch.status === 'draft' ? 'bg-gray-200 text-gray-800' :
+                      selectedBatch.status === 'in_progress' ? 'bg-blue-200 text-blue-800' :
+                      selectedBatch.status === 'completed' ? 'bg-green-200 text-green-800' :
+                      'bg-red-200 text-red-800'
+                    }`}>{selectedBatch.status}</span>
+                  </h4>
+                  <div className="text-sm text-gray-600 mt-1">
+                    {selectedBatch.formula_id && (
+                      <span className="mr-4">Formula: <strong>{getFormulaName(selectedBatch.formula_id)}</strong></span>
+                    )}
+                    {selectedBatch.expected_output_quantity && (
+                      <span className="mr-4">Expected Output: <strong>{selectedBatch.expected_output_quantity}</strong></span>
+                    )}
+                    {selectedBatch.actual_output_quantity && (
+                      <span>Actual Output: <strong>{selectedBatch.actual_output_quantity}</strong></span>
+                    )}
+                  </div>
+                  {selectedBatch.status === 'in_progress' && selectedBatch.formula_id && (
+                    <p className="text-xs text-blue-700 mt-2 bg-blue-50 p-2 rounded">
+                      Enter actual quantities for each item below, then click "Save All Actual Quantities"
+                    </p>
+                  )}
+                </div>
+
+                {/* Manual Add Form - only for simple mode (no formula) or to add extra items */}
+                {(selectedBatch.status === 'draft' || selectedBatch.status === 'in_progress') && !selectedBatch.formula_id && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-500 mb-2">Simple mode: Add items manually</p>
+                    <form onSubmit={handleAddBatchItem} className="grid grid-cols-5 gap-3">
+                      <select value={biItemId} onChange={(e) => setBiItemId(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md text-sm" required>
+                        <option value="">Select Item</option>
+                        {items?.map((item) => (<option key={item.id} value={item.id}>{item.name}</option>))}
+                      </select>
+                      <select value={biRole} onChange={(e) => setBiRole(e.target.value as any)}
+                        className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <option value="input">Input</option>
+                        <option value="output">Output</option>
+                        <option value="waste">Waste</option>
+                        <option value="byproduct">Byproduct</option>
+                      </select>
+                      <input type="number" value={biExpectedQty} onChange={(e) => setBiExpectedQty(e.target.value)}
+                        placeholder="Expected Qty" className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                      <input type="number" value={biActualQty} onChange={(e) => setBiActualQty(e.target.value)}
+                        placeholder="Actual Qty" className="px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                      <button type="submit" className="bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 text-sm">
+                        Add
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {batchItems && batchItems.length > 0 ? (
+                  <div className="space-y-2">
+                    {/* Save All Button for in_progress batches */}
+                    {selectedBatch.status === 'in_progress' && (
+                      <div className="flex justify-end mb-2">
+                        <button onClick={handleSaveAllActualQuantities}
+                          className="bg-orange-600 text-white py-1 px-4 rounded-md hover:bg-orange-700 text-sm">
+                          Save All Actual Quantities
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Table header */}
+                    <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-600 border-b pb-1">
+                      <div className="col-span-1">Role</div>
+                      <div className="col-span-4">Item</div>
+                      <div className="col-span-2 text-center">Expected</div>
+                      <div className="col-span-3 text-center">Actual</div>
+                      <div className="col-span-2 text-center">Variance</div>
+                    </div>
+
+                    {batchItems.map((bi) => (
+                      <div key={bi.id} className="grid grid-cols-12 gap-2 p-2 bg-white border rounded text-sm items-center">
+                        <div className="col-span-1">
+                          <span className={`font-medium px-2 py-0.5 rounded text-xs ${
+                            bi.item_role === 'input' ? 'bg-blue-100 text-blue-800' :
+                            bi.item_role === 'output' ? 'bg-green-100 text-green-800' :
+                            bi.item_role === 'waste' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>{bi.item_role}</span>
+                        </div>
+                        <div className="col-span-4 font-medium">{getItemName(bi.item_id)}</div>
+                        <div className="col-span-2 text-center text-gray-600">
+                          {bi.expected_quantity ?? '-'}
+                        </div>
+                        <div className="col-span-3 text-center">
+                          {selectedBatch.status === 'in_progress' ? (
+                            <input
+                              type="number"
+                              value={batchItemActualQtys[bi.id] ?? (bi.actual_quantity?.toString() || '')}
+                              onChange={(e) => setBatchItemActualQtys(prev => ({ ...prev, [bi.id]: e.target.value }))}
+                              placeholder="Enter actual"
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                            />
+                          ) : (
+                            <span className="text-gray-600">{bi.actual_quantity ?? '-'}</span>
+                          )}
+                        </div>
+                        <div className="col-span-2 text-center">
+                          {bi.variance_quantity != null ? (
+                            <span className={bi.variance_quantity >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {bi.variance_quantity > 0 ? '+' : ''}{bi.variance_quantity}
+                              {bi.variance_percentage != null && ` (${bi.variance_percentage}%)`}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    {selectedBatch.status === 'draft' && selectedBatch.formula_id
+                      ? 'Click "Start" on this batch to auto-populate items from the formula.'
+                      : selectedBatch.status === 'draft'
+                      ? 'Add items manually using the form above, or attach a formula.'
+                      : 'No items in this batch.'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

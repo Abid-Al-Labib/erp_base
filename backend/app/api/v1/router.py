@@ -29,6 +29,10 @@ from app.api.v1.endpoints import (
     # Sales
     sales_orders,
     sales_deliveries,
+    # Production
+    production_lines,
+    production_formulas,
+    production_batches,
     # Projects
     projects,
     project_components,
@@ -87,6 +91,11 @@ api_router.include_router(order_part_logs.router, prefix="/order-part-logs", tag
 # Sales
 api_router.include_router(sales_orders.router, prefix="/sales-orders", tags=["sales"])
 api_router.include_router(sales_deliveries.router, prefix="/sales-deliveries", tags=["sales"])
+
+# Production
+api_router.include_router(production_lines.router, prefix="/production-lines", tags=["production"])
+api_router.include_router(production_formulas.router, prefix="/production-formulas", tags=["production"])
+api_router.include_router(production_batches.router, prefix="/production-batches", tags=["production"])
 
 # Projects
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
