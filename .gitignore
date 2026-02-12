@@ -1,2 +1,6 @@
 node_modules/
 frontend/package-lock.json
+erp.db
+.cursorrules
+progressCode.md
+progressDesign.md

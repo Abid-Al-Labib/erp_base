@@ -9,11 +9,43 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+const loadWorkspaceFromStorage = (): Workspace | null => {
+  const workspaceId = localStorage.getItem('workspace_id');
+  
+  if (workspaceId) {
+    // Create minimal workspace object - only ID is needed for API headers
+    return {
+      id: parseInt(workspaceId),
+      name: '',
+      slug: '',
+      owner_user_id: 0,
+      created_by_user_id: 0,
+      subscription_plan_id: 0,
+      subscription_status: 'active',
+      created_at: '',
+      updated_at: '',
+    };
+  }
+  return null;
+};
+
+const loadUserFromStorage = (): User | null => {
+  const userJson = localStorage.getItem('user_data');
+  if (userJson) {
+    try {
+      return JSON.parse(userJson) as User;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 const initialState: AuthState = {
-  user: null,
+  user: loadUserFromStorage(),
   token: localStorage.getItem('auth_token'),
-  workspace: null,
-  isAuthenticated: false,
+  workspace: loadWorkspaceFromStorage(),
+  isAuthenticated: !!localStorage.getItem('auth_token'),
 };
 
 export const authSlice = createSlice({
@@ -29,6 +61,7 @@ export const authSlice = createSlice({
       state.workspace = action.payload.workspace || null;
       state.isAuthenticated = true;
       localStorage.setItem('auth_token', action.payload.token);
+      localStorage.setItem('user_data', JSON.stringify(action.payload.user));
       if (action.payload.workspace) {
         localStorage.setItem('workspace_id', action.payload.workspace.id.toString());
       }
@@ -44,6 +77,7 @@ export const authSlice = createSlice({
       state.isAuthenticated = false;
       localStorage.removeItem('auth_token');
       localStorage.removeItem('workspace_id');
+      localStorage.removeItem('user_data');
     },
   },
 });

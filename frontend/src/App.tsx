@@ -4,6 +4,10 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { store } from "@/app/store";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import Login2Page from "./pages/newpages/Login2Page";
+import WorkspaceSelectorPage from "./pages/newpages/WorkspaceSelectorPage";
+import DashboardPage from "./pages/newpages/DashboardPage";
+import ItemsPage from "./pages/newpages/ItemsPage";
 import PartsPage from "./pages/PartsPage";
 import OrderPage from "./pages/OrderPage";
 import CreateOrderPage from "./pages/CreateOrderPage";
@@ -14,6 +18,7 @@ import StoragePage from "./pages/StoragePage";
 import MachinePage from "./pages/MachinePage";
 import ProjectsPage from "./pages/ProjectsPage";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import PrivateRoute from "./components/customui/routing/PrivateRouting";
 import InvoicePage from "./pages/InvoicePage";
 import ManagementPage from "./pages/ManagementPage";
@@ -28,10 +33,15 @@ import AuditTestPage from "./pages/AuditTestPage";
 const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <AuthProvider>
-        <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login2" element={<Login2Page />} />
+            <Route path="/workspace-selector" element={<WorkspaceSelectorPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/items" element={<ItemsPage />} />
             <Route path="/api-test" element={<ApiTestPage />} />
             <Route path="/audit-test" element={<AuditTestPage />} />
 
@@ -170,6 +180,7 @@ const App: React.FC = () => {
           </Routes>
         </Router>
       </AuthProvider>
+    </ThemeProvider>
     </Provider>
   );
 };

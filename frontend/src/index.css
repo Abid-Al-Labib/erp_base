@@ -4,24 +4,31 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Page background - warm cream/offwhite */
+    --background: 45 25% 97%; /* Warm cream offwhite */
     --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
+    
+    /* Navbar background - uses brand-secondary in light mode */
+    --nav-background: 250 27% 17%; /* Not used in light mode, navbar uses brand-secondary */
+    
+    /* Cards - pure white (elevated from cream background) */
+    --card: 0 0% 100%; /* Pure white for contrast */
     --card-foreground: 222.2 84% 4.9%;
+    
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 45 20% 94%; /* Slightly darker cream for contrast */
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+    --accent: 45 20% 94%; /* Match muted with warm tone */
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 45 20% 88%; /* Warm-toned border */
+    --input: 0 0% 100%; /* Pure white for inputs on cream background */
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
@@ -29,28 +36,46 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Purple/Lavender Theme Colors */
+    --primary: 266 45% 59%; /* Lavender Purple */
+    --primary-hover: 246 38% 66%; /* Soft Periwinkle */
+    --secondary: 250 27% 17%; /* Midnight Violet */
+    --accent: 276 9% 79%; /* Pale Slate */
+    --accent-light: 30 58% 93%; /* Linen */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Purple Dark Theme */
+    
+    /* Page background - dark purple */
+    --background: 250 27% 17%; /* Midnight Violet #242038 */
+    --foreground: 220 13% 95%; /* Light gray for text */
+    
+    /* Navbar background - darker for depth */
+    --nav-background: 250 27% 12%; /* Darker purple #1a1625 */
+    
+    /* Cards - OPTION 1: Subtle dark cards (slightly lighter than background) */
+    --card: 252 24% 21%; /* Slightly lighter purple #2d2440 */
+    --card-foreground: 220 13% 95%; /* Light text on dark cards */
+    
+    --popover: 252 24% 21%;
+    --popover-foreground: 220 13% 95%;
+    --primary: 266 45% 59%; /* Keep Lavender Purple */
+    --primary-hover: 246 38% 66%; /* Soft Periwinkle for hover */
+    --primary-foreground: 0 0% 100%; /* White text on purple */
+    --secondary: 250 27% 17%; /* Midnight Violet */
+    --secondary-foreground: 220 13% 95%;
+    --muted: 250 20% 28%; /* Slightly lighter for contrast on dark cards */
+    --muted-foreground: 220 13% 70%; /* Lighter for better readability */
+    --accent: 276 9% 79%; /* Keep Pale Slate in dark mode (don't change) */
+    --accent-foreground: 222.2 84% 4.9%; /* Dark text on pale slate */
+    --accent-light: 0 0% 100%; /* White in dark mode (was linen/beige) */
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 250 20% 28%; /* Purple-tinted borders, lighter than cards */
+    --input: 252 20% 18%; /* Slightly darker input backgrounds */
+    --ring: 266 45% 59%; /* Purple focus ring */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -65,5 +90,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+  
+  /* Smooth transitions for theme switching */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+  }
+
 }
