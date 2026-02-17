@@ -30,7 +30,7 @@ export const accountsApi = createApi({
   endpoints: (builder) => ({
     // Get all accounts with pagination and search
     getAccounts: builder.query<Account[], ListAccountsParams>({
-      query: ({ skip = 0, limit = 100, search }) => {
+      query: ({ skip = 0, limit = 100, search, tag_code }) => {
         const params = new URLSearchParams({
           skip: skip.toString(),
           limit: limit.toString(),
@@ -38,6 +38,9 @@ export const accountsApi = createApi({
 
         if (search) {
           params.append('search', search);
+        }
+        if (tag_code) {
+          params.append('tag_code', tag_code);
         }
 
         return `/accounts?${params.toString()}`;

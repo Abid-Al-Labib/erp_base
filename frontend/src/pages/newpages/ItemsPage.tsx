@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import DashboardNavbar from '@/components/newcomponents/customui/DashboardNavbar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,17 +17,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useGetItemsQuery, useDeleteItemMutation } from '@/features/items/itemsApi';
 import { useGetTagsQuery } from '@/features/items/itemTagsApi';
 import { Item } from '@/types/item';
-import { Search, Plus, Loader2, Eye, Pencil, Filter, X, Trash2, Package2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Loader2, Eye, Pencil, Filter, X, Trash2, Package2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import ItemTagBadge from '@/components/newcomponents/customui/ItemTagBadge';
 import AddItemDialog from '@/components/newcomponents/customui/AddItemDialog';
 import EditItemDialog from '@/components/newcomponents/customui/EditItemDialog';
 import toast, { Toaster } from 'react-hot-toast';
 
 const ItemsPage: React.FC = () => {
-  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(() =>
+    localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [filterUnit, setFilterUnit] = useState<string>('');
   const [filterTagId, setFilterTagId] = useState<string>('');
@@ -149,106 +152,90 @@ const ItemsPage: React.FC = () => {
         {/* Content */}
         <div className="p-8 bg-background">
           <Card className="shadow-sm bg-card border-border">
-            <CardHeader className="pb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-card-foreground text-xl">All Items</CardTitle>
-                  <CardDescription className="mt-1.5">
-                    Manage your items catalog, including materials, parts, and consumables.
-                  </CardDescription>
-                </div>
-                {totalItems > 0 && !isLoading && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-4 py-2 rounded-lg">
-                    <Package2 className="h-4 w-4" />
-                    <span className="font-medium">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
+            <CardContent className="p-0">
+              {/* Table header bar: search + filters (expandable when cramped) */}
+              <div className="border-b border-border px-4 py-3">
+                <Collapsible defaultOpen={true}>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    {/* Left: count */}
+                    <div className="text-sm text-muted-foreground shrink-0">
+                      {!isLoading && (
+                        <span className="font-medium">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
+                      )}
+                    </div>
+                    {/* Right: search + filters */}
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      <div className="relative w-[180px] min-w-[140px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                        <Input
+                          type="text"
+                          placeholder="Search items..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 h-9"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Filter className="text-muted-foreground flex-shrink-0" size={16} />
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-9 gap-1 shrink-0 group">
+                            Filters
+                            <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
+                      <CollapsibleContent asChild>
+                        <div className="flex items-center gap-2 flex-wrap basis-full md:basis-auto md:flex-initial justify-end">
+                          <Select value={filterUnit || 'all'} onValueChange={(value) => setFilterUnit(value === 'all' ? '' : value)}>
+                            <SelectTrigger className="w-[140px] h-9">
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All units</SelectItem>
+                              {uniqueUnits.map((unit) => (
+                                <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {tags && tags.length > 0 && (
+                            <Select value={filterTagId || 'all'} onValueChange={(value) => setFilterTagId(value === 'all' ? '' : value)}>
+                              <SelectTrigger className="w-[160px] h-9">
+                                {filterTagId && filterTagId !== 'all' ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tags.find(t => t.id.toString() === filterTagId)?.color || '#9067c6' }} />
+                                    <span className="truncate">{tags.find(t => t.id.toString() === filterTagId)?.name}</span>
+                                  </div>
+                                ) : (
+                                  <SelectValue placeholder="Tag" />
+                                )}
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All tags</SelectItem>
+                                {tags.map((tag) => (
+                                  <SelectItem key={tag.id} value={tag.id.toString()}>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color || '#9067c6' }} />
+                                      {tag.icon && <span>{tag.icon}</span>}
+                                      <span>{tag.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {hasActiveFilters && (
+                            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-muted-foreground hover:text-destructive">
+                              <X className="h-4 w-4 mr-1" /> Clear
+                            </Button>
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </div>
                   </div>
-                )}
+                </Collapsible>
               </div>
-              
-              {/* Search and Filters */}
-              <div className="pt-6 border-t border-border">
-                <div className="flex items-center gap-3">
-                  {/* Search Bar */}
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-                    <Input
-                      type="text"
-                      placeholder="Search items by name..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 h-10"
-                    />
-                  </div>
 
-                  <div className="h-8 w-px bg-border"></div>
-                  <Filter className="text-muted-foreground flex-shrink-0" size={18} />
-                  
-                  {/* Unit Filter */}
-                  <Select value={filterUnit || 'all'} onValueChange={(value) => setFilterUnit(value === 'all' ? '' : value)}>
-                    <SelectTrigger className="w-[180px] h-10">
-                      <SelectValue placeholder="Filter by unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All units</SelectItem>
-                      {uniqueUnits.map((unit) => (
-                        <SelectItem key={unit} value={unit}>
-                          {unit}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* Tag Filter */}
-                  {tags && tags.length > 0 && (
-                    <Select value={filterTagId || 'all'} onValueChange={(value) => setFilterTagId(value === 'all' ? '' : value)}>
-                      <SelectTrigger className="w-[200px] h-10">
-                        {filterTagId && filterTagId !== 'all' ? (
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: tags.find(t => t.id.toString() === filterTagId)?.color || '#9067c6' }}
-                            />
-                            <span>{tags.find(t => t.id.toString() === filterTagId)?.name}</span>
-                          </div>
-                        ) : (
-                          <SelectValue placeholder="Filter by tag" />
-                        )}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All tags</SelectItem>
-                        {tags.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id.toString()}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: tag.color || '#9067c6' }}
-                              />
-                              {tag.icon && <span>{tag.icon}</span>}
-                              <span>{tag.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  {/* Clear Filters */}
-                  {hasActiveFilters && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="h-10 text-muted-foreground hover:text-red-600 hover:border-red-300"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent>
+              <div className="p-4">
               {isLoading ? (
                 <div className="flex justify-center items-center py-16">
                   <div className="text-center">
@@ -422,6 +409,7 @@ const ItemsPage: React.FC = () => {
                   )}
                 </>
               )}
+              </div>
             </CardContent>
           </Card>
         </div>

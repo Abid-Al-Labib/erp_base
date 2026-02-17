@@ -1,24 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Package, 
-  Archive, 
-  Cog, 
+import {
+  LayoutDashboard,
+  Factory,
+  Users,
+  ShoppingCart,
+  Package,
+  Archive,
+  Cog,
   FolderKanban,
   Settings,
   LogOut,
   User,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeftRight,
   Moon,
-  Sun
+  Sun,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { logout } from '@/features/auth/authSlice';
 import { useTheme } from '@/context/ThemeContext';
 import toast from 'react-hot-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import FactorySelectorDialog from './FactorySelectorDialog';
 
 interface NavItem {
   name: string;
@@ -26,33 +39,67 @@ interface NavItem {
   path: string;
 }
 
+export const SIDEBAR_COLLAPSED_KEY = 'erp-sidebar-collapsed';
+
 interface DashboardNavbarProps {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
+
+const HOVER_ZONE_WIDTH = 56; // Wide enough to cover button + easy to trigger
+
+const FACTORIES_SUB_PATHS = ['/factories', '/items', '/storage', '/machine', '/project'];
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, factory } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [factoryDialogOpen, setFactoryDialogOpen] = useState(false);
+  const [factoriesExpanded, setFactoriesExpanded] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+  });
+  const [isHoveringEdge, setIsHoveringEdge] = useState(false);
+  const [isButtonMounted, setIsButtonMounted] = useState(false);
+
+  // Delay visibility:hidden until after hide animation to avoid compositing artifacts
+  useEffect(() => {
+    if (isHoveringEdge) {
+      setIsButtonMounted(true);
+    } else {
+      const t = setTimeout(() => setIsButtonMounted(false), 180);
+      return () => clearTimeout(t);
+    }
+  }, [isHoveringEdge]);
+
+  // Sync parent's content margin on mount (in case we're collapsed from localStorage)
+  useEffect(() => {
+    onCollapsedChange?.(isCollapsed);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only sync initial state on mount
 
   const handleToggleCollapse = () => {
     const newCollapsed = !isCollapsed;
     setIsCollapsed(newCollapsed);
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(newCollapsed));
     onCollapsedChange?.(newCollapsed);
   };
 
   const navItems: NavItem[] = [
     { name: 'Overview', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
+    { name: 'Accounts', icon: <Users size={20} />, path: '/accounts' },
     { name: 'Orders', icon: <ShoppingCart size={20} />, path: '/orders' },
-    { name: 'Items', icon: <Package size={20} />, path: '/items' },
-    { name: 'Storage', icon: <Archive size={20} />, path: '/storage' },
-    { name: 'Machine', icon: <Cog size={20} />, path: '/machine' },
-    { name: 'Project', icon: <FolderKanban size={20} />, path: '/project' },
     { name: 'Management', icon: <Settings size={20} />, path: '/management' },
   ];
+
+  const isFactoriesActive = FACTORIES_SUB_PATHS.some(
+    (p) => location.pathname === p || (p !== '/dashboard' && location.pathname.startsWith(p + '/'))
+  );
+  // Keep Factories expanded when on a factories sub-path
+  useEffect(() => {
+    if (isFactoriesActive) setFactoriesExpanded(true);
+  }, [isFactoriesActive]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -60,12 +107,62 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
     navigate('/login2');
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) =>
+    location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path + '/'));
 
   return (
-    <div className={`h-screen bg-brand-secondary dark:bg-[hsl(var(--nav-background))] dark:border-r dark:border-border flex flex-col fixed left-0 top-0 transition-all duration-300 ${
-      isCollapsed ? 'w-20' : 'w-64'
-    }`}>
+    <div
+      ref={sidebarRef}
+      className={`h-screen bg-brand-secondary dark:bg-[hsl(var(--nav-background))] dark:border-r dark:border-border flex flex-col fixed left-0 top-0 transition-all duration-300 overflow-visible ${
+        isCollapsed ? 'w-20' : 'w-64'
+      }`}
+    >
+      {/* Curved border - follows button shape, only visible when button is shown */}
+      <div
+        className={`absolute left-full top-1/2 z-[5] w-24 h-32 bg-brand-secondary dark:bg-[hsl(var(--nav-background))] border-r border-border origin-left pointer-events-none transition-all backface-hidden ${
+          isHoveringEdge ? 'opacity-100 visible duration-200 ease-out' : `opacity-0 scale-0 duration-150 ease-in ${isButtonMounted ? '' : 'invisible'}`
+        }`}
+        style={{
+          marginLeft: -1,
+          WebkitClipPath: 'ellipse(55% 50% at 0% 50%)',
+          clipPath: 'ellipse(55% 50% at 0% 50%)',
+          transform: `translateY(-50%) ${isHoveringEdge ? 'scale(0.7)' : 'scale(0)'}`,
+        }}
+        aria-hidden
+      />
+      {/* Hover zone - right edge, contains button so hover persists when clicking */}
+      <div
+        className="absolute top-0 bottom-0 z-20"
+        style={{
+          left: '100%',
+          width: HOVER_ZONE_WIDTH,
+          marginLeft: -12, // Overlap sidebar so easier to trigger
+        }}
+        onMouseEnter={() => setIsHoveringEdge(true)}
+        onMouseLeave={() => setIsHoveringEdge(false)}
+      >
+        {/* Ripple shape = expand/collapse button (appears on hover), starts at navbar edge */}
+        <button
+          onClick={handleToggleCollapse}
+          className={`absolute left-[12px] top-1/2 -translate-y-1/2 z-30 w-24 h-32 flex items-center justify-start pl-3 bg-brand-secondary dark:bg-[hsl(var(--nav-background))] border-r border-border shadow-md origin-left cursor-pointer hover:bg-brand-primary/20 dark:hover:bg-brand-primary/20 transition-all backface-hidden ${
+            isHoveringEdge
+              ? 'opacity-100 scale-[0.7] pointer-events-auto visible duration-200 ease-out'
+              : `opacity-0 scale-0 pointer-events-none duration-150 ease-in ${isButtonMounted ? '' : 'invisible'}`
+          }`}
+          style={{
+            marginLeft: -1,
+            WebkitClipPath: 'ellipse(55% 50% at 0% 50%)',
+            clipPath: 'ellipse(55% 50% at 0% 50%)',
+            filter: 'drop-shadow(0 0 1px hsl(var(--border)))',
+          }}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <span className="text-white dark:text-foreground flex items-center justify-center">
+            {isCollapsed ? <ChevronRight size={26} /> : <ChevronLeft size={26} />}
+          </span>
+        </button>
+      </div>
+
       {/* Logo Section */}
       <div className="p-6 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-3">
@@ -80,18 +177,183 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
         </Link>
       </div>
 
-      {/* Toggle Button */}
-      <button
-        onClick={handleToggleCollapse}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-brand-primary rounded-full flex items-center justify-center text-white hover:bg-brand-primary-hover transition-colors z-10"
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
-
-      {/* Navigation Items */}
-      <nav className="flex-1 py-6 px-3">
+      {/* Navigation Items - scrollable when content overflows */}
+      <nav className="flex-1 min-h-0 overflow-y-auto py-6 px-3 scrollbar-purple">
         <ul className="space-y-1">
+          <li>
+            <Link
+              to="/dashboard"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                isActive('/dashboard')
+                  ? 'bg-brand-primary text-white'
+                  : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+              } ${isCollapsed ? 'justify-center' : ''}`}
+              title={isCollapsed ? 'Overview' : ''}
+            >
+              <LayoutDashboard size={20} />
+              {!isCollapsed && <span className="font-medium">Overview</span>}
+            </Link>
+          </li>
+
+          {/* Factories expandable section */}
+          <li>
+            {isCollapsed ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div
+                    className={`flex items-center gap-1 w-full px-2 py-3 rounded-lg cursor-pointer ${
+                      isFactoriesActive
+                        ? 'bg-brand-primary text-white'
+                        : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                    }`}
+                    title={factory ? `Factory - ${factory.name}` : 'Factory'}
+                  >
+                    <Factory size={20} className="shrink-0" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFactoryDialogOpen(true);
+                      }}
+                      title="Change factory"
+                      className="p-1 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <ArrowLeftRight size={14} />
+                    </button>
+                    <ChevronDown size={14} className="shrink-0 ml-auto" />
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="right" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link to={factory ? `/factories/${factory.id}` : '/factories'}>Factories</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/items">Items</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/storage">Storage</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/machine">Machine</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/project">Project</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Collapsible open={factoriesExpanded} onOpenChange={setFactoriesExpanded}>
+                <div
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all w-full ${
+                    isFactoriesActive
+                      ? 'bg-brand-primary text-white'
+                      : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                  }`}
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      title={factory ? `Factory - ${factory.name}` : 'Factory'}
+                    >
+                      <Factory size={20} className="shrink-0" />
+                      <span className="font-medium flex-1 truncate">
+                        {factory ? factory.abbreviation : 'Factory'}
+                      </span>
+                    </button>
+                  </CollapsibleTrigger>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFactoryDialogOpen(true);
+                    }}
+                    title="Change factory"
+                    className="p-1.5 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <ArrowLeftRight size={18} />
+                  </button>
+                  <CollapsibleTrigger asChild>
+                    <button className="shrink-0 p-1">
+                      {factoriesExpanded ? (
+                        <ChevronUp size={16} />
+                      ) : (
+                        <ChevronDown size={16} />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                  <ul className="mt-1 ml-4 pl-4 border-l border-white/20 dark:border-border space-y-1">
+                    <li>
+                      <Link
+                        to={factory ? `/factories/${factory.id}` : '/factories'}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/factories')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <Factory size={18} />
+                        <span className="text-sm font-medium">Factories</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/items"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/items')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <Package size={18} />
+                        <span className="text-sm font-medium">Items</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/storage"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/storage')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <Archive size={18} />
+                        <span className="text-sm font-medium">Storage</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/machine"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/machine')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <Cog size={18} />
+                        <span className="text-sm font-medium">Machine</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/project"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/project')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <FolderKanban size={18} />
+                        <span className="text-sm font-medium">Project</span>
+                      </Link>
+                    </li>
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </li>
+
           {navItems.map((item) => (
             <li key={item.name}>
               <Link
@@ -110,6 +372,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
           ))}
         </ul>
       </nav>
+
+      <FactorySelectorDialog open={factoryDialogOpen} onOpenChange={setFactoryDialogOpen} />
 
       {/* User Profile, Theme Toggle & Logout */}
       <div className="p-4 border-t border-white/10 dark:border-border">
