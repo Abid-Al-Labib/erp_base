@@ -28,7 +28,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -201,30 +200,30 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
             {isCollapsed ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    className={`flex items-center justify-center w-full px-4 py-3 rounded-lg transition-all ${
+                  <div
+                    className={`flex items-center gap-1 w-full px-2 py-3 rounded-lg cursor-pointer ${
                       isFactoriesActive
                         ? 'bg-brand-primary text-white'
                         : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
                     }`}
-                    title={factory ? `Factory - ${factory.abbreviation}` : 'Factories'}
+                    title={factory ? `Factory - ${factory.name}` : 'Factory'}
                   >
-                    <Factory size={20} />
-                  </button>
+                    <Factory size={20} className="shrink-0" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFactoryDialogOpen(true);
+                      }}
+                      title="Change factory"
+                      className="p-1 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <ArrowLeftRight size={14} />
+                    </button>
+                    <ChevronDown size={14} className="shrink-0 ml-auto" />
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="right" className="w-56">
-                  <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      setFactoryDialogOpen(true);
-                    }}
-                    className="cursor-pointer flex items-center gap-2"
-                    title="Change factory"
-                  >
-                    <ArrowLeftRight size={18} />
-                    <span>{factory ? `Factory - ${factory.abbreviation}` : 'Factory - Select'}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/factories">Factories</Link>
                   </DropdownMenuItem>
@@ -244,39 +243,46 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
               </DropdownMenu>
             ) : (
               <Collapsible open={factoriesExpanded} onOpenChange={setFactoriesExpanded}>
-                <CollapsibleTrigger asChild>
+                <div
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all w-full ${
+                    isFactoriesActive
+                      ? 'bg-brand-primary text-white'
+                      : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                  }`}
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      title={factory ? `Factory - ${factory.name}` : 'Factory'}
+                    >
+                      <Factory size={20} className="shrink-0" />
+                      <span className="font-medium flex-1 truncate">
+                        {factory ? factory.abbreviation : 'Factory'}
+                      </span>
+                    </button>
+                  </CollapsibleTrigger>
                   <button
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all w-full ${
-                      isFactoriesActive
-                        ? 'bg-brand-primary text-white'
-                        : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
-                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFactoryDialogOpen(true);
+                    }}
+                    title="Change factory"
+                    className="p-1.5 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
                   >
-                    <Factory size={20} />
-                    <span className="font-medium flex-1 text-left truncate">
-                      {factory ? `Factory - ${factory.abbreviation}` : 'Factory - Select'}
-                    </span>
-                    {factoriesExpanded ? (
-                      <ChevronUp size={16} className="shrink-0" />
-                    ) : (
-                      <ChevronDown size={16} className="shrink-0" />
-                    )}
+                    <ArrowLeftRight size={18} />
                   </button>
-                </CollapsibleTrigger>
+                  <CollapsibleTrigger asChild>
+                    <button className="shrink-0 p-1">
+                      {factoriesExpanded ? (
+                        <ChevronUp size={16} />
+                      ) : (
+                        <ChevronDown size={16} />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
                 <CollapsibleContent>
                   <ul className="mt-1 ml-4 pl-4 border-l border-white/20 dark:border-border space-y-1">
-                    <li>
-                      <button
-                        onClick={() => setFactoryDialogOpen(true)}
-                        title="Change factory"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground transition-all"
-                      >
-                        <ArrowLeftRight size={18} />
-                        <span className="text-sm font-medium">
-                          {factory ? `Factory - ${factory.abbreviation}` : 'Factory - Select'}
-                        </span>
-                      </button>
-                    </li>
                     <li>
                       <Link
                         to="/factories"
