@@ -99,5 +99,27 @@
     transition-duration: 0.3s;
     transition-timing-function: ease;
   }
+}
 
+/* Purple scrollbar for navbar */
+.scrollbar-purple {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(266 45% 59%) transparent;
+}
+
+.scrollbar-purple::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-purple::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-purple::-webkit-scrollbar-thumb {
+  background: hsl(266 45% 59%);
+  border-radius: 3px;
+}
+
+.scrollbar-purple::-webkit-scrollbar-thumb:hover {
+  background: hsl(266 45% 65%);
 }

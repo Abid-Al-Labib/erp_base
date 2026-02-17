@@ -202,37 +202,32 @@ class AccountManager(BaseManager[Account]):
         session: Session,
         workspace_id: int,
         name: Optional[str] = None,
+        tag_code: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[Account]:
         """
-        Search accounts by name or get all accounts within workspace.
+        Search accounts by name and/or tag within workspace.
 
         Args:
             session: Database session
             workspace_id: Workspace ID (for multi-tenancy)
             name: Optional search query for account name
+            tag_code: Optional tag code to filter (e.g. 'supplier', 'client', 'vendor')
             skip: Number of records to skip
             limit: Maximum number of records to return
 
         Returns:
             List of accounts in workspace
         """
-        if name:
-            return self.account_dao.search_by_name_in_workspace(
-                session,
-                workspace_id=workspace_id,
-                name=name,
-                skip=skip,
-                limit=limit
-            )
-        else:
-            return self.account_dao.get_active_accounts_in_workspace(
-                session,
-                workspace_id=workspace_id,
-                skip=skip,
-                limit=limit
-            )
+        return self.account_dao.get_accounts_in_workspace(
+            session,
+            workspace_id=workspace_id,
+            name=name,
+            tag_code=tag_code,
+            skip=skip,
+            limit=limit
+        )
 
     def delete_account(
         self,

@@ -7,7 +7,12 @@ import LoginPage from "./pages/LoginPage";
 import Login2Page from "./pages/newpages/Login2Page";
 import WorkspaceSelectorPage from "./pages/newpages/WorkspaceSelectorPage";
 import DashboardPage from "./pages/newpages/DashboardPage";
+import FactoriesPage from "./pages/newpages/FactoriesPage";
+import FactoryDetailPage from "./pages/newpages/FactoryDetailPage";
+import FactorySectionDetailPage from "./pages/newpages/FactorySectionDetailPage";
 import ItemsPage from "./pages/newpages/ItemsPage";
+import AccountsLandingPage from "./pages/newpages/AccountsLandingPage";
+import AccountDetailPage from "./pages/newpages/AccountDetailPage";
 import PartsPage from "./pages/PartsPage";
 import OrderPage from "./pages/OrderPage";
 import CreateOrderPage from "./pages/CreateOrderPage";
@@ -16,7 +21,7 @@ import ManageOrderPage from "./pages/ManageOrderPage";
 import ViewPartPage from "./pages/ViewPartPage";
 import StoragePage from "./pages/StoragePage";
 import MachinePage from "./pages/MachinePage";
-import ProjectsPage from "./pages/ProjectsPage";
+import ProjectsPage from "./pages/newpages/ProjectsPage";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import PrivateRoute from "./components/customui/routing/PrivateRouting";
@@ -41,7 +46,19 @@ const App: React.FC = () => {
             <Route path="/login2" element={<Login2Page />} />
             <Route path="/workspace-selector" element={<WorkspaceSelectorPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/factories" element={<FactoriesPage />} />
+            <Route path="/factories/:id" element={<FactoryDetailPage />} />
+            <Route path="/factories/:id/sections/:sectionId" element={<FactorySectionDetailPage />} />
             <Route path="/items" element={<ItemsPage />} />
+            <Route path="/accounts" element={<AccountsLandingPage />} />
+            <Route path="/accounts/aggregated" element={<AccountsLandingPage initialSection="aggregated" />} />
+            <Route path="/accounts/suppliers" element={<AccountsLandingPage initialSection="suppliers" />} />
+            <Route path="/accounts/vendors" element={<AccountsLandingPage initialSection="vendors" />} />
+            <Route path="/accounts/customers" element={<AccountsLandingPage initialSection="customers" />} />
+            <Route path="/accounts/utilities" element={<AccountsLandingPage initialSection="utilities" />} />
+            <Route path="/accounts/payroll" element={<AccountsLandingPage initialSection="payroll" />} />
+            <Route path="/accounts/:id" element={<AccountDetailPage />} />
+            <Route path="/project" element={<ProjectsPage />} />
             <Route path="/api-test" element={<ApiTestPage />} />
             <Route path="/audit-test" element={<AuditTestPage />} />
 
@@ -142,15 +159,6 @@ const App: React.FC = () => {
               element={
                 <PrivateRoute pageKey="machine">
                   <MachinePage />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/project"
-              element={
-                <PrivateRoute pageKey="project">
-                  <ProjectsPage />
                 </PrivateRoute>
               }
             />

@@ -158,4 +158,5 @@ export interface UpdateAccountRequest {
  */
 export interface ListAccountsParams extends PaginationParams {
   search?: string;  // Search by account name
+  tag_code?: string;  // Filter by tag code (supplier, vendor, client, utility, payroll)
 }

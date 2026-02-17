@@ -15,7 +15,15 @@ DEFAULT_ACCOUNT_TAGS = [
         "tag_code": "supplier",
         "color": "#3B82F6",
         "icon": "truck",
-        "description": "Vendors and suppliers we purchase from",
+        "description": "Distributors whose stores we get parts from",
+        "is_system_tag": True,
+    },
+    {
+        "name": "Vendor",
+        "tag_code": "vendor",
+        "color": "#0EA5E9",
+        "icon": "package",
+        "description": "Companies whose parts we buy",
         "is_system_tag": True,
     },
     {

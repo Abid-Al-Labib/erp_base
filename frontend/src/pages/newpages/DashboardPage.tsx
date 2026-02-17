@@ -1,12 +1,14 @@
 import React from 'react';
-import DashboardNavbar from '@/components/newcomponents/customui/DashboardNavbar';
+import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, TrendingUp, TrendingDown, DollarSign, Users as UsersIcon, Activity, Percent } from 'lucide-react';
 import { useAppSelector } from '@/app/hooks';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const [isNavCollapsed, setIsNavCollapsed] = React.useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = React.useState(() =>
+    localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
+  );
 
   // Mock data for widgets
   const stats = [

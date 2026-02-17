@@ -90,6 +90,83 @@ class AccountService(BaseService):
             raise NotFoundError(f"Account with ID {account_id} not found")
         return account
 
+    def get_account_with_tags(
+        self,
+        db: Session,
+        account_id: int,
+        workspace_id: int
+    ) -> dict:
+        """
+        Get account by ID with tags included.
+
+        Args:
+            db: Database session
+            account_id: Account ID
+            workspace_id: Workspace ID
+
+        Returns:
+            Account dict with tags
+
+        Raises:
+            NotFoundError: If account not found
+        """
+        account = self.account_manager.get_account(db, account_id, workspace_id)
+        if not account:
+            raise NotFoundError(f"Account with ID {account_id} not found")
+
+        tags = self.account_manager.get_tags_for_account(
+            session=db,
+            account_id=account.id,
+            workspace_id=workspace_id
+        )
+
+        return {
+            "id": account.id,
+            "workspace_id": account.workspace_id,
+            "name": account.name,
+            "account_code": account.account_code,
+            "primary_contact_person": account.primary_contact_person,
+            "primary_email": account.primary_email,
+            "primary_phone": account.primary_phone,
+            "secondary_contact_person": account.secondary_contact_person,
+            "secondary_email": account.secondary_email,
+            "secondary_phone": account.secondary_phone,
+            "address": account.address,
+            "city": account.city,
+            "country": account.country,
+            "postal_code": account.postal_code,
+            "tax_id": account.tax_id,
+            "business_registration_number": account.business_registration_number,
+            "payment_terms": account.payment_terms,
+            "credit_limit": account.credit_limit,
+            "currency": account.currency,
+            "bank_name": account.bank_name,
+            "bank_account_number": account.bank_account_number,
+            "bank_swift_code": account.bank_swift_code,
+            "allow_invoices": account.allow_invoices,
+            "invoices_disabled_reason": account.invoices_disabled_reason,
+            "notes": account.notes,
+            "is_active": account.is_active,
+            "is_deleted": account.is_deleted,
+            "created_at": account.created_at,
+            "updated_at": account.updated_at,
+            "created_by": account.created_by,
+            "updated_by": account.updated_by,
+            "deleted_at": account.deleted_at,
+            "deleted_by": account.deleted_by,
+            "tags": [
+                {
+                    "id": tag.id,
+                    "name": tag.name,
+                    "tag_code": tag.tag_code,
+                    "color": tag.color,
+                    "icon": tag.icon,
+                    "is_system_tag": tag.is_system_tag
+                }
+                for tag in tags
+            ]
+        }
+
     def get_accounts(
         self,
         db: Session,
@@ -124,6 +201,7 @@ class AccountService(BaseService):
         db: Session,
         workspace_id: int,
         search: Optional[str] = None,
+        tag_code: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[dict]:
@@ -144,6 +222,7 @@ class AccountService(BaseService):
             session=db,
             workspace_id=workspace_id,
             name=search,
+            tag_code=tag_code,
             skip=skip,
             limit=limit
         )
