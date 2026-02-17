@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { setFactory } from '@/features/auth/authSlice';
+import { setFactory, clearFactory } from '@/features/auth/authSlice';
 import { useGetFactoriesQuery } from '@/features/factories/factoriesApi';
 import {
   Dialog,
@@ -31,13 +31,18 @@ const FactorySelectorDialog: React.FC<FactorySelectorDialogProps> = ({ open, onO
     onOpenChange(false);
   };
 
+  const handleClear = () => {
+    dispatch(clearFactory());
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Select Factory</DialogTitle>
           <DialogDescription>
-            Choose a factory to use as the default across Items, Storage, Machine, and Project pages.
+            Choose a factory to use as the default for Sections, Machines, Orders, and Projects. Items and Accounts are not tied to a factory.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
@@ -47,6 +52,15 @@ const FactorySelectorDialog: React.FC<FactorySelectorDialogProps> = ({ open, onO
             </div>
           ) : factories && factories.length > 0 ? (
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {selectedFactory && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-muted-foreground"
+                  onClick={handleClear}
+                >
+                  Clear selection (show all)
+                </Button>
+              )}
               {factories.map((factory) => (
                 <Button
                   key={factory.id}

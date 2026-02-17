@@ -10,16 +10,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useGetFactoriesQuery, useDeleteFactoryMutation, useUpdateFactoryMutation } from '@/features/factories/factoriesApi';
+import { useGetFactoriesQuery, useDeleteFactoryMutation } from '@/features/factories/factoriesApi';
 import { useGetFactorySectionsQuery } from '@/features/factorySections/factorySectionsApi';
 import { useGetDepartmentsQuery } from '@/features/departments/departmentsApi';
 import type { Factory } from '@/types/factory';
-import type { Department } from '@/types/department';
-import { Search, Plus, Loader2, Pencil, Trash2, Factory as FactoryIcon, ChevronRight, Layers } from 'lucide-react';
+import { Search, Plus, Loader2, Pencil, Trash2, Factory as FactoryIcon, ChevronRight, Layers, Users } from 'lucide-react';
 import AddFactoryDialog from '@/components/newcomponents/customui/AddFactoryDialog';
 import EditFactoryDialog from '@/components/newcomponents/customui/EditFactoryDialog';
-import AddDepartmentDialog from '@/components/newcomponents/customui/AddDepartmentDialog';
-import EditDepartmentDialog from '@/components/newcomponents/customui/EditDepartmentDialog';
+import DepartmentsManageDialog from '@/components/newcomponents/customui/DepartmentsManageDialog';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface FactoryCardProps {
@@ -133,8 +131,7 @@ const FactoriesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingFactory, setEditingFactory] = useState<Factory | null>(null);
-  const [isAddDeptDialogOpen, setIsAddDeptDialogOpen] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [isDeptsDialogOpen, setIsDeptsDialogOpen] = useState(false);
 
   const { data: factories, isLoading, error } = useGetFactoriesQuery({
     skip: 0,
@@ -142,7 +139,7 @@ const FactoriesPage: React.FC = () => {
     search: searchQuery || undefined,
   });
   const { data: allSections = [] } = useGetFactorySectionsQuery({ skip: 0, limit: 500 });
-  const { data: departments = [], isLoading: isLoadingDepts } = useGetDepartmentsQuery({ skip: 0, limit: 100 });
+  const { data: departments = [] } = useGetDepartmentsQuery({ skip: 0, limit: 100 });
   const sectionsByFactory = React.useMemo(() => {
     const map: Record<number, number> = {};
     for (const s of allSections) {
@@ -284,98 +281,27 @@ const FactoriesPage: React.FC = () => {
                 </div>
               )}
               </div>
-
-              {/* Departments footer (Option 5) */}
-              <div className="border-t border-border px-4 py-3 flex flex-wrap items-center gap-2 bg-muted/30">
-                <span className="text-sm text-muted-foreground mr-2">Departments:</span>
-                {isLoadingDepts ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-brand-primary" />
-                ) : departments.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">None</span>
-                ) : (
-                  departments.map((dept) => (
-                    <div
-                      key={dept.id}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-background border border-border text-sm"
-                    >
-                      {dept.name}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0 text-brand-primary hover:text-brand-primary-hover hover:bg-brand-primary/10"
-                              onClick={() => setEditingDepartment(dept)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit department</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  ))
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 ml-1"
-                  onClick={() => setIsAddDeptDialogOpen(true)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Departments - Option 1: Inline strip */}
-          <Card className="mt-6 shadow-sm bg-card border-border">
-            <CardContent className="p-0">
-              <div className="border-b border-border px-4 py-3 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">{departments.length} {departments.length === 1 ? 'department' : 'departments'}</span>
+          {/* Departments card - opens popup */}
+          <Card
+            className="mt-6 max-w-sm shadow-sm bg-card border-border cursor-pointer hover:border-brand-primary/30 hover:shadow-md transition-all"
+            onClick={() => setIsDeptsDialogOpen(true)}
+          >
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-brand-primary/10 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-brand-primary" />
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8"
-                  onClick={() => setIsAddDeptDialogOpen(true)}
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add
-                </Button>
+                <div>
+                  <p className="font-semibold text-card-foreground">Departments</p>
+                  <p className="text-sm text-muted-foreground">
+                    {departments.length} {departments.length === 1 ? 'department' : 'departments'}
+                  </p>
+                </div>
               </div>
-              <div className="p-4 flex flex-wrap gap-2">
-                {isLoadingDepts ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-brand-primary" />
-                ) : departments.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">No departments yet.</span>
-                ) : (
-                  departments.map((dept) => (
-                    <div
-                      key={dept.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-sm"
-                    >
-                      {dept.name}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0 text-brand-primary hover:text-brand-primary-hover hover:bg-brand-primary/10"
-                              onClick={() => setEditingDepartment(dept)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit department</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  ))
-                )}
-              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
           </Card>
         </div>
@@ -388,16 +314,9 @@ const FactoriesPage: React.FC = () => {
         factory={editingFactory}
         factories={factories ?? []}
       />
-      <AddDepartmentDialog
-        open={isAddDeptDialogOpen}
-        onOpenChange={setIsAddDeptDialogOpen}
-        departments={departments}
-      />
-      <EditDepartmentDialog
-        open={!!editingDepartment}
-        onOpenChange={(open) => !open && setEditingDepartment(null)}
-        department={editingDepartment}
-        departments={departments}
+      <DepartmentsManageDialog
+        open={isDeptsDialogOpen}
+        onOpenChange={setIsDeptsDialogOpen}
       />
     </div>
   );

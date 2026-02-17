@@ -67,7 +67,7 @@ const FactorySectionDetailPage: React.FC = () => {
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to={`/factories/${factoryId}`}>{factory?.name ?? 'Factory'}</Link>
+                      <Link to={`/factories/${factoryId}`}>{factory ? `${factory.name} (${factory.abbreviation})` : 'Factory'}</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />

@@ -30,7 +30,6 @@ import type { ProjectComponent } from '@/types/projectComponent';
 import type { ProjectStatus } from '@/types/project';
 import {
   FolderKanban,
-  Folder,
   FolderOpen,
   Settings,
   Search,
@@ -42,7 +41,12 @@ import {
   Package,
   DollarSign,
   ListTodo,
+  FileText,
+  Calendar,
+  Paperclip,
+  Users,
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AddProjectDialog from '@/components/newcomponents/customui/AddProjectDialog';
 import AddProjectComponentDialog from '@/components/newcomponents/customui/AddProjectComponentDialog';
 import AddProjectComponentTaskDialog from '@/components/newcomponents/customui/AddProjectComponentTaskDialog';
@@ -56,9 +60,9 @@ const ProjectsPage: React.FC = () => {
     localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
   );
   const [factoryId, setFactoryId] = useState<number | null>(() => globalFactory?.id ?? null);
-  // Sync with global factory when it changes (e.g. user selects in navbar)
+  // Sync with global factory when it changes (e.g. user selects or clears in navbar)
   useEffect(() => {
-    if (globalFactory) setFactoryId(globalFactory.id);
+    setFactoryId(globalFactory?.id ?? null);
   }, [globalFactory?.id]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -429,113 +433,181 @@ const ProjectsPage: React.FC = () => {
                   </CardContent>
                 )}
               </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Tasks */}
+            ) : selectedComponent ? (
+              <div className="space-y-6">
+                {/* 1. Component intro card */}
                 <Card className="border-border">
-                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ListTodo className="h-4 w-4" />
-                      Tasks ({tasks.filter((t) => !t.is_note).length})
-                    </CardTitle>
-                    <Button size="sm" variant="outline" className="h-7" onClick={() => setIsAddTaskOpen(true)}>
-                      <Plus className="h-3.5 w-3.5 mr-1" />
-                      Add
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-2 max-h-64 overflow-y-auto">
-                    {tasks.filter((t) => !t.is_note).length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No tasks</p>
-                    ) : (
-                      tasks
-                        .filter((t) => !t.is_note)
-                        .map((task) => (
-                          <div
-                            key={task.id}
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleToggleTask(task.id, task.is_completed)}
-                              className="shrink-0"
-                            >
-                              {task.is_completed ? (
-                                <Check className="h-5 w-5 text-emerald-500" />
-                              ) : (
-                                <Circle className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </button>
-                            <span
-                              className={`flex-1 text-sm ${task.is_completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}
-                            >
-                              {task.name}
-                            </span>
+                  <CardContent className="p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-xl font-semibold text-card-foreground">{selectedComponent.name}</h2>
+                        <span className={`inline-block mt-2 text-xs px-2 py-1 rounded ${getStatusBadge(selectedComponent.status ?? 'PLANNING')}`}>
+                          {(selectedComponent.status ?? 'PLANNING').replace('_', ' ')}
+                        </span>
+                        {selectedComponent.description && (
+                          <p className="mt-3 text-sm text-muted-foreground max-w-2xl">{selectedComponent.description}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-6 text-sm">
+                        {selectedComponent.budget != null && (
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Budget</p>
+                            <p className="font-medium">{formatCurrency(selectedComponent.budget)}</p>
+                          </div>
+                        )}
+                        {selectedComponent.deadline && (
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Deadline</p>
+                            <p className="font-medium">{new Date(selectedComponent.deadline).toLocaleDateString()}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Cost</p>
+                          <p className="text-lg font-semibold text-brand-primary">
+                            {totalCost ? formatCurrency(totalCost.total_cost) : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 2. Misc Costs / Notes switcher */}
+                <Card className="border-border">
+                  <CardContent className="p-0">
+                    <Tabs defaultValue="misc" className="w-full">
+                      <div className="border-b border-border px-4">
+                        <TabsList className="h-11 w-full justify-start rounded-none border-0 bg-transparent p-0">
+                          <TabsTrigger value="misc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3">
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            Misc Costs ({miscCosts.length})
+                          </TabsTrigger>
+                          <TabsTrigger value="notes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Notes ({tasks.filter((t) => t.is_note).length})
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
+                      <TabsContent value="misc" className="p-4 m-0">
+                        {miscCosts.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No misc costs. Add expenses like labor, permits, or other non-item costs.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {miscCosts.map((cost) => (
+                              <div key={cost.id} className="flex justify-between items-center p-2 rounded-lg hover:bg-muted/50 text-sm">
+                                <span className="text-card-foreground">{cost.name}</span>
+                                <span className="font-medium">{formatCurrency(cost.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+                      <TabsContent value="notes" className="p-4 m-0">
+                        {tasks.filter((t) => t.is_note).length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No notes. Add notes for specifications, decisions, or reminders.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {tasks
+                              .filter((t) => t.is_note)
+                              .map((task) => (
+                                <div key={task.id} className="p-3 rounded-lg border border-border bg-muted/30 text-sm">
+                                  <p className="font-medium text-card-foreground">{task.name}</p>
+                                  {task.description && <p className="mt-1 text-muted-foreground">{task.description}</p>}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+
+                {/* 3. Sample cards: Tasks, Items, and placeholders */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Tasks */}
+                  <Card className="border-border">
+                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <ListTodo className="h-4 w-4" />
+                        Tasks
+                      </CardTitle>
+                      <Button size="sm" variant="outline" className="h-7" onClick={() => setIsAddTaskOpen(true)}>
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-1 max-h-48 overflow-y-auto">
+                      {tasks.filter((t) => !t.is_note).length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No tasks</p>
+                      ) : (
+                        tasks
+                          .filter((t) => !t.is_note)
+                          .map((task) => (
+                            <div key={task.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50">
+                              <button type="button" onClick={() => handleToggleTask(task.id, task.is_completed)} className="shrink-0">
+                                {task.is_completed ? <Check className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
+                              </button>
+                              <span className={`flex-1 text-xs truncate ${task.is_completed ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>{task.name}</span>
+                            </div>
+                          ))
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Items */}
+                  <Card className="border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Items ({componentItems.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1 max-h-48 overflow-y-auto">
+                      {componentItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No items</p>
+                      ) : (
+                        componentItems.map((item) => (
+                          <div key={item.id} className="flex justify-between items-center p-1.5 rounded hover:bg-muted/50 text-xs">
+                            <span className="text-card-foreground truncate">{getItemName(item.item_id)}</span>
+                            <span className="text-muted-foreground shrink-0 ml-1">× {item.qty}</span>
                           </div>
                         ))
-                    )}
-                  </CardContent>
-                </Card>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                {/* Items */}
-                <Card className="border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Items ({componentItems.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 max-h-64 overflow-y-auto">
-                    {componentItems.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No items</p>
-                    ) : (
-                      componentItems.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center p-2 rounded-lg hover:bg-muted/50 text-sm">
-                          <span className="text-card-foreground">{getItemName(item.item_id)}</span>
-                          <span className="text-muted-foreground font-medium">× {item.qty}</span>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
+                  {/* Timeline - placeholder */}
+                  <Card className="border-border border-dashed opacity-75">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        Timeline
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">Milestones & schedule coming soon</p>
+                    </CardContent>
+                  </Card>
 
-                {/* Misc Costs */}
-                <Card className="border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Misc Costs ({miscCosts.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 max-h-48 overflow-y-auto">
-                    {miscCosts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No misc costs</p>
-                    ) : (
-                      miscCosts.map((cost) => (
-                        <div key={cost.id} className="flex justify-between items-center p-2 rounded-lg hover:bg-muted/50 text-sm">
-                          <span className="text-card-foreground">{cost.name}</span>
-                          <span className="font-medium">{formatCurrency(cost.amount)}</span>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Total Cost */}
-                <Card className="border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Component Total Cost
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-brand-primary">
-                      {totalCost ? formatCurrency(totalCost.total_cost) : '—'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">From ledger (items consumed)</p>
-                  </CardContent>
-                </Card>
+                  {/* Documents - placeholder */}
+                  <Card className="border-border border-dashed opacity-75">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Paperclip className="h-4 w-4" />
+                        Documents
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">Attachments & specs coming soon</p>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
+            ) : (
+              <Card className="border-border">
+                <CardContent className="py-16 flex flex-col items-center justify-center min-h-[280px]">
+                  <p className="text-sm text-muted-foreground">Component not found</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>

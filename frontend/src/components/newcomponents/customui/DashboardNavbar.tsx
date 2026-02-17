@@ -225,7 +225,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="right" className="w-56">
                   <DropdownMenuItem asChild>
-                    <Link to="/factories">Factories</Link>
+                    <Link to={factory ? `/factories/${factory.id}` : '/factories'}>Factories</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/items">Items</Link>
@@ -285,7 +285,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                   <ul className="mt-1 ml-4 pl-4 border-l border-white/20 dark:border-border space-y-1">
                     <li>
                       <Link
-                        to="/factories"
+                        to={factory ? `/factories/${factory.id}` : '/factories'}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
                           isActive('/factories')
                             ? 'bg-brand-primary text-white'

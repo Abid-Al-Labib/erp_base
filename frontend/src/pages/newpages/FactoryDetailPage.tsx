@@ -107,7 +107,7 @@ const FactoryDetailPage: React.FC = () => {
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{factory ? factory.name : 'Factory'}</BreadcrumbPage>
+                    <BreadcrumbPage>{factory ? `${factory.name} (${factory.abbreviation})` : 'Factory'}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
@@ -116,7 +116,7 @@ const FactoryDetailPage: React.FC = () => {
                 <FactoryIcon className="h-5 w-5 text-brand-primary" />
               </div>
               <h1 className="text-2xl font-bold text-card-foreground dark:text-foreground">
-                {factory ? factory.name : 'Factory'}
+                {factory ? `${factory.name} (${factory.abbreviation})` : 'Factory'}
               </h1>
             </div>
             {factory && (
