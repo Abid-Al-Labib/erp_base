@@ -28,6 +28,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -96,10 +97,24 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
   const isFactoriesActive = FACTORIES_SUB_PATHS.some(
     (p) => location.pathname === p || (p !== '/dashboard' && location.pathname.startsWith(p + '/'))
   );
-  // Keep Factories expanded when on a factories sub-path
+  const userCollapsedRef = useRef(false);
+
+  // Auto-expand when navigating TO a factories path, but respect manual collapse
   useEffect(() => {
-    if (isFactoriesActive) setFactoriesExpanded(true);
+    if (isFactoriesActive && !userCollapsedRef.current) {
+      setFactoriesExpanded(true);
+    }
   }, [isFactoriesActive]);
+
+  // Reset "user collapsed" when navigating away from factories path
+  useEffect(() => {
+    if (!isFactoriesActive) userCollapsedRef.current = false;
+  }, [isFactoriesActive]);
+
+  const handleFactoriesOpenChange = (open: boolean) => {
+    if (!open) userCollapsedRef.current = true;
+    setFactoriesExpanded(open);
+  };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -201,7 +216,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div
-                    className={`flex items-center gap-1 w-full px-2 py-3 rounded-lg cursor-pointer ${
+                    className={`flex items-center justify-center w-full px-2 py-3 rounded-lg cursor-pointer ${
                       isFactoriesActive
                         ? 'bg-brand-primary text-white'
                         : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
@@ -209,21 +224,17 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                     title={factory ? `Factory - ${factory.name}` : 'Factory'}
                   >
                     <Factory size={20} className="shrink-0" />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFactoryDialogOpen(true);
-                      }}
-                      title="Change factory"
-                      className="p-1 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <ArrowLeftRight size={14} />
-                    </button>
-                    <ChevronDown size={14} className="shrink-0 ml-auto" />
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="right" className="w-56">
+                  <DropdownMenuItem
+                    onClick={() => setFactoryDialogOpen(true)}
+                    className="cursor-pointer"
+                  >
+                    <ArrowLeftRight size={16} className="mr-2" />
+                    Switch factory
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to={factory ? `/factories/${factory.id}` : '/factories'}>Factories</Link>
                   </DropdownMenuItem>
@@ -242,7 +253,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Collapsible open={factoriesExpanded} onOpenChange={setFactoriesExpanded}>
+              <Collapsible open={factoriesExpanded} onOpenChange={handleFactoriesOpenChange}>
                 <div
                   className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all w-full ${
                     isFactoriesActive
@@ -261,16 +272,18 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                       </span>
                     </button>
                   </CollapsibleTrigger>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFactoryDialogOpen(true);
-                    }}
-                    title="Change factory"
-                    className="p-1.5 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <ArrowLeftRight size={18} />
-                  </button>
+                  {factoriesExpanded && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFactoryDialogOpen(true);
+                      }}
+                      title="Change factory"
+                      className="p-1.5 rounded-md shrink-0 hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <ArrowLeftRight size={18} />
+                    </button>
+                  )}
                   <CollapsibleTrigger asChild>
                     <button className="shrink-0 p-1">
                       {factoriesExpanded ? (
