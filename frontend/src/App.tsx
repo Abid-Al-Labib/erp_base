@@ -33,7 +33,7 @@ import PrivateRoute from "./components/customui/routing/PrivateRouting";
 // import DisabledPage from "./pages/DisabledPage";
 // import BusinessLens from "./pages/BusinessLensPage";
 // import BusinessLensWizard from "./pages/BusinessLensWizardPage";
-// import ApiTestPage from "./pages/ApiTestPage";
+import ApiTestPage from "./pages/ApiTestPage";
 // import AuditTestPage from "./pages/AuditTestPage";
 
 const App: React.FC = () => {
@@ -61,8 +61,9 @@ const App: React.FC = () => {
             <Route path="/accounts/:id" element={<AccountDetailPage />} />
             <Route path="/project" element={<ProjectsPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/api-test" element={<ApiTestPage />} />
+
             {/* Legacy routes - commented out */}
-            {/* <Route path="/api-test" element={<ApiTestPage />} /> */}
             {/* <Route path="/audit-test" element={<AuditTestPage />} /> */}
 
             {/* Protected routes (pageKey maps to access_control.target) */}
