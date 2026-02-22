@@ -23,6 +23,7 @@ import AccountDetailPage from "./pages/newpages/AccountDetailPage";
 // import StoragePage from "./pages/StoragePage";
 // import MachinePage from "./pages/MachinePage";
 import ProjectsPage from "./pages/newpages/ProjectsPage";
+import ProductionPage from "./pages/newpages/ProductionPage";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import PrivateRoute from "./components/customui/routing/PrivateRouting";
@@ -60,6 +61,7 @@ const App: React.FC = () => {
             <Route path="/accounts/payroll" element={<AccountsLandingPage initialSection="payroll" />} />
             <Route path="/accounts/:id" element={<AccountDetailPage />} />
             <Route path="/project" element={<ProjectsPage />} />
+            <Route path="/production" element={<ProductionPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/api-test" element={<ApiTestPage />} />
 

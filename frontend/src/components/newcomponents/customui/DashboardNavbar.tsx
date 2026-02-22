@@ -9,6 +9,7 @@ import {
   Archive,
   Cog,
   FolderKanban,
+  FlaskConical,
   Settings,
   LogOut,
   User,
@@ -48,7 +49,7 @@ interface DashboardNavbarProps {
 
 const HOVER_ZONE_WIDTH = 56; // Wide enough to cover button + easy to trigger
 
-const FACTORIES_SUB_PATHS = ['/factories', '/items', '/storage', '/machine', '/project'];
+const FACTORIES_SUB_PATHS = ['/factories', '/items', '/storage', '/machine', '/project', '/production'];
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) => {
   const location = useLocation();
@@ -88,7 +89,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
   };
 
   const navItems: NavItem[] = [
-    { name: 'Overview', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
     { name: 'Accounts', icon: <Users size={20} />, path: '/accounts' },
     { name: 'Orders', icon: <ShoppingCart size={20} />, path: '/orders' },
     { name: 'Management', icon: <Settings size={20} />, path: '/management' },
@@ -359,6 +359,19 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                       >
                         <FolderKanban size={18} />
                         <span className="text-sm font-medium">Project</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/production"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/production')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <FlaskConical size={18} />
+                        <span className="text-sm font-medium">Production</span>
                       </Link>
                     </li>
                   </ul>
