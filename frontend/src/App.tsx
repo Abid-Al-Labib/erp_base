@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import { store } from "@/app/store";
 // Legacy pages - commented out
 // import HomePage from "./pages/HomePage";
-// import LoginPage from "./pages/LoginPage";
+import LoginPage from "./pages/LoginPage";
 import Login2Page from "./pages/newpages/Login2Page";
 import WorkspaceSelectorPage from "./pages/newpages/WorkspaceSelectorPage";
 import DashboardPage from "./pages/newpages/DashboardPage";
@@ -32,8 +32,8 @@ import PrivateRoute from "./components/customui/routing/PrivateRouting";
 // import UnauthorizedPage from "./pages/UnauthorizedPage";
 // import NoProfilePage from "./pages/NoProfilePage";
 // import DisabledPage from "./pages/DisabledPage";
-// import BusinessLens from "./pages/BusinessLensPage";
-// import BusinessLensWizard from "./pages/BusinessLensWizardPage";
+import BusinessLensPage from "./pages/newpages/BusinessLensPage";
+import BusinessLensWizardPage from "./pages/newpages/BusinessLensWizardPage";
 import ApiTestPage from "./pages/ApiTestPage";
 // import AuditTestPage from "./pages/AuditTestPage";
 
@@ -44,7 +44,7 @@ const App: React.FC = () => {
         <AuthProvider>
           <Router>
           <Routes>
-            {/* <Route path="/login" element={<LoginPage />} /> */}
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/login2" element={<Login2Page />} />
             <Route path="/workspace-selector" element={<WorkspaceSelectorPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -81,8 +81,8 @@ const App: React.FC = () => {
             {/* <Route path="/manageorder/:id" element={<PrivateRoute pageKey="manage order"><ManageOrderPage /></PrivateRoute>} /> */}
             {/* <Route path="/storage" element={<PrivateRoute pageKey="storage"><StoragePage /></PrivateRoute>} /> */}
             {/* <Route path="/machine" element={<PrivateRoute pageKey="machine"><MachinePage /></PrivateRoute>} /> */}
-            {/* <Route path="/businessLens" element={<PrivateRoute pageKey="businesslens"><BusinessLens /></PrivateRoute>} /> */}
-            {/* <Route path="/businessLens/:templateId" element={<PrivateRoute pageKey="businesslens reports"><BusinessLensWizard /></PrivateRoute>} /> */}
+            <Route path="/businesslens" element={<BusinessLensPage />} />
+            <Route path="/businesslens/:templateId" element={<BusinessLensWizardPage />} />
 
             {/* Public/system pages - legacy */}
             {/* <Route path="/unauthorized" element={<UnauthorizedPage />} /> */}

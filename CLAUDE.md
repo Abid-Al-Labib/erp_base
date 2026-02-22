@@ -2198,6 +2198,7 @@ def create_order(
 - Async/await over `.then()` chains
 - Component props must have explicit TypeScript interfaces
 - Use RTK Query hooks for all API calls
+- **Create reusable components wherever possible** – Extract custom UI (charts, panels, dialogs, etc.) into `frontend/src/components/newcomponents/customui/` with generic props so they can be reused across pages
 
 **Backend**:
 - Follow PEP 8 style guide

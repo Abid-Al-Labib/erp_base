@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
+import { ContributionHeatmap } from '@/components/newcomponents/customui/ContributionHeatmap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +73,9 @@ import {
   Layers,
   FileText,
   Package,
+  LayoutDashboard,
 } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
 
 const BATCH_STATUSES = ['draft', 'in_progress', 'completed', 'cancelled'] as const;
@@ -87,7 +90,8 @@ const ProductionPage: React.FC = () => {
   const [lineId, setLineId] = useState<number | null>(null);
   const [batchStatusFilter, setBatchStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'lines' | 'formulas' | 'batches'>('lines');
+  const [activeTab, setActiveTab] = useState<'overview' | 'batches'>('overview');
+  const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
 
   // Dialog states
   const [isAddLineOpen, setIsAddLineOpen] = useState(false);
@@ -145,7 +149,7 @@ const ProductionPage: React.FC = () => {
       production_line_id: lineId ?? undefined,
       status: batchStatusFilter === 'all' ? undefined : batchStatusFilter,
     },
-    { skip: activeTab !== 'batches' }
+    { skip: false }
   );
 
   const batches = useMemo(() => {
@@ -196,6 +200,31 @@ const ProductionPage: React.FC = () => {
     );
   }, [batches, searchQuery]);
 
+  // Metrics for Overview
+  const metrics = useMemo(() => {
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const batchesThisMonth = batches.filter(
+      (b) => new Date(b.batch_date) >= thisMonthStart
+    );
+    const activeBatches = batches.filter((b) => b.status === 'in_progress');
+    const completedWithEfficiency = batches.filter(
+      (b) => b.status === 'completed' && b.efficiency_percentage != null
+    );
+    const avgEfficiency =
+      completedWithEfficiency.length > 0
+        ? completedWithEfficiency.reduce((s, b) => s + (b.efficiency_percentage ?? 0), 0) /
+          completedWithEfficiency.length
+        : null;
+    return {
+      totalLines: filteredLines.length,
+      totalFormulas: filteredFormulas.length,
+      activeBatches: activeBatches.length,
+      batchesThisMonth: batchesThisMonth.length,
+      avgEfficiency,
+    };
+  }, [filteredLines, filteredFormulas, batches]);
+
   const handleFactoryChange = (value: string) => {
     const id = value ? parseInt(value, 10) : null;
     setFactoryId(id);
@@ -205,6 +234,16 @@ const ProductionPage: React.FC = () => {
   const handleLineChange = (value: string) => {
     const id = value ? parseInt(value, 10) : null;
     setLineId(id);
+  };
+
+  // When switching to Overview, clear line/status filters so metrics show full counts
+  const handleTabChange = (tab: string) => {
+    if (tab === 'overview') {
+      setLineId(null);
+      setBatchStatusFilter('all');
+      setSelectedBatchId(null);
+    }
+    setActiveTab(tab as 'overview' | 'batches');
   };
 
   const getItemName = (itemId: number) => items.find((i) => i.id === itemId)?.name ?? `Item #${itemId}`;
@@ -247,7 +286,8 @@ const ProductionPage: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {(activeTab === 'formulas' || activeTab === 'batches') && (
+              {activeTab === 'batches' && (
+                <>
                 <Select value={lineId?.toString() ?? 'all'} onValueChange={handleLineChange}>
                   <SelectTrigger className="w-[200px] h-9">
                     <SelectValue placeholder="Production line" />
@@ -261,8 +301,6 @@ const ProductionPage: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              )}
-              {activeTab === 'batches' && (
                 <Select value={batchStatusFilter} onValueChange={setBatchStatusFilter}>
                   <SelectTrigger className="w-[140px] h-9">
                     <SelectValue placeholder="Status" />
@@ -276,16 +314,15 @@ const ProductionPage: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                </>
               )}
               <div className="relative w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder={
-                    activeTab === 'lines'
-                      ? 'Search lines...'
-                      : activeTab === 'formulas'
-                        ? 'Search formulas...'
-                        : 'Search batches...'
+                    activeTab === 'overview'
+                      ? 'Search lines & formulas...'
+                      : 'Search batches...'
                   }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -297,15 +334,11 @@ const ProductionPage: React.FC = () => {
         </div>
 
         <div className="p-6">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="mb-4">
-              <TabsTrigger value="lines">
-                <Layers className="h-4 w-4 mr-2" />
-                Lines ({filteredLines.length})
-              </TabsTrigger>
-              <TabsTrigger value="formulas">
-                <FileText className="h-4 w-4 mr-2" />
-                Formulas ({filteredFormulas.length})
+              <TabsTrigger value="overview">
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Overview
               </TabsTrigger>
               <TabsTrigger value="batches">
                 <Package className="h-4 w-4 mr-2" />
@@ -313,7 +346,48 @@ const ProductionPage: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="lines" className="mt-0">
+            <TabsContent value="overview" className="mt-0">
+              {/* Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+                <Card className="border-border">
+                  <CardContent className="pt-4 pb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Production Lines</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{metrics.totalLines}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border">
+                  <CardContent className="pt-4 pb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Formulas</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{metrics.totalFormulas}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border">
+                  <CardContent className="pt-4 pb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Active Batches</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{metrics.activeBatches}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border">
+                  <CardContent className="pt-4 pb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Batches This Month</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{metrics.batchesThisMonth}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border">
+                  <CardContent className="pt-4 pb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Avg. Efficiency</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      {metrics.avgEfficiency != null
+                        ? `${metrics.avgEfficiency.toFixed(1)}%`
+                        : '—'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Half-half: Production Lines | Formulas */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Production Lines */}
               <Card className="border-border">
                 <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                   <span className="text-sm text-muted-foreground font-medium">
@@ -412,9 +486,9 @@ const ProductionPage: React.FC = () => {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="formulas" className="mt-0">
+                {/* Formulas */}
+                <div>
               <Card className="border-border">
                 <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                   <span className="text-sm text-muted-foreground font-medium">
@@ -529,9 +603,34 @@ const ProductionPage: React.FC = () => {
                   onClose={() => setSelectedFormulaId(null)}
                 />
               )}
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="batches" className="mt-0">
+              {/* Batch charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <Card className="border-border">
+                  <CardHeader>
+                    <CardTitle className="text-base">Batches by Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <BatchStatusPieChart batches={filteredBatches} />
+                  </CardContent>
+                </Card>
+                <Card className="border-border">
+                  <CardHeader>
+                    <CardTitle className="text-base">Batch activity (last 12 months)</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Filtered by factory, line & status above
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <ContributionHeatmap items={filteredBatches.map((b) => ({ date: b.batch_date }))} itemLabel="batch" />
+                  </CardContent>
+                </Card>
+              </div>
+
               <Card className="border-border">
                 <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                   <span className="text-sm text-muted-foreground font-medium">
@@ -574,6 +673,8 @@ const ProductionPage: React.FC = () => {
                           lines={linesForFactory}
                           formulas={formulas}
                           getStatusBadge={getStatusBadge}
+                          isSelected={selectedBatchId === batch.id}
+                          onClick={() => setSelectedBatchId(selectedBatchId === batch.id ? null : batch.id)}
                           onStart={async () => {
                             try {
                               await startBatch({ id: batch.id, data: {} }).unwrap();
@@ -591,6 +692,35 @@ const ProductionPage: React.FC = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {selectedBatchId && (
+                <BatchDetailPanel
+                  batch={filteredBatches.find((b) => b.id === selectedBatchId)!}
+                  lines={linesForFactory}
+                  formulas={formulas}
+                  getStatusBadge={getStatusBadge}
+                  onClose={() => setSelectedBatchId(null)}
+                  onStart={async () => {
+                    const b = filteredBatches.find((x) => x.id === selectedBatchId);
+                    if (!b) return;
+                    try {
+                      await startBatch({ id: b.id, data: {} }).unwrap();
+                      toast.success('Batch started');
+                    } catch (e: unknown) {
+                      const err = e as { data?: { detail?: string } };
+                      toast.error(err?.data?.detail || 'Failed to start');
+                    }
+                  }}
+                  onComplete={() => {
+                    const b = filteredBatches.find((x) => x.id === selectedBatchId);
+                    if (b) setCompletingBatch(b);
+                  }}
+                  onCancel={() => {
+                    const b = filteredBatches.find((x) => x.id === selectedBatchId);
+                    if (b) setCancellingBatch(b);
+                  }}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -1131,6 +1261,142 @@ const FormulaItemsPanel: React.FC<FormulaItemsPanelProps> = ({
   );
 };
 
+// ─── Batch Charts ─────────────────────────────────────────────────────
+
+const CHART_COLORS = ['#9067c6', '#8d86c9', '#7c6bb8', '#6b5aa7', '#5a4996'];
+
+const BatchStatusPieChart: React.FC<{ batches: ProductionBatch[] }> = ({ batches }) => {
+  const byStatus = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const b of batches) {
+      map[b.status] = (map[b.status] ?? 0) + 1;
+    }
+    return Object.entries(map).map(([name, value]) => ({ name: name.replace('_', ' '), value }));
+  }, [batches]);
+
+  if (byStatus.length === 0) {
+    return <p className="text-sm text-muted-foreground py-8 text-center">No batch data</p>;
+  }
+  return (
+    <div style={{ height: 200 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={byStatus} dataKey="value" nameKey="name" outerRadius={80} label>
+            {byStatus.map((_, i) => (
+              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+          </Pie>
+          <RechartsTooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// ─── Batch Detail Panel ───────────────────────────────────────────────
+
+interface BatchDetailPanelProps {
+  batch: ProductionBatch;
+  lines: ProductionLine[];
+  formulas: ProductionFormula[];
+  getStatusBadge: (s: string) => string;
+  onClose: () => void;
+  onStart: () => void;
+  onComplete: () => void;
+  onCancel: () => void;
+}
+
+const BatchDetailPanel: React.FC<BatchDetailPanelProps> = ({
+  batch,
+  lines,
+  formulas,
+  getStatusBadge,
+  onClose,
+  onStart,
+  onComplete,
+  onCancel,
+}) => {
+  const line = lines.find((l) => l.id === batch.production_line_id);
+  const formula = batch.formula_id ? formulas.find((f) => f.id === batch.formula_id) : null;
+
+  return (
+    <Card className="border-border mt-6">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Batch details: {batch.batch_number}</CardTitle>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">Status</p>
+            <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 ${getStatusBadge(batch.status)}`}>
+              {batch.status.replace('_', ' ')}
+            </span>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Line</p>
+            <p className="font-medium">{line?.name ?? `Line #${batch.production_line_id}`}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Formula</p>
+            <p className="font-medium">{formula?.name ?? 'Simple mode'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Date</p>
+            <p className="font-medium">{new Date(batch.batch_date).toLocaleDateString()}</p>
+          </div>
+          {batch.expected_output_quantity != null && (
+            <div>
+              <p className="text-muted-foreground">Expected output</p>
+              <p className="font-medium">{batch.expected_output_quantity}</p>
+            </div>
+          )}
+          {batch.actual_output_quantity != null && (
+            <div>
+              <p className="text-muted-foreground">Actual output</p>
+              <p className="font-medium">{batch.actual_output_quantity}</p>
+            </div>
+          )}
+          {batch.efficiency_percentage != null && (
+            <div>
+              <p className="text-muted-foreground">Efficiency</p>
+              <p className="font-medium">{batch.efficiency_percentage.toFixed(1)}%</p>
+            </div>
+          )}
+          {batch.notes && (
+            <div className="col-span-2">
+              <p className="text-muted-foreground">Notes</p>
+              <p className="font-medium">{batch.notes}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2 pt-2">
+          {batch.status === 'draft' && (
+            <Button size="sm" onClick={onStart}>
+              <Play className="h-4 w-4 mr-1" />
+              Start
+            </Button>
+          )}
+          {batch.status === 'in_progress' && (
+            <>
+              <Button size="sm" onClick={onComplete}>
+                <Check className="h-4 w-4 mr-1" />
+                Complete
+              </Button>
+              <Button size="sm" variant="outline" className="text-destructive" onClick={onCancel}>
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 // ─── Batch Row ───────────────────────────────────────────────────────
 
 interface BatchRowProps {
@@ -1138,6 +1404,8 @@ interface BatchRowProps {
   lines: ProductionLine[];
   formulas: ProductionFormula[];
   getStatusBadge: (s: string) => string;
+  isSelected?: boolean;
+  onClick?: () => void;
   onStart: () => void;
   onComplete: () => void;
   onCancel: () => void;
@@ -1148,6 +1416,8 @@ const BatchRow: React.FC<BatchRowProps> = ({
   lines,
   formulas,
   getStatusBadge,
+  isSelected,
+  onClick,
   onStart,
   onComplete,
   onCancel,
@@ -1158,8 +1428,11 @@ const BatchRow: React.FC<BatchRowProps> = ({
     : null;
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/50">
-      <div>
+    <div
+      className={`flex items-center justify-between px-4 py-3 hover:bg-muted/50 cursor-pointer ${isSelected ? 'bg-brand-primary/10' : ''}`}
+      onClick={onClick}
+    >
+        <div>
         <div className="font-medium text-card-foreground">{batch.batch_number}</div>
         <div className="text-sm text-muted-foreground">
           {line?.name ?? `Line #${batch.production_line_id}`}
@@ -1176,7 +1449,7 @@ const BatchRow: React.FC<BatchRowProps> = ({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
         {batch.status === 'draft' && (
           <Button size="sm" variant="outline" onClick={onStart}>
             <Play className="h-4 w-4 mr-1" />

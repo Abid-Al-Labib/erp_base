@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   Moon,
   Sun,
+  BarChart3,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { logout } from '@/features/auth/authSlice';
@@ -90,6 +91,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
 
   const navItems: NavItem[] = [
     { name: 'Accounts', icon: <Users size={20} />, path: '/accounts' },
+    { name: 'BusinessLens', icon: <BarChart3 size={20} />, path: '/businesslens' },
     { name: 'Orders', icon: <ShoppingCart size={20} />, path: '/orders' },
     { name: 'Management', icon: <Settings size={20} />, path: '/management' },
   ];
@@ -249,6 +251,9 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/project">Project</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/production">Production</Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
