@@ -7,7 +7,16 @@
       "Bash(alembic revision:*)",
       "Bash(python add_department_columns.py:*)",
       "Bash(python add_factory_columns.py:*)",
-      "Bash(python add_project_audit_columns.py:*)"
+      "Bash(python add_project_audit_columns.py:*)",
+      "Bash(ls -la \"E:\\\\Projects\\\\ERP-Revamp\\\\erp_base\\\\backend\\\\app\\\\models\"\" 2>/dev/null || echo \"Directory not found \")",
+      "Bash(python -c:*)",
+      "Bash(.venvScriptspython.exe -c \"from app.api.v1.endpoints.purchase_orders import router; print\\(''purchase_orders OK''\\)\")",
+      "Bash(.venvScriptspython.exe -c \"from app.api.v1.endpoints.transfer_orders import router; print\\(''transfer_orders OK''\\)\")",
+      "Bash(.venvScriptspython.exe -c \"from app.api.v1.endpoints.expense_orders import router; print\\(''expense_orders OK''\\)\")",
+      "Bash(.venvScriptspython.exe -c \"from app.api.v1.endpoints.order_templates import router; print\\(''order_templates OK''\\)\")",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

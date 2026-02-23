@@ -1,4 +1,4 @@
-"""Order template model - for creating reusable order templates"""
+"""Order template model - reusable expense order templates"""
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, Date
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -7,8 +7,8 @@ from app.db.base_class import Base
 
 class OrderTemplate(Base):
     """
-    Generic template for auto-generating any type of order (purchase, transfer, expense).
-    Can be one-time template or recurring for automation.
+    Reusable template for expense orders.
+    Can be one-time or recurring for automation (cron-based auto-generation).
     """
 
     __tablename__ = "order_templates"
@@ -16,22 +16,15 @@ class OrderTemplate(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # === TEMPLATE TYPE ===
-    template_type = Column(String(50), nullable=False, index=True)
-    # Valid values: 'purchase', 'transfer', 'expense'
-
     template_name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
 
-    # === FOR PURCHASE/EXPENSE TEMPLATES ===
+    # === ACCOUNT ===
     account_id = Column(Integer, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True, index=True)
-    # Required for purchase/expense, null for transfer
 
-    # === FOR TRANSFER TEMPLATES ===
-    source_location_type = Column(String(50), nullable=True)  # 'storage', 'machine', 'damaged'
-    source_location_id = Column(Integer, nullable=True)  # factory_id, machine_id, etc.
-    destination_location_type = Column(String(50), nullable=True)  # 'storage', 'machine', 'project', 'damaged'
-    destination_location_id = Column(Integer, nullable=True)  # factory_id, machine_id, project_component_id, etc.
+    # === EXPENSE CATEGORY ===
+    expense_category = Column(String(100), nullable=True)
+    # 'utilities', 'payroll', 'rent', 'services', 'maintenance', etc.
 
     # === RECURRENCE PATTERN ===
     is_recurring = Column(Boolean, nullable=False, default=False)
@@ -40,16 +33,16 @@ class OrderTemplate(Base):
     recurrence_day = Column(Integer, nullable=True)  # Day of month (1-31) or day of week (0-6)
 
     # === SCHEDULE ===
-    start_date = Column(Date, nullable=True)  # When to start generating (for recurring)
-    end_date = Column(Date, nullable=True)  # When to stop (null = indefinite)
-    next_generation_date = Column(Date, nullable=True)  # When to generate next order
-    last_generated_date = Column(Date, nullable=True)  # Last time order was generated
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    next_generation_date = Column(Date, nullable=True)
+    last_generated_date = Column(Date, nullable=True)
 
     # === AUTO-GENERATION SETTINGS ===
-    is_active = Column(Boolean, nullable=False, default=True)  # Can pause template
-    auto_generate = Column(Boolean, nullable=False, default=False)  # Should system auto-create orders?
-    generate_days_before = Column(Integer, nullable=False, default=0)  # Generate X days before due date
-    auto_approve = Column(Boolean, nullable=False, default=False)  # Auto-approve generated orders?
+    is_active = Column(Boolean, nullable=False, default=True)
+    auto_generate = Column(Boolean, nullable=False, default=False)
+    generate_days_before = Column(Integer, nullable=False, default=0)
+    auto_approve = Column(Boolean, nullable=False, default=False)
 
     # === WORKFLOW ===
     requires_approval = Column(Boolean, nullable=False, default=True)

@@ -54,7 +54,53 @@ class UnstableTypeEnum(str, enum.Enum):
 
 class MachineEventTypeEnum(str, enum.Enum):
     """Machine event types"""
-    ON = "ON"
+    IDLE = "IDLE"
+    RUNNING = "RUNNING"
     OFF = "OFF"
-    REPAIRING = "REPAIRING"
-    REPLACING = "REPLACING"
+    MAINTENANCE = "MAINTENANCE"
+
+
+class MaintenanceTypeEnum(str, enum.Enum):
+    """Machine maintenance types"""
+    PREVENTIVE = "PREVENTIVE"
+    REPAIR = "REPAIR"
+    EMERGENCY = "EMERGENCY"
+    INSPECTION = "INSPECTION"
+
+
+class WorkTypeEnum(str, enum.Enum):
+    """Work order types"""
+    MAINTENANCE = "MAINTENANCE"
+    INSPECTION = "INSPECTION"
+    INSTALLATION = "INSTALLATION"
+    REPAIR = "REPAIR"
+    CALIBRATION = "CALIBRATION"
+    OVERHAUL = "OVERHAUL"
+    FABRICATION = "FABRICATION"
+    OTHER = "OTHER"
+
+
+class WorkOrderPriorityEnum(str, enum.Enum):
+    """Work order priority levels"""
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    URGENT = "URGENT"
+
+
+class WorkOrderStatusEnum(str, enum.Enum):
+    """Work order status"""
+    DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+
+
+class InventoryTypeEnum(str, enum.Enum):
+    """Inventory types for the unified inventory table"""
+    STORAGE = "STORAGE"
+    DAMAGED = "DAMAGED"
+    WASTE = "WASTE"
+    SCRAP = "SCRAP"

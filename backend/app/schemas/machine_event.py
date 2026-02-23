@@ -13,19 +13,24 @@ class MachineEventBase(BaseModel):
 
 class MachineEventCreate(MachineEventBase):
     """Machine event creation schema"""
-    initiated_by: int | None = None  # NULL means system initiated
+    pass
 
 
 class MachineEventUpdate(BaseModel):
-    """Machine event update schema"""
-    event_type: MachineEventTypeEnum | None = None
+    """Machine event update schema - only note can be updated (events are immutable)"""
     note: str | None = None
 
 
-class MachineEventResponse(MachineEventBase):
+class MachineEventResponse(BaseModel):
     """Machine event response schema"""
     id: int
+    workspace_id: int
+    machine_id: int
+    event_type: MachineEventTypeEnum
     started_at: datetime
-    initiated_by: int | None
+    initiated_by: int | None = None
+    note: str | None = None
+    created_at: datetime
+    created_by: int | None = None
 
     model_config = ConfigDict(from_attributes=True)

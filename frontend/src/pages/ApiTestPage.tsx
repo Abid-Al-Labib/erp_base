@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLoginMutation } from '@/features/auth/authApi';
+import { useLoginMutation, useRegisterMutation } from '@/features/auth/authApi';
 import { useGetWorkspacesQuery, useCreateWorkspaceMutation } from '@/features/workspaces/workspaceApi';
 import { useGetItemsQuery, useCreateItemMutation, useUpdateItemMutation, useDeleteItemMutation } from '@/features/items/itemsApi';
 import { useGetTagsQuery, useCreateTagMutation, useDeleteTagMutation } from '@/features/items/itemTagsApi';
@@ -24,6 +24,16 @@ import {
   useGetProductionBatchesQuery, useCreateProductionBatchMutation, useStartBatchMutation, useCompleteBatchMutation, useCancelBatchMutation,
   useGetBatchItemsQuery, useAddBatchItemMutation, useUpdateBatchItemMutation,
 } from '@/features/production/productionApi';
+import { useGetMachinesQuery, useCreateMachineMutation, useUpdateMachineMutation, useDeleteMachineMutation, useGetMachineEventsQuery, useCreateMachineEventMutation } from '@/features/machines/machinesApi';
+import { useGetMachineItemsQuery, useCreateMachineItemMutation, useUpdateMachineItemMutation, useDeleteMachineItemMutation } from '@/features/machineItems/machineItemsApi';
+import { useGetMachineMaintenanceLogsQuery, useCreateMachineMaintenanceLogMutation, useUpdateMachineMaintenanceLogMutation, useDeleteMachineMaintenanceLogMutation } from '@/features/machineMaintenanceLogs/machineMaintenanceLogsApi';
+import { useGetInventoryListQuery, useCreateInventoryMutation, useUpdateInventoryMutation, useDeleteInventoryMutation, useGetInventoryLedgerQuery } from '@/features/inventory/inventoryApi';
+import { useGetProductsQuery, useCreateProductMutation, useUpdateProductMutation, useDeleteProductMutation, useGetProductLedgerQuery } from '@/features/products/productsApi';
+import { useGetWorkOrdersQuery, useCreateWorkOrderMutation, useUpdateWorkOrderMutation, useDeleteWorkOrderMutation, useGetWorkOrderItemsQuery, useAddWorkOrderItemMutation, useRemoveWorkOrderItemMutation } from '@/features/workOrders/workOrdersApi';
+import { useGetPurchaseOrdersQuery, useCreatePurchaseOrderMutation, useUpdatePurchaseOrderMutation, useDeletePurchaseOrderMutation, useGetPurchaseOrderItemsQuery, useAddPurchaseOrderItemMutation, useRemovePurchaseOrderItemMutation } from '@/features/purchaseOrders/purchaseOrdersApi';
+import { useGetTransferOrdersQuery, useCreateTransferOrderMutation, useUpdateTransferOrderMutation, useDeleteTransferOrderMutation, useGetTransferOrderItemsQuery, useAddTransferOrderItemMutation, useRemoveTransferOrderItemMutation } from '@/features/transferOrders/transferOrdersApi';
+import { useGetExpenseOrdersQuery, useCreateExpenseOrderMutation, useUpdateExpenseOrderMutation, useDeleteExpenseOrderMutation, useGetExpenseOrderItemsQuery, useAddExpenseOrderItemMutation, useRemoveExpenseOrderItemMutation } from '@/features/expenseOrders/expenseOrdersApi';
+import { useGetOrderTemplatesQuery, useCreateOrderTemplateMutation, useUpdateOrderTemplateMutation, useDeleteOrderTemplateMutation, useGetOrderTemplateItemsQuery, useAddOrderTemplateItemMutation, useRemoveOrderTemplateItemMutation } from '@/features/orderTemplates/orderTemplatesApi';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { setCredentials, setWorkspace, logout as logoutAction } from '@/features/auth/authSlice';
 import toast, { Toaster } from 'react-hot-toast';
@@ -42,6 +52,16 @@ import type { InvoicePayment } from '@/types/invoicePayment';
 import type { SalesOrder } from '@/types/salesOrder';
 import type { SalesDelivery } from '@/types/salesDelivery';
 import type { ProductionLine, ProductionFormula, ProductionBatch } from '@/types/production';
+import type { Machine, MachineEventType } from '@/types/machine';
+import type { MachineItem } from '@/types/machineItem';
+import type { MachineMaintenanceLog, MaintenanceType } from '@/types/machineMaintenanceLog';
+import type { Inventory, InventoryType } from '@/types/inventory';
+import type { Product } from '@/types/product';
+import type { WorkOrder, WorkType, WorkOrderPriority, WorkOrderStatus } from '@/types/workOrder';
+import type { PurchaseOrder } from '@/types/purchaseOrder';
+import type { TransferOrder } from '@/types/transferOrder';
+import type { ExpenseOrder } from '@/types/expenseOrder';
+import type { OrderTemplate } from '@/types/orderTemplate';
 
 const ApiTestPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -49,6 +69,14 @@ const ApiTestPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Registration state
+  const [showRegister, setShowRegister] = useState(false);
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerWorkspaceName, setRegisterWorkspaceName] = useState('');
+  const [registerPosition, setRegisterPosition] = useState('');
 
   const [workspaceName, setWorkspaceName] = useState('');
   const [workspaceSlug, setWorkspaceSlug] = useState('');
@@ -71,6 +99,7 @@ const ApiTestPage: React.FC = () => {
   const [itemTagIds, setItemTagIds] = useState<number[]>([]);
 
   const [login, { isLoading: isLoggingIn }] = useLoginMutation();
+  const [register, { isLoading: isRegistering }] = useRegisterMutation();
   const [createWorkspace, { isLoading: isCreatingWorkspace }] = useCreateWorkspaceMutation();
   const { data: workspaces, isLoading: isLoadingWorkspaces } = useGetWorkspacesQuery(undefined, {
     skip: !isAuthenticated,
@@ -448,6 +477,275 @@ const ApiTestPage: React.FC = () => {
   // Track actual quantities being edited for batch items (key = batch_item_id, value = actual_qty string)
   const [batchItemActualQtys, setBatchItemActualQtys] = useState<Record<number, string>>({});
 
+  // ─── Machines Module State ──────────────────────────────────────
+  const [machineName, setMachineName] = useState('');
+  const [machineSectionId, setMachineSectionId] = useState('');
+  const [machineModelNumber, setMachineModelNumber] = useState('');
+  const [machineManufacturer, setMachineManufacturer] = useState('');
+  const [machineMaintenanceDate, setMachineMaintenanceDate] = useState('');
+  const [machineMaintenanceNote, setMachineMaintenanceNote] = useState('');
+  const [machineNote, setMachineNote] = useState('');
+  const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
+  const [machineSearchQuery, setMachineSearchQuery] = useState('');
+  const [machineFilterSectionId, setMachineFilterSectionId] = useState('');
+  const [machineFilterRunning, setMachineFilterRunning] = useState('');
+
+  // Machine Events state
+  const [selectedMachineForEvents, setSelectedMachineForEvents] = useState<Machine | null>(null);
+  const [eventType, setEventType] = useState<MachineEventType>('IDLE');
+  const [eventNote, setEventNote] = useState('');
+
+  // ─── Machines API Hooks ─────────────────────────────────────────
+  const { data: machines, isLoading: isLoadingMachines, refetch: refetchMachines } = useGetMachinesQuery(
+    {
+      skip: 0,
+      limit: 50,
+      search: machineSearchQuery || undefined,
+      factory_section_id: machineFilterSectionId ? parseInt(machineFilterSectionId) : undefined,
+      is_running: machineFilterRunning === '' ? undefined : machineFilterRunning === 'true',
+    },
+    { skip: !workspace }
+  );
+  const [createMachine, { isLoading: isCreatingMachine }] = useCreateMachineMutation();
+  const [updateMachine, { isLoading: isUpdatingMachine }] = useUpdateMachineMutation();
+  const [deleteMachine, { isLoading: isDeletingMachine }] = useDeleteMachineMutation();
+
+  const { data: machineEvents, isLoading: isLoadingMachineEvents, refetch: refetchMachineEvents } = useGetMachineEventsQuery(
+    { machine_id: selectedMachineForEvents?.id || 0, skip: 0, limit: 50 },
+    { skip: !selectedMachineForEvents }
+  );
+  const [createMachineEvent, { isLoading: isCreatingMachineEvent }] = useCreateMachineEventMutation();
+
+  // Machine Items state
+  const [machineItemMachineId, setMachineItemMachineId] = useState('');
+  const [machineItemItemId, setMachineItemItemId] = useState('');
+  const [machineItemQty, setMachineItemQty] = useState('0');
+  const [machineItemReqQty, setMachineItemReqQty] = useState('');
+  const [machineItemDefectiveQty, setMachineItemDefectiveQty] = useState('');
+  const [selectedMachineForItems, setSelectedMachineForItems] = useState<Machine | null>(null);
+  const [editingMachineItem, setEditingMachineItem] = useState<MachineItem | null>(null);
+
+  // Machine Items API hooks
+  const { data: machineItems, isLoading: isLoadingMachineItems } = useGetMachineItemsQuery(
+    { machine_id: selectedMachineForItems?.id, skip: 0, limit: 100 },
+    { skip: !selectedMachineForItems }
+  );
+  const [createMachineItem, { isLoading: isCreatingMachineItem }] = useCreateMachineItemMutation();
+  const [updateMachineItem, { isLoading: isUpdatingMachineItem }] = useUpdateMachineItemMutation();
+  const [deleteMachineItem, { isLoading: isDeletingMachineItem }] = useDeleteMachineItemMutation();
+
+  // Machine Maintenance Logs state
+  const [selectedMachineForMaintenance, setSelectedMachineForMaintenance] = useState<Machine | null>(null);
+  const [maintenanceType, setMaintenanceType] = useState<MaintenanceType>('PREVENTIVE');
+  const [maintenanceDate, setMaintenanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [maintenanceSummary, setMaintenanceSummary] = useState('');
+  const [maintenanceCost, setMaintenanceCost] = useState('');
+  const [maintenancePerformedBy, setMaintenancePerformedBy] = useState('');
+  const [editingMaintenanceLog, setEditingMaintenanceLog] = useState<MachineMaintenanceLog | null>(null);
+  const [filterMaintenanceType, setFilterMaintenanceType] = useState<MaintenanceType | ''>('');
+
+  // Machine Maintenance Logs API hooks
+  const { data: maintenanceLogs, isLoading: isLoadingMaintenanceLogs } = useGetMachineMaintenanceLogsQuery(
+    {
+      machine_id: selectedMachineForMaintenance?.id,
+      maintenance_type: filterMaintenanceType || undefined,
+      skip: 0, limit: 100,
+    },
+    { skip: !selectedMachineForMaintenance }
+  );
+  const [createMaintenanceLog, { isLoading: isCreatingMaintenanceLog }] = useCreateMachineMaintenanceLogMutation();
+  const [updateMaintenanceLog, { isLoading: isUpdatingMaintenanceLog }] = useUpdateMachineMaintenanceLogMutation();
+  const [deleteMaintenanceLog, { isLoading: isDeletingMaintenanceLog }] = useDeleteMachineMaintenanceLogMutation();
+
+  // Unified Inventory state
+  const [invItemId, setInvItemId] = useState('');
+  const [invFactoryId, setInvFactoryId] = useState('');
+  const [invType, setInvType] = useState<InventoryType>('STORAGE');
+  const [invQty, setInvQty] = useState('0');
+  const [invAvgPrice, setInvAvgPrice] = useState('');
+  const [invNote, setInvNote] = useState('');
+  const [editingInv, setEditingInv] = useState<Inventory | null>(null);
+  const [filterInvType, setFilterInvType] = useState<InventoryType | ''>('');
+  const [filterInvFactoryId, setFilterInvFactoryId] = useState('');
+  const [showInvLedger, setShowInvLedger] = useState(false);
+
+  // Inventory API hooks
+  const { data: inventoryList, isLoading: isLoadingInventory } = useGetInventoryListQuery({
+    inventory_type: filterInvType || undefined,
+    factory_id: filterInvFactoryId ? parseInt(filterInvFactoryId) : undefined,
+    skip: 0, limit: 100,
+  });
+  const { data: inventoryLedger, isLoading: isLoadingInvLedger } = useGetInventoryLedgerQuery(
+    { inventory_type: filterInvType || undefined, skip: 0, limit: 50 },
+    { skip: !showInvLedger }
+  );
+  const [createInventory, { isLoading: isCreatingInventory }] = useCreateInventoryMutation();
+  const [updateInventory, { isLoading: isUpdatingInventory }] = useUpdateInventoryMutation();
+  const [deleteInventory, { isLoading: isDeletingInventory }] = useDeleteInventoryMutation();
+
+  // Products state
+  const [prodItemId, setProdItemId] = useState('');
+  const [prodFactoryId, setProdFactoryId] = useState('');
+  const [prodQty, setProdQty] = useState('0');
+  const [prodAvgCost, setProdAvgCost] = useState('');
+  const [prodSellingPrice, setProdSellingPrice] = useState('');
+  const [prodMinOrderQty, setProdMinOrderQty] = useState('');
+  const [prodAvailableForSale, setProdAvailableForSale] = useState(false);
+  const [prodNote, setProdNote] = useState('');
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [filterProdFactoryId, setFilterProdFactoryId] = useState('');
+  const [filterProdAvailable, setFilterProdAvailable] = useState<string>('');
+  const [showProdLedger, setShowProdLedger] = useState(false);
+
+  // Products API hooks
+  const { data: productsList, isLoading: isLoadingProducts } = useGetProductsQuery({
+    factory_id: filterProdFactoryId ? parseInt(filterProdFactoryId) : undefined,
+    is_available_for_sale: filterProdAvailable === '' ? undefined : filterProdAvailable === 'true',
+    skip: 0, limit: 100,
+  });
+  const { data: productLedger, isLoading: isLoadingProdLedger } = useGetProductLedgerQuery(
+    { skip: 0, limit: 50 },
+    { skip: !showProdLedger }
+  );
+  const [createProduct, { isLoading: isCreatingProduct }] = useCreateProductMutation();
+  const [updateProduct, { isLoading: isUpdatingProduct }] = useUpdateProductMutation();
+  const [deleteProduct, { isLoading: isDeletingProduct }] = useDeleteProductMutation();
+
+  // Work Orders state
+  const [woTitle, setWoTitle] = useState('');
+  const [woDescription, setWoDescription] = useState('');
+  const [woWorkType, setWoWorkType] = useState<WorkType>('MAINTENANCE');
+  const [woPriority, setWoPriority] = useState<WorkOrderPriority>('MEDIUM');
+  const [woFactoryId, setWoFactoryId] = useState('');
+  const [woMachineId, setWoMachineId] = useState('');
+  const [woStartDate, setWoStartDate] = useState('');
+  const [woEndDate, setWoEndDate] = useState('');
+  const [woCost, setWoCost] = useState('');
+  const [woAssignedTo, setWoAssignedTo] = useState('');
+  const [woNotes, setWoNotes] = useState('');
+  const [editingWo, setEditingWo] = useState<WorkOrder | null>(null);
+  const [selectedWoId, setSelectedWoId] = useState<number | null>(null);
+  const [filterWoType, setFilterWoType] = useState<WorkType | ''>('');
+  const [filterWoStatus, setFilterWoStatus] = useState<WorkOrderStatus | ''>('');
+  const [woItemId, setWoItemId] = useState('');
+  const [woItemQty, setWoItemQty] = useState('1');
+
+  // Work Orders API hooks
+  const { data: workOrders, isLoading: isLoadingWorkOrders } = useGetWorkOrdersQuery({
+    work_type: filterWoType || undefined,
+    status: filterWoStatus || undefined,
+    skip: 0, limit: 100,
+  });
+  const { data: woItems, isLoading: isLoadingWoItems } = useGetWorkOrderItemsQuery(
+    selectedWoId!, { skip: !selectedWoId }
+  );
+  const [createWorkOrder, { isLoading: isCreatingWo }] = useCreateWorkOrderMutation();
+  const [updateWorkOrder, { isLoading: isUpdatingWo }] = useUpdateWorkOrderMutation();
+  const [deleteWorkOrder, { isLoading: isDeletingWo }] = useDeleteWorkOrderMutation();
+  const [addWoItem, { isLoading: isAddingWoItem }] = useAddWorkOrderItemMutation();
+  const [removeWoItem] = useRemoveWorkOrderItemMutation();
+
+  // Purchase Orders state
+  const [poAccountId, setPoAccountId] = useState('');
+  const [poDestType, setPoDestType] = useState('storage');
+  const [poDestId, setPoDestId] = useState('');
+  const [poNote, setPoNote] = useState('');
+  const [poDescription, setPoDescription] = useState('');
+  const [poInternalNote, setPoInternalNote] = useState('');
+  const [selectedPoId, setSelectedPoId] = useState<number | null>(null);
+  const [poItemItemId, setPoItemItemId] = useState('');
+  const [poItemQty, setPoItemQty] = useState('1');
+  const [poItemPrice, setPoItemPrice] = useState('0');
+
+  // Purchase Orders API hooks
+  const { data: purchaseOrders, isLoading: isLoadingPO } = useGetPurchaseOrdersQuery({
+    skip: 0, limit: 100,
+  });
+  const { data: poItems } = useGetPurchaseOrderItemsQuery(selectedPoId!, { skip: !selectedPoId });
+  const [createPO] = useCreatePurchaseOrderMutation();
+  const [updatePO] = useUpdatePurchaseOrderMutation();
+  const [deletePO] = useDeletePurchaseOrderMutation();
+  const [addPOItem] = useAddPurchaseOrderItemMutation();
+  const [removePOItem] = useRemovePurchaseOrderItemMutation();
+
+  // Transfer Orders state
+  const [toSrcType, setToSrcType] = useState('storage');
+  const [toSrcId, setToSrcId] = useState('');
+  const [toDestType, setToDestType] = useState('machine');
+  const [toDestId, setToDestId] = useState('');
+  const [toNote, setToNote] = useState('');
+  const [toDescription, setToDescription] = useState('');
+  const [selectedToId, setSelectedToId] = useState<number | null>(null);
+  const [toItemItemId, setToItemItemId] = useState('');
+  const [toItemQty, setToItemQty] = useState('1');
+
+  // Transfer Orders API hooks
+  const { data: transferOrders, isLoading: isLoadingTO } = useGetTransferOrdersQuery({
+    skip: 0, limit: 100,
+  });
+  const { data: toItems } = useGetTransferOrderItemsQuery(selectedToId!, { skip: !selectedToId });
+  const [createTO] = useCreateTransferOrderMutation();
+  const [updateTO] = useUpdateTransferOrderMutation();
+  const [deleteTO] = useDeleteTransferOrderMutation();
+  const [addTOItem] = useAddTransferOrderItemMutation();
+  const [removeTOItem] = useRemoveTransferOrderItemMutation();
+
+  // Expense Orders state
+  const [eoCategory, setEoCategory] = useState('utilities');
+  const [eoNote, setEoNote] = useState('');
+  const [eoAccountId, setEoAccountId] = useState('');
+  const [eoExpenseDate, setEoExpenseDate] = useState('');
+  const [eoDueDate, setEoDueDate] = useState('');
+  const [eoDescription, setEoDescription] = useState('');
+  const [eoInternalNote, setEoInternalNote] = useState('');
+  const [eoFilterCategory, setEoFilterCategory] = useState('');
+  const [selectedEoId, setSelectedEoId] = useState<number | null>(null);
+  const [eoItemDesc, setEoItemDesc] = useState('');
+  const [eoItemQty, setEoItemQty] = useState('1');
+  const [eoItemPrice, setEoItemPrice] = useState('0');
+  const [eoItemUnit, setEoItemUnit] = useState('');
+  const [eoItemAccountId, setEoItemAccountId] = useState('');
+
+  // Expense Orders API hooks
+  const { data: expenseOrders, isLoading: isLoadingEO } = useGetExpenseOrdersQuery({
+    expense_category: eoFilterCategory || undefined, skip: 0, limit: 100,
+  });
+  const { data: eoItems } = useGetExpenseOrderItemsQuery(selectedEoId!, { skip: !selectedEoId });
+  const [createEO] = useCreateExpenseOrderMutation();
+  const [updateEO] = useUpdateExpenseOrderMutation();
+  const [deleteEO] = useDeleteExpenseOrderMutation();
+  const [addEOItem] = useAddExpenseOrderItemMutation();
+  const [removeEOItem] = useRemoveExpenseOrderItemMutation();
+
+  // Order Templates state
+  const [tplName, setTplName] = useState('');
+  const [tplDesc, setTplDesc] = useState('');
+  const [tplCategory, setTplCategory] = useState('');
+  const [tplAccountId, setTplAccountId] = useState('');
+  const [tplIsRecurring, setTplIsRecurring] = useState(false);
+  const [tplRecurrenceType, setTplRecurrenceType] = useState('');
+  const [tplRecurrenceDay, setTplRecurrenceDay] = useState('');
+  const [tplAutoGenerate, setTplAutoGenerate] = useState(false);
+  const [tplAutoApprove, setTplAutoApprove] = useState(false);
+  const [tplNotes, setTplNotes] = useState('');
+  const [tplFilterCategory, setTplFilterCategory] = useState('');
+  const [selectedTplId, setSelectedTplId] = useState<number | null>(null);
+  const [tplItemDesc, setTplItemDesc] = useState('');
+  const [tplItemQty, setTplItemQty] = useState('1');
+  const [tplItemPrice, setTplItemPrice] = useState('0');
+  const [tplItemUnit, setTplItemUnit] = useState('');
+  const [tplItemAccountId, setTplItemAccountId] = useState('');
+
+  // Order Templates API hooks
+  const { data: orderTemplates, isLoading: isLoadingTPL } = useGetOrderTemplatesQuery({
+    expense_category: tplFilterCategory || undefined, skip: 0, limit: 100,
+  });
+  const { data: tplItems } = useGetOrderTemplateItemsQuery(selectedTplId!, { skip: !selectedTplId });
+  const [createTPL] = useCreateOrderTemplateMutation();
+  const [updateTPL] = useUpdateOrderTemplateMutation();
+  const [deleteTPL] = useDeleteOrderTemplateMutation();
+  const [addTPLItem] = useAddOrderTemplateItemMutation();
+  const [removeTPLItem] = useRemoveOrderTemplateItemMutation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -466,6 +764,37 @@ const ApiTestPage: React.FC = () => {
       const errorMessage = error.data?.detail || 'Login failed';
       toast.error(errorMessage);
       console.error('Login error:', error);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const result = await register({
+        name: registerName,
+        email: registerEmail,
+        password: registerPassword,
+        workspace_name: registerWorkspaceName || undefined,
+        position: registerPosition || undefined,
+      }).unwrap();
+
+      dispatch(setCredentials({
+        user: result.user,
+        token: result.access_token,
+        workspace: result.workspace,
+      }));
+
+      toast.success(`Registration successful! Welcome ${result.user.name}. Workspace "${result.workspace.name}" created.`);
+      setShowRegister(false);
+      setRegisterName('');
+      setRegisterEmail('');
+      setRegisterPassword('');
+      setRegisterWorkspaceName('');
+      setRegisterPosition('');
+    } catch (error: any) {
+      const errorMessage = error.data?.detail || 'Registration failed';
+      toast.error(errorMessage);
+      console.error('Registration error:', error);
     }
   };
 
@@ -1805,6 +2134,536 @@ const ApiTestPage: React.FC = () => {
     return formula ? `${formula.formula_code} - ${formula.name}` : `Formula #${formulaId}`;
   };
 
+  // ─── Machine Handlers ────────────────────────────────────────────
+  const handleCreateMachine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!machineName || !machineSectionId) {
+      toast.error('Please provide machine name and select a factory section');
+      return;
+    }
+    try {
+      await createMachine({
+        name: machineName,
+        factory_section_id: parseInt(machineSectionId),
+        model_number: machineModelNumber || undefined,
+        manufacturer: machineManufacturer || undefined,
+        next_maintenance_schedule: machineMaintenanceDate || undefined,
+        next_maintenance_note: machineMaintenanceNote || undefined,
+        note: machineNote || undefined,
+      }).unwrap();
+      toast.success(`Machine "${machineName}" created!`);
+      handleCancelMachineEdit();
+      refetchMachines();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create machine');
+    }
+  };
+
+  const handleEditMachine = (machine: Machine) => {
+    setEditingMachine(machine);
+    setMachineName(machine.name);
+    setMachineSectionId(machine.factory_section_id.toString());
+    setMachineModelNumber(machine.model_number || '');
+    setMachineManufacturer(machine.manufacturer || '');
+    setMachineMaintenanceDate(machine.next_maintenance_schedule || '');
+    setMachineMaintenanceNote(machine.next_maintenance_note || '');
+    setMachineNote(machine.note || '');
+  };
+
+  const handleUpdateMachine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMachine) return;
+    try {
+      await updateMachine({
+        id: editingMachine.id,
+        data: {
+          name: machineName || undefined,
+          factory_section_id: machineSectionId ? parseInt(machineSectionId) : undefined,
+          model_number: machineModelNumber || undefined,
+          manufacturer: machineManufacturer || undefined,
+          next_maintenance_schedule: machineMaintenanceDate || undefined,
+          next_maintenance_note: machineMaintenanceNote || undefined,
+          note: machineNote || undefined,
+        },
+      }).unwrap();
+      toast.success(`Machine "${machineName}" updated!`);
+      handleCancelMachineEdit();
+      refetchMachines();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update machine');
+    }
+  };
+
+  const handleCancelMachineEdit = () => {
+    setEditingMachine(null);
+    setMachineName('');
+    setMachineSectionId('');
+    setMachineModelNumber('');
+    setMachineManufacturer('');
+    setMachineMaintenanceDate('');
+    setMachineMaintenanceNote('');
+    setMachineNote('');
+  };
+
+  const handleDeleteMachine = async (machine: Machine) => {
+    if (!confirm(`Are you sure you want to delete "${machine.name}"?`)) return;
+    try {
+      await deleteMachine(machine.id).unwrap();
+      toast.success(`Machine "${machine.name}" deleted!`);
+      if (selectedMachineForEvents?.id === machine.id) {
+        setSelectedMachineForEvents(null);
+      }
+      refetchMachines();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete machine');
+    }
+  };
+
+  const handleCreateMachineEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMachineForEvents) return;
+    try {
+      await createMachineEvent({
+        machine_id: selectedMachineForEvents.id,
+        data: {
+          machine_id: selectedMachineForEvents.id,
+          event_type: eventType,
+          note: eventNote || undefined,
+        },
+      }).unwrap();
+      toast.success(`Event "${eventType}" created for "${selectedMachineForEvents.name}"`);
+      setEventNote('');
+      refetchMachineEvents();
+      refetchMachines();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create event');
+    }
+  };
+
+  // ─── Machine Maintenance Log Handlers ────────────────────────
+  const resetMaintenanceForm = () => {
+    setMaintenanceType('PREVENTIVE');
+    setMaintenanceDate(new Date().toISOString().split('T')[0]);
+    setMaintenanceSummary('');
+    setMaintenanceCost('');
+    setMaintenancePerformedBy('');
+    setEditingMaintenanceLog(null);
+  };
+
+  const handleCreateMaintenanceLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMachineForMaintenance) return;
+    try {
+      await createMaintenanceLog({
+        machine_id: selectedMachineForMaintenance.id,
+        maintenance_type: maintenanceType,
+        maintenance_date: maintenanceDate,
+        summary: maintenanceSummary,
+        cost: maintenanceCost ? parseFloat(maintenanceCost) : undefined,
+        performed_by: maintenancePerformedBy || undefined,
+      }).unwrap();
+      toast.success('Maintenance log created!');
+      resetMaintenanceForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create maintenance log');
+    }
+  };
+
+  const handleEditMaintenanceLog = (log: MachineMaintenanceLog) => {
+    setEditingMaintenanceLog(log);
+    setMaintenanceType(log.maintenance_type);
+    setMaintenanceDate(log.maintenance_date);
+    setMaintenanceSummary(log.summary);
+    setMaintenanceCost(log.cost?.toString() || '');
+    setMaintenancePerformedBy(log.performed_by || '');
+  };
+
+  const handleUpdateMaintenanceLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMaintenanceLog) return;
+    try {
+      await updateMaintenanceLog({
+        id: editingMaintenanceLog.id,
+        data: {
+          maintenance_type: maintenanceType,
+          maintenance_date: maintenanceDate,
+          summary: maintenanceSummary,
+          cost: maintenanceCost ? parseFloat(maintenanceCost) : undefined,
+          performed_by: maintenancePerformedBy || undefined,
+        },
+      }).unwrap();
+      toast.success('Maintenance log updated!');
+      resetMaintenanceForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update maintenance log');
+    }
+  };
+
+  const handleDeleteMaintenanceLog = async (log: MachineMaintenanceLog) => {
+    if (!confirm(`Delete maintenance log from ${log.maintenance_date}?`)) return;
+    try {
+      await deleteMaintenanceLog(log.id).unwrap();
+      toast.success('Maintenance log deleted!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete maintenance log');
+    }
+  };
+
+  // ─── Unified Inventory Handlers ──────────────────────────────
+  const resetInvForm = () => {
+    setInvItemId('');
+    setInvFactoryId('');
+    setInvType('STORAGE');
+    setInvQty('0');
+    setInvAvgPrice('');
+    setInvNote('');
+    setEditingInv(null);
+  };
+
+  const handleCreateInventory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createInventory({
+        item_id: parseInt(invItemId),
+        factory_id: parseInt(invFactoryId),
+        inventory_type: invType,
+        qty: parseInt(invQty),
+        avg_price: invAvgPrice ? parseFloat(invAvgPrice) : undefined,
+        note: invNote || undefined,
+      }).unwrap();
+      toast.success('Inventory record created!');
+      resetInvForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create inventory');
+    }
+  };
+
+  const handleEditInventory = (inv: Inventory) => {
+    setEditingInv(inv);
+    setInvQty(inv.qty.toString());
+    setInvAvgPrice(inv.avg_price?.toString() || '');
+    setInvNote(inv.note || '');
+  };
+
+  const handleUpdateInventory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInv) return;
+    try {
+      await updateInventory({
+        id: editingInv.id,
+        data: {
+          qty: parseInt(invQty),
+          avg_price: invAvgPrice ? parseFloat(invAvgPrice) : undefined,
+          note: invNote || undefined,
+        },
+      }).unwrap();
+      toast.success('Inventory updated!');
+      resetInvForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update inventory');
+    }
+  };
+
+  const handleDeleteInventory = async (inv: Inventory) => {
+    if (!confirm(`Delete inventory record #${inv.id}?`)) return;
+    try {
+      await deleteInventory(inv.id).unwrap();
+      toast.success('Inventory deleted!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete inventory');
+    }
+  };
+
+  // ─── Products Handlers ──────────────────────────────────────
+  const resetProdForm = () => {
+    setProdItemId('');
+    setProdFactoryId('');
+    setProdQty('0');
+    setProdAvgCost('');
+    setProdSellingPrice('');
+    setProdMinOrderQty('');
+    setProdAvailableForSale(false);
+    setProdNote('');
+    setEditingProduct(null);
+  };
+
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createProduct({
+        item_id: parseInt(prodItemId),
+        factory_id: parseInt(prodFactoryId),
+        qty: parseInt(prodQty),
+        avg_cost: prodAvgCost ? parseFloat(prodAvgCost) : undefined,
+        selling_price: prodSellingPrice ? parseFloat(prodSellingPrice) : undefined,
+        min_order_qty: prodMinOrderQty ? parseInt(prodMinOrderQty) : undefined,
+        is_available_for_sale: prodAvailableForSale,
+        note: prodNote || undefined,
+      }).unwrap();
+      toast.success('Product created!');
+      resetProdForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create product');
+    }
+  };
+
+  const handleEditProduct = (prod: Product) => {
+    setEditingProduct(prod);
+    setProdQty(prod.qty.toString());
+    setProdAvgCost(prod.avg_cost?.toString() || '');
+    setProdSellingPrice(prod.selling_price?.toString() || '');
+    setProdMinOrderQty(prod.min_order_qty?.toString() || '');
+    setProdAvailableForSale(prod.is_available_for_sale);
+    setProdNote(prod.note || '');
+  };
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    try {
+      await updateProduct({
+        id: editingProduct.id,
+        data: {
+          qty: parseInt(prodQty),
+          avg_cost: prodAvgCost ? parseFloat(prodAvgCost) : undefined,
+          selling_price: prodSellingPrice ? parseFloat(prodSellingPrice) : undefined,
+          min_order_qty: prodMinOrderQty ? parseInt(prodMinOrderQty) : undefined,
+          is_available_for_sale: prodAvailableForSale,
+          note: prodNote || undefined,
+        },
+      }).unwrap();
+      toast.success('Product updated!');
+      resetProdForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update product');
+    }
+  };
+
+  const handleDeleteProduct = async (prod: Product) => {
+    if (!confirm(`Delete product record #${prod.id}?`)) return;
+    try {
+      await deleteProduct(prod.id).unwrap();
+      toast.success('Product deleted!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete product');
+    }
+  };
+
+  // ─── Work Orders Handlers ────────────────────────────────────
+  const resetWoForm = () => {
+    setWoTitle('');
+    setWoDescription('');
+    setWoWorkType('MAINTENANCE');
+    setWoPriority('MEDIUM');
+    setWoFactoryId('');
+    setWoMachineId('');
+    setWoStartDate('');
+    setWoEndDate('');
+    setWoCost('');
+    setWoAssignedTo('');
+    setWoNotes('');
+    setEditingWo(null);
+  };
+
+  const handleCreateWorkOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createWorkOrder({
+        work_type: woWorkType,
+        title: woTitle,
+        description: woDescription || undefined,
+        priority: woPriority,
+        factory_id: parseInt(woFactoryId),
+        machine_id: woMachineId ? parseInt(woMachineId) : undefined,
+        start_date: woStartDate || undefined,
+        end_date: woEndDate || undefined,
+        cost: woCost ? parseFloat(woCost) : undefined,
+        assigned_to: woAssignedTo || undefined,
+        notes: woNotes || undefined,
+      }).unwrap();
+      toast.success('Work order created!');
+      resetWoForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create work order');
+    }
+  };
+
+  const handleEditWorkOrder = (wo: WorkOrder) => {
+    setEditingWo(wo);
+    setWoTitle(wo.title);
+    setWoDescription(wo.description || '');
+    setWoWorkType(wo.work_type);
+    setWoPriority(wo.priority);
+    setWoMachineId(wo.machine_id?.toString() || '');
+    setWoStartDate(wo.start_date || '');
+    setWoEndDate(wo.end_date || '');
+    setWoCost(wo.cost?.toString() || '');
+    setWoAssignedTo(wo.assigned_to || '');
+    setWoNotes(wo.notes || '');
+  };
+
+  const handleUpdateWorkOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWo) return;
+    try {
+      await updateWorkOrder({
+        id: editingWo.id,
+        data: {
+          work_type: woWorkType,
+          title: woTitle,
+          description: woDescription || undefined,
+          priority: woPriority,
+          machine_id: woMachineId ? parseInt(woMachineId) : undefined,
+          start_date: woStartDate || undefined,
+          end_date: woEndDate || undefined,
+          cost: woCost ? parseFloat(woCost) : undefined,
+          assigned_to: woAssignedTo || undefined,
+          notes: woNotes || undefined,
+        },
+      }).unwrap();
+      toast.success('Work order updated!');
+      resetWoForm();
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update work order');
+    }
+  };
+
+  const handleDeleteWorkOrder = async (wo: WorkOrder) => {
+    if (!confirm(`Delete work order ${wo.work_order_number}?`)) return;
+    try {
+      await deleteWorkOrder(wo.id).unwrap();
+      toast.success('Work order deleted!');
+      if (selectedWoId === wo.id) setSelectedWoId(null);
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete work order');
+    }
+  };
+
+  const handleApproveOrder = async (wo: WorkOrder) => {
+    try {
+      await updateWorkOrder({ id: wo.id, data: { order_approved: true } }).unwrap();
+      toast.success('Order approved!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to approve order');
+    }
+  };
+
+  const handleApproveCost = async (wo: WorkOrder) => {
+    try {
+      await updateWorkOrder({ id: wo.id, data: { cost_approved: true } }).unwrap();
+      toast.success('Cost approved!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to approve cost');
+    }
+  };
+
+  const handleUpdateWoStatus = async (wo: WorkOrder, newStatus: WorkOrderStatus) => {
+    try {
+      await updateWorkOrder({ id: wo.id, data: { status: newStatus } }).unwrap();
+      toast.success(`Status updated to ${newStatus}`);
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update status');
+    }
+  };
+
+  const handleAddWoItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWoId) return;
+    try {
+      await addWoItem({
+        woId: selectedWoId,
+        data: { item_id: parseInt(woItemId), quantity: parseInt(woItemQty) },
+      }).unwrap();
+      toast.success('Item added to work order!');
+      setWoItemId('');
+      setWoItemQty('1');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to add item');
+    }
+  };
+
+  const handleRemoveWoItem = async (itemId: number) => {
+    try {
+      await removeWoItem(itemId).unwrap();
+      toast.success('Item removed!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to remove item');
+    }
+  };
+
+  // ─── Machine Items Handlers ──────────────────────────────────
+  const handleCreateMachineItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createMachineItem({
+        machine_id: machineItemMachineId ? parseInt(machineItemMachineId) : selectedMachineForItems!.id,
+        item_id: parseInt(machineItemItemId),
+        qty: parseInt(machineItemQty),
+        req_qty: machineItemReqQty ? parseInt(machineItemReqQty) : undefined,
+        defective_qty: machineItemDefectiveQty ? parseInt(machineItemDefectiveQty) : undefined,
+      }).unwrap();
+      toast.success('Machine item created!');
+      setMachineItemMachineId('');
+      setMachineItemItemId('');
+      setMachineItemQty('0');
+      setMachineItemReqQty('');
+      setMachineItemDefectiveQty('');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to create machine item');
+    }
+  };
+
+  const handleEditMachineItem = (mi: MachineItem) => {
+    setEditingMachineItem(mi);
+    setMachineItemQty(mi.qty.toString());
+    setMachineItemReqQty(mi.req_qty?.toString() || '');
+    setMachineItemDefectiveQty(mi.defective_qty?.toString() || '');
+  };
+
+  const handleUpdateMachineItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMachineItem) return;
+    try {
+      await updateMachineItem({
+        id: editingMachineItem.id,
+        data: {
+          qty: parseInt(machineItemQty),
+          req_qty: machineItemReqQty ? parseInt(machineItemReqQty) : undefined,
+          defective_qty: machineItemDefectiveQty ? parseInt(machineItemDefectiveQty) : undefined,
+        },
+      }).unwrap();
+      toast.success('Machine item updated!');
+      setEditingMachineItem(null);
+      setMachineItemQty('0');
+      setMachineItemReqQty('');
+      setMachineItemDefectiveQty('');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to update machine item');
+    }
+  };
+
+  const handleCancelMachineItemEdit = () => {
+    setEditingMachineItem(null);
+    setMachineItemQty('0');
+    setMachineItemReqQty('');
+    setMachineItemDefectiveQty('');
+  };
+
+  const handleDeleteMachineItem = async (mi: MachineItem) => {
+    if (!confirm(`Are you sure you want to remove item #${mi.item_id} from machine #${mi.machine_id}?`)) return;
+    try {
+      await deleteMachineItem(mi.id).unwrap();
+      toast.success('Machine item removed!');
+    } catch (error: any) {
+      toast.error(error.data?.detail || 'Failed to delete machine item');
+    }
+  };
+
+  const getSectionName = (sectionId: number): string => {
+    const section = sections?.find(s => s.id === sectionId);
+    return section ? section.name : `Section #${sectionId}`;
+  };
+
   // ─── Production Line Handlers ──────────────────────────────────
   const handleCreateProdLine = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2063,45 +2922,134 @@ const ApiTestPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Login Form */}
+        {/* Login / Register Forms */}
         {!isAuthenticated && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Login Test</h2>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="user@example.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter password"
-                  required
-                />
-              </div>
+            {/* Toggle between Login and Register */}
+            <div className="flex space-x-4 mb-4">
               <button
-                type="submit"
-                disabled={isLoggingIn}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={() => setShowRegister(false)}
+                className={`px-4 py-2 rounded-md font-medium ${!showRegister ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
               >
-                {isLoggingIn ? 'Logging in...' : 'Test Login'}
+                Login
               </button>
-            </form>
+              <button
+                onClick={() => setShowRegister(true)}
+                className={`px-4 py-2 rounded-md font-medium ${showRegister ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                Register
+              </button>
+            </div>
+
+            {/* Login Form */}
+            {!showRegister && (
+              <>
+                <h2 className="text-xl font-semibold mb-4">Login Test</h2>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="user@example.com"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter password"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoggingIn}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isLoggingIn ? 'Logging in...' : 'Test Login'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* Register Form */}
+            {showRegister && (
+              <>
+                <h2 className="text-xl font-semibold mb-4">Register Test</h2>
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="john@example.com"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password * (min 8 chars)</label>
+                    <input
+                      type="password"
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Enter password"
+                      minLength={8}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Workspace Name *</label>
+                    <input
+                      type="text"
+                      value={registerWorkspaceName}
+                      onChange={(e) => setRegisterWorkspaceName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="My Company"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">A new workspace will be created and you will be the owner.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Position (optional)</label>
+                    <input
+                      type="text"
+                      value={registerPosition}
+                      onChange={(e) => setRegisterPosition(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Manager, Engineer, etc."
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isRegistering}
+                    className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isRegistering ? 'Registering...' : 'Test Register'}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         )}
 
@@ -6101,6 +7049,1585 @@ const ApiTestPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* ==================== MACHINES MODULE ==================== */}
+      {workspace && (
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Machines Management (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* Create/Edit Machine Form */}
+          <form onSubmit={editingMachine ? handleUpdateMachine : handleCreateMachine} className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3">{editingMachine ? 'Edit Machine' : 'Create Machine'}</h3>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Machine Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={machineName}
+                  onChange={(e) => setMachineName(e.target.value)}
+                  placeholder="e.g., Loom A1, Spinner B3"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Factory Section <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={machineSectionId}
+                  onChange={(e) => setMachineSectionId(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a section...</option>
+                  {sections && sections.map(section => (
+                    <option key={section.id} value={section.id}>
+                      {section.name} (Factory: {getFactoryName(section.factory_id)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Model Number</label>
+                <input
+                  type="text"
+                  value={machineModelNumber}
+                  onChange={(e) => setMachineModelNumber(e.target.value)}
+                  placeholder="e.g., XJ-2000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                <input
+                  type="text"
+                  value={machineManufacturer}
+                  onChange={(e) => setMachineManufacturer(e.target.value)}
+                  placeholder="e.g., Toyota, Rieter"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Next Maintenance Date</label>
+                <input
+                  type="date"
+                  value={machineMaintenanceDate}
+                  onChange={(e) => setMachineMaintenanceDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Maintenance Note</label>
+                <input
+                  type="text"
+                  value={machineMaintenanceNote}
+                  onChange={(e) => setMachineMaintenanceNote(e.target.value)}
+                  placeholder="e.g., Replace bearings"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <textarea
+                value={machineNote}
+                onChange={(e) => setMachineNote(e.target.value)}
+                placeholder="General notes about this machine..."
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={isCreatingMachine || isUpdatingMachine}
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {editingMachine ? 'Update Machine' : 'Create Machine'}
+              </button>
+              {editingMachine && (
+                <button
+                  type="button"
+                  onClick={handleCancelMachineEdit}
+                  className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Search and Filters */}
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div>
+              <input
+                type="text"
+                value={machineSearchQuery}
+                onChange={(e) => setMachineSearchQuery(e.target.value)}
+                placeholder="Search by name, model, manufacturer..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <select
+                value={machineFilterSectionId}
+                onChange={(e) => setMachineFilterSectionId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Sections</option>
+                {sections && sections.map(section => (
+                  <option key={section.id} value={section.id}>
+                    {section.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={machineFilterRunning}
+                onChange={(e) => setMachineFilterRunning(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Status</option>
+                <option value="true">Running</option>
+                <option value="false">Not Running</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Machines List */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Machines List</h3>
+            {isLoadingMachines ? (
+              <p className="text-gray-600">Loading machines...</p>
+            ) : machines && machines.length > 0 ? (
+              <div className="space-y-3">
+                {machines.map((machine) => (
+                  <div
+                    key={machine.id}
+                    className={`p-4 border rounded-lg hover:shadow-md transition-shadow ${
+                      machine.is_deleted ? 'border-red-200 bg-red-50 opacity-60' :
+                      machine.is_running ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-900">{machine.name}</h4>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            machine.is_running
+                              ? 'bg-green-200 text-green-800'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {machine.is_running ? 'RUNNING' : 'STOPPED'}
+                          </span>
+                          {machine.is_deleted && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-200 text-red-800">DELETED</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Section: {getSectionName(machine.factory_section_id)}
+                        </p>
+                        {(machine.model_number || machine.manufacturer) && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            {machine.manufacturer && `Manufacturer: ${machine.manufacturer}`}
+                            {machine.manufacturer && machine.model_number && ' | '}
+                            {machine.model_number && `Model: ${machine.model_number}`}
+                          </p>
+                        )}
+                        {machine.next_maintenance_schedule && (
+                          <p className="text-sm text-orange-600 mt-1">
+                            Next maintenance: {machine.next_maintenance_schedule}
+                            {machine.next_maintenance_note && ` - ${machine.next_maintenance_note}`}
+                          </p>
+                        )}
+                        {machine.note && (
+                          <p className="text-sm text-gray-400 mt-1 italic">Note: {machine.note}</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">ID: {machine.id}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedMachineForEvents(machine);
+                            setTimeout(() => refetchMachineEvents(), 100);
+                          }}
+                          className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                        >
+                          Events
+                        </button>
+                        {!machine.is_deleted && (
+                          <>
+                            <button
+                              onClick={() => handleEditMachine(machine)}
+                              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMachine(machine)}
+                              disabled={isDeletingMachine}
+                              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No machines found. Create your first machine above!</p>
+            )}
+          </div>
+
+          {/* Machine Events Panel */}
+          {selectedMachineForEvents && (
+            <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-purple-900">
+                  Events for: {selectedMachineForEvents.name}
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    selectedMachineForEvents.is_running
+                      ? 'bg-green-200 text-green-800'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {selectedMachineForEvents.is_running ? 'RUNNING' : 'STOPPED'}
+                  </span>
+                </h3>
+                <button
+                  onClick={() => setSelectedMachineForEvents(null)}
+                  className="text-gray-500 hover:text-gray-700 text-lg"
+                >
+                  &times;
+                </button>
+              </div>
+
+              {/* Create Event Form */}
+              <form onSubmit={handleCreateMachineEvent} className="mb-4 p-3 bg-white rounded-lg">
+                <h4 className="text-sm font-semibold mb-2">Create Status Change Event</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Event Type</label>
+                    <select
+                      value={eventType}
+                      onChange={(e) => setEventType(e.target.value as MachineEventType)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    >
+                      <option value="IDLE">IDLE</option>
+                      <option value="RUNNING">RUNNING</option>
+                      <option value="OFF">OFF</option>
+                      <option value="MAINTENANCE">MAINTENANCE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Note (optional)</label>
+                    <input
+                      type="text"
+                      value={eventNote}
+                      onChange={(e) => setEventNote(e.target.value)}
+                      placeholder="Reason for status change..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      disabled={isCreatingMachineEvent}
+                      className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 text-sm"
+                    >
+                      Create Event
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Events List */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Event History (newest first)</h4>
+                {isLoadingMachineEvents ? (
+                  <p className="text-gray-600 text-sm">Loading events...</p>
+                ) : machineEvents && machineEvents.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {machineEvents.map((event) => (
+                      <div key={event.id} className="p-3 bg-white rounded border border-gray-200 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            event.event_type === 'RUNNING' ? 'bg-green-200 text-green-800' :
+                            event.event_type === 'IDLE' ? 'bg-yellow-200 text-yellow-800' :
+                            event.event_type === 'MAINTENANCE' ? 'bg-orange-200 text-orange-800' :
+                            'bg-gray-200 text-gray-800'
+                          }`}>
+                            {event.event_type}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(event.started_at).toLocaleString()}
+                          </span>
+                        </div>
+                        {event.note && (
+                          <p className="text-gray-600 mt-1">{event.note}</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">
+                          {event.initiated_by ? `By user #${event.initiated_by}` : 'System initiated'}
+                          {' | '}ID: {event.id}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No events recorded for this machine yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════ MACHINE ITEMS SECTION ═══════════════════════ */}
+      {workspace && (
+        <div className="mt-6 p-4 bg-amber-50 rounded-lg">
+          <h2 className="text-xl font-bold mb-4">
+            Machine Items (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* Machine Selector */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Select Machine to view/manage items:</label>
+            <select
+              value={selectedMachineForItems?.id || ''}
+              onChange={(e) => {
+                const id = parseInt(e.target.value);
+                const machine = machines?.find(m => m.id === id) || null;
+                setSelectedMachineForItems(machine);
+                setEditingMachineItem(null);
+              }}
+              className="border rounded px-3 py-2 w-full max-w-md"
+            >
+              <option value="">-- Select a machine --</option>
+              {machines?.map((m) => (
+                <option key={m.id} value={m.id}>{m.name} (ID: {m.id})</option>
+              ))}
+            </select>
+          </div>
+
+          {selectedMachineForItems && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Create / Edit Form */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  {editingMachineItem ? `Edit Machine Item #${editingMachineItem.id}` : 'Assign Item to Machine'}
+                </h3>
+                <form onSubmit={editingMachineItem ? handleUpdateMachineItem : handleCreateMachineItem} className="mb-4 p-3 bg-white rounded-lg">
+                  {!editingMachineItem && (
+                    <>
+                      <div className="mb-2">
+                        <label className="block text-sm font-medium">Machine ID</label>
+                        <input
+                          type="number"
+                          value={machineItemMachineId || selectedMachineForItems.id}
+                          onChange={(e) => setMachineItemMachineId(e.target.value)}
+                          className="border rounded px-3 py-1 w-full"
+                          required
+                        />
+                      </div>
+                      <div className="mb-2">
+                        <label className="block text-sm font-medium">Item</label>
+                        <select
+                          value={machineItemItemId}
+                          onChange={(e) => setMachineItemItemId(e.target.value)}
+                          className="border rounded px-3 py-1 w-full"
+                          required
+                        >
+                          <option value="">-- Select Item --</option>
+                          {items?.map((item) => (
+                            <option key={item.id} value={item.id}>{item.name} (ID: {item.id})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium">Quantity</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={machineItemQty}
+                      onChange={(e) => setMachineItemQty(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      required
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium">Required Qty (optional)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={machineItemReqQty}
+                      onChange={(e) => setMachineItemReqQty(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      placeholder="Leave empty if not tracked"
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium">Defective Qty (optional)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={machineItemDefectiveQty}
+                      onChange={(e) => setMachineItemDefectiveQty(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      placeholder="Leave empty if not tracked"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="bg-amber-600 text-white px-4 py-1 rounded hover:bg-amber-700"
+                      disabled={isCreatingMachineItem || isUpdatingMachineItem}
+                    >
+                      {editingMachineItem
+                        ? (isUpdatingMachineItem ? 'Updating...' : 'Update')
+                        : (isCreatingMachineItem ? 'Assigning...' : 'Assign Item')}
+                    </button>
+                    {editingMachineItem && (
+                      <button
+                        type="button"
+                        onClick={handleCancelMachineItemEdit}
+                        className="bg-gray-400 text-white px-4 py-1 rounded hover:bg-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Items List */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Items on "{selectedMachineForItems.name}"
+                </h3>
+                {isLoadingMachineItems ? (
+                  <p className="text-gray-600">Loading machine items...</p>
+                ) : machineItems && machineItems.length > 0 ? (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {machineItems.map((mi) => (
+                      <div key={mi.id} className="p-3 bg-white rounded border border-gray-200">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{getItemName(mi.item_id)}</p>
+                            <p className="text-sm text-gray-600">
+                              Qty: <span className="font-bold">{mi.qty}</span>
+                              {mi.req_qty !== null && (
+                                <span className={mi.qty < mi.req_qty ? ' text-red-600' : ' text-green-600'}>
+                                  {' '}/ Required: {mi.req_qty}
+                                </span>
+                              )}
+                              {mi.defective_qty !== null && mi.defective_qty > 0 && (
+                                <span className="text-orange-600"> | Defective: {mi.defective_qty}</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400">ID: {mi.id} | Item ID: {mi.item_id} | Machine ID: {mi.machine_id}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleEditMachineItem(mi)}
+                              className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMachineItem(mi)}
+                              className="text-red-600 hover:text-red-800 text-sm px-2 py-1"
+                              disabled={isDeletingMachineItem}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No items assigned to this machine yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════ MACHINE MAINTENANCE LOGS SECTION ═══════════════════════ */}
+      {workspace && (
+        <div className="mt-6 p-4 bg-rose-50 rounded-lg">
+          <h2 className="text-xl font-bold mb-4">
+            Machine Maintenance Logs (Active Workspace: {workspace.name})
+          </h2>
+
+          {/* Machine Selector */}
+          <div className="mb-4 flex gap-4 items-end">
+            <div className="flex-1 max-w-md">
+              <label className="block text-sm font-medium mb-1">Select Machine:</label>
+              <select
+                value={selectedMachineForMaintenance?.id || ''}
+                onChange={(e) => {
+                  const id = parseInt(e.target.value);
+                  const machine = machines?.find(m => m.id === id) || null;
+                  setSelectedMachineForMaintenance(machine);
+                  resetMaintenanceForm();
+                }}
+                className="border rounded px-3 py-2 w-full"
+              >
+                <option value="">-- Select a machine --</option>
+                {machines?.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} (ID: {m.id})</option>
+                ))}
+              </select>
+            </div>
+            {selectedMachineForMaintenance && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Filter by Type:</label>
+                <select
+                  value={filterMaintenanceType}
+                  onChange={(e) => setFilterMaintenanceType(e.target.value as MaintenanceType | '')}
+                  className="border rounded px-3 py-2"
+                >
+                  <option value="">All Types</option>
+                  <option value="PREVENTIVE">Preventive</option>
+                  <option value="REPAIR">Repair</option>
+                  <option value="EMERGENCY">Emergency</option>
+                  <option value="INSPECTION">Inspection</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {selectedMachineForMaintenance && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Create / Edit Form */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  {editingMaintenanceLog ? `Edit Log #${editingMaintenanceLog.id}` : 'New Maintenance Log'}
+                </h3>
+                <form onSubmit={editingMaintenanceLog ? handleUpdateMaintenanceLog : handleCreateMaintenanceLog} className="mb-4 p-3 bg-white rounded-lg space-y-2">
+                  <div>
+                    <label className="block text-sm font-medium">Type *</label>
+                    <select
+                      value={maintenanceType}
+                      onChange={(e) => setMaintenanceType(e.target.value as MaintenanceType)}
+                      className="border rounded px-3 py-1 w-full"
+                      required
+                    >
+                      <option value="PREVENTIVE">Preventive</option>
+                      <option value="REPAIR">Repair</option>
+                      <option value="EMERGENCY">Emergency</option>
+                      <option value="INSPECTION">Inspection</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Date *</label>
+                    <input
+                      type="date"
+                      value={maintenanceDate}
+                      onChange={(e) => setMaintenanceDate(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Summary *</label>
+                    <textarea
+                      value={maintenanceSummary}
+                      onChange={(e) => setMaintenanceSummary(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      rows={3}
+                      placeholder="Describe the maintenance work done..."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Cost (optional)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={maintenanceCost}
+                      onChange={(e) => setMaintenanceCost(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Performed By (optional)</label>
+                    <input
+                      type="text"
+                      value={maintenancePerformedBy}
+                      onChange={(e) => setMaintenancePerformedBy(e.target.value)}
+                      className="border rounded px-3 py-1 w-full"
+                      placeholder="Name of person who did the maintenance"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="bg-rose-600 text-white px-4 py-1 rounded hover:bg-rose-700"
+                      disabled={isCreatingMaintenanceLog || isUpdatingMaintenanceLog}
+                    >
+                      {editingMaintenanceLog
+                        ? (isUpdatingMaintenanceLog ? 'Updating...' : 'Update Log')
+                        : (isCreatingMaintenanceLog ? 'Creating...' : 'Create Log')}
+                    </button>
+                    {editingMaintenanceLog && (
+                      <button
+                        type="button"
+                        onClick={resetMaintenanceForm}
+                        className="bg-gray-400 text-white px-4 py-1 rounded hover:bg-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Logs List */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Maintenance History for "{selectedMachineForMaintenance.name}"
+                </h3>
+                {isLoadingMaintenanceLogs ? (
+                  <p className="text-gray-600">Loading logs...</p>
+                ) : maintenanceLogs && maintenanceLogs.length > 0 ? (
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                    {maintenanceLogs.map((log) => (
+                      <div key={log.id} className="p-3 bg-white rounded border border-gray-200">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                log.maintenance_type === 'PREVENTIVE' ? 'bg-blue-200 text-blue-800' :
+                                log.maintenance_type === 'REPAIR' ? 'bg-red-200 text-red-800' :
+                                log.maintenance_type === 'EMERGENCY' ? 'bg-orange-200 text-orange-800' :
+                                'bg-purple-200 text-purple-800'
+                              }`}>
+                                {log.maintenance_type}
+                              </span>
+                              <span className="text-sm text-gray-600">{log.maintenance_date}</span>
+                            </div>
+                            <p className="text-sm">{log.summary}</p>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {log.performed_by && <span>By: {log.performed_by} | </span>}
+                              {log.cost && <span>Cost: ${Number(log.cost).toFixed(2)} | </span>}
+                              ID: {log.id}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <button
+                              onClick={() => handleEditMaintenanceLog(log)}
+                              className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMaintenanceLog(log)}
+                              className="text-red-600 hover:text-red-800 text-sm px-2 py-1"
+                              disabled={isDeletingMaintenanceLog}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No maintenance logs for this machine yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          UNIFIED INVENTORY SECTION (teal theme)
+          ═══════════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+          <h2 className="text-xl font-bold text-teal-800 mb-3">Unified Inventory (STORAGE / DAMAGED / WASTE / SCRAP)</h2>
+
+          {/* Filters */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <select
+              value={filterInvType}
+              onChange={(e) => setFilterInvType(e.target.value as InventoryType | '')}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value="">All Types</option>
+              <option value="STORAGE">STORAGE</option>
+              <option value="DAMAGED">DAMAGED</option>
+              <option value="WASTE">WASTE</option>
+              <option value="SCRAP">SCRAP</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Filter by Factory ID"
+              value={filterInvFactoryId}
+              onChange={(e) => setFilterInvFactoryId(e.target.value)}
+              className="border rounded px-2 py-1 text-sm w-40"
+            />
+            <button
+              onClick={() => setShowInvLedger(!showInvLedger)}
+              className={`text-sm px-3 py-1 rounded ${showInvLedger ? 'bg-teal-600 text-white' : 'bg-teal-100 text-teal-700'}`}
+            >
+              {showInvLedger ? 'Hide Ledger' : 'Show Ledger'}
+            </button>
+          </div>
+
+          {/* Create / Edit Form */}
+          <form onSubmit={editingInv ? handleUpdateInventory : handleCreateInventory} className="mb-4 p-3 bg-white rounded-lg space-y-2">
+            <h3 className="font-semibold text-teal-700">{editingInv ? `Edit Inventory #${editingInv.id}` : 'Create Inventory Record'}</h3>
+            {!editingInv && (
+              <div className="grid grid-cols-3 gap-2">
+                <input type="number" placeholder="Item ID" value={invItemId} onChange={(e) => setInvItemId(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+                <input type="number" placeholder="Factory ID" value={invFactoryId} onChange={(e) => setInvFactoryId(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+                <select value={invType} onChange={(e) => setInvType(e.target.value as InventoryType)} className="border rounded px-2 py-1 text-sm">
+                  <option value="STORAGE">STORAGE</option>
+                  <option value="DAMAGED">DAMAGED</option>
+                  <option value="WASTE">WASTE</option>
+                  <option value="SCRAP">SCRAP</option>
+                </select>
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              <input type="number" placeholder="Qty" value={invQty} onChange={(e) => setInvQty(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+              <input type="text" placeholder="Avg Price" value={invAvgPrice} onChange={(e) => setInvAvgPrice(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="text" placeholder="Note" value={invNote} onChange={(e) => setInvNote(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" disabled={isCreatingInventory || isUpdatingInventory} className="bg-teal-600 text-white px-4 py-1 rounded text-sm hover:bg-teal-700">
+                {editingInv ? 'Update' : 'Create'}
+              </button>
+              {editingInv && (
+                <button type="button" onClick={resetInvForm} className="bg-gray-400 text-white px-4 py-1 rounded text-sm">Cancel</button>
+              )}
+            </div>
+          </form>
+
+          {/* Inventory List */}
+          {isLoadingInventory ? (
+            <p className="text-teal-600">Loading inventory...</p>
+          ) : inventoryList && inventoryList.length > 0 ? (
+            <div className="space-y-2 mb-4">
+              <h3 className="font-semibold text-teal-700">Records ({inventoryList.length})</h3>
+              {inventoryList.map((inv) => (
+                <div key={inv.id} className="bg-white border rounded p-2 flex justify-between items-center">
+                  <div className="text-sm">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mr-2 ${
+                      inv.inventory_type === 'STORAGE' ? 'bg-blue-100 text-blue-700' :
+                      inv.inventory_type === 'DAMAGED' ? 'bg-red-100 text-red-700' :
+                      inv.inventory_type === 'WASTE' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>{inv.inventory_type}</span>
+                    Item:{inv.item_id} | Factory:{inv.factory_id} | Qty:{inv.qty}
+                    {inv.avg_price && <span> | Avg:${Number(inv.avg_price).toFixed(2)}</span>}
+                    <span className="text-gray-400 ml-2">#{inv.id}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEditInventory(inv)} className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1">Edit</button>
+                    <button onClick={() => handleDeleteInventory(inv)} disabled={isDeletingInventory} className="text-red-600 hover:text-red-800 text-sm px-2 py-1">Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 mb-4">No inventory records found.</p>
+          )}
+
+          {/* Ledger */}
+          {showInvLedger && (
+            <div className="border-t pt-3">
+              <h3 className="font-semibold text-teal-700 mb-2">Inventory Ledger</h3>
+              {isLoadingInvLedger ? (
+                <p className="text-teal-600">Loading ledger...</p>
+              ) : inventoryLedger && inventoryLedger.length > 0 ? (
+                <div className="space-y-1">
+                  {inventoryLedger.map((entry) => (
+                    <div key={entry.id} className="bg-white border rounded p-2 text-xs">
+                      <span className="font-medium">{entry.transaction_type}</span> |
+                      Type:{entry.inventory_type} | Item:{entry.item_id} | Factory:{entry.factory_id} |
+                      Qty:{entry.qty_before} → {entry.qty_after} ({entry.quantity})
+                      {entry.notes && <span className="text-gray-500 ml-1">- {entry.notes}</span>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No ledger entries.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          PRODUCTS SECTION (indigo theme)
+          ═══════════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+          <h2 className="text-xl font-bold text-indigo-800 mb-3">Products (Finished Goods)</h2>
+
+          {/* Filters */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <input
+              type="text"
+              placeholder="Filter by Factory ID"
+              value={filterProdFactoryId}
+              onChange={(e) => setFilterProdFactoryId(e.target.value)}
+              className="border rounded px-2 py-1 text-sm w-40"
+            />
+            <select
+              value={filterProdAvailable}
+              onChange={(e) => setFilterProdAvailable(e.target.value)}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value="">All</option>
+              <option value="true">Available for Sale</option>
+              <option value="false">Not Available</option>
+            </select>
+            <button
+              onClick={() => setShowProdLedger(!showProdLedger)}
+              className={`text-sm px-3 py-1 rounded ${showProdLedger ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'}`}
+            >
+              {showProdLedger ? 'Hide Ledger' : 'Show Ledger'}
+            </button>
+          </div>
+
+          {/* Create / Edit Form */}
+          <form onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct} className="mb-4 p-3 bg-white rounded-lg space-y-2">
+            <h3 className="font-semibold text-indigo-700">{editingProduct ? `Edit Product #${editingProduct.id}` : 'Create Product'}</h3>
+            {!editingProduct && (
+              <div className="grid grid-cols-2 gap-2">
+                <input type="number" placeholder="Item ID" value={prodItemId} onChange={(e) => setProdItemId(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+                <input type="number" placeholder="Factory ID" value={prodFactoryId} onChange={(e) => setProdFactoryId(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+              </div>
+            )}
+            <div className="grid grid-cols-4 gap-2">
+              <input type="number" placeholder="Qty" value={prodQty} onChange={(e) => setProdQty(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+              <input type="text" placeholder="Avg Cost" value={prodAvgCost} onChange={(e) => setProdAvgCost(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="text" placeholder="Selling Price" value={prodSellingPrice} onChange={(e) => setProdSellingPrice(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="number" placeholder="Min Order Qty" value={prodMinOrderQty} onChange={(e) => setProdMinOrderQty(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="text" placeholder="Note" value={prodNote} onChange={(e) => setProdNote(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={prodAvailableForSale} onChange={(e) => setProdAvailableForSale(e.target.checked)} />
+                Available for Sale (QC Passed)
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" disabled={isCreatingProduct || isUpdatingProduct} className="bg-indigo-600 text-white px-4 py-1 rounded text-sm hover:bg-indigo-700">
+                {editingProduct ? 'Update' : 'Create'}
+              </button>
+              {editingProduct && (
+                <button type="button" onClick={resetProdForm} className="bg-gray-400 text-white px-4 py-1 rounded text-sm">Cancel</button>
+              )}
+            </div>
+          </form>
+
+          {/* Products List */}
+          {isLoadingProducts ? (
+            <p className="text-indigo-600">Loading products...</p>
+          ) : productsList && productsList.length > 0 ? (
+            <div className="space-y-2 mb-4">
+              <h3 className="font-semibold text-indigo-700">Products ({productsList.length})</h3>
+              {productsList.map((prod) => (
+                <div key={prod.id} className="bg-white border rounded p-2 flex justify-between items-center">
+                  <div className="text-sm">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mr-2 ${
+                      prod.is_available_for_sale ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                    }`}>{prod.is_available_for_sale ? 'FOR SALE' : 'QC PENDING'}</span>
+                    Item:{prod.item_id} | Factory:{prod.factory_id} | Qty:{prod.qty}
+                    {prod.avg_cost && <span> | Cost:${Number(prod.avg_cost).toFixed(2)}</span>}
+                    {prod.selling_price && <span> | Price:${Number(prod.selling_price).toFixed(2)}</span>}
+                    {prod.min_order_qty && <span> | MOQ:{prod.min_order_qty}</span>}
+                    <span className="text-gray-400 ml-2">#{prod.id}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEditProduct(prod)} className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1">Edit</button>
+                    <button onClick={() => handleDeleteProduct(prod)} disabled={isDeletingProduct} className="text-red-600 hover:text-red-800 text-sm px-2 py-1">Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 mb-4">No product records found.</p>
+          )}
+
+          {/* Ledger */}
+          {showProdLedger && (
+            <div className="border-t pt-3">
+              <h3 className="font-semibold text-indigo-700 mb-2">Product Ledger</h3>
+              {isLoadingProdLedger ? (
+                <p className="text-indigo-600">Loading ledger...</p>
+              ) : productLedger && productLedger.length > 0 ? (
+                <div className="space-y-1">
+                  {productLedger.map((entry) => (
+                    <div key={entry.id} className="bg-white border rounded p-2 text-xs">
+                      <span className="font-medium">{entry.transaction_type}</span> |
+                      Item:{entry.item_id} | Factory:{entry.factory_id} |
+                      Qty:{entry.qty_before} → {entry.qty_after} ({entry.quantity})
+                      {entry.notes && <span className="text-gray-500 ml-1">- {entry.notes}</span>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No ledger entries.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          WORK ORDERS SECTION (orange theme)
+          ═══════════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <h2 className="text-xl font-bold text-orange-800 mb-3">Work Orders</h2>
+
+          {/* Filters */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <select value={filterWoType} onChange={(e) => setFilterWoType(e.target.value as WorkType | '')} className="border rounded px-2 py-1 text-sm">
+              <option value="">All Types</option>
+              {['MAINTENANCE', 'INSPECTION', 'INSTALLATION', 'REPAIR', 'CALIBRATION', 'OVERHAUL', 'FABRICATION', 'OTHER'].map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <select value={filterWoStatus} onChange={(e) => setFilterWoStatus(e.target.value as WorkOrderStatus | '')} className="border rounded px-2 py-1 text-sm">
+              <option value="">All Statuses</option>
+              {['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Create / Edit Form */}
+          <form onSubmit={editingWo ? handleUpdateWorkOrder : handleCreateWorkOrder} className="mb-4 p-3 bg-white rounded-lg space-y-2">
+            <h3 className="font-semibold text-orange-700">{editingWo ? `Edit ${editingWo.work_order_number}` : 'Create Work Order'}</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <input type="text" placeholder="Title" value={woTitle} onChange={(e) => setWoTitle(e.target.value)} className="border rounded px-2 py-1 text-sm" required />
+              <select value={woWorkType} onChange={(e) => setWoWorkType(e.target.value as WorkType)} className="border rounded px-2 py-1 text-sm">
+                {['MAINTENANCE', 'INSPECTION', 'INSTALLATION', 'REPAIR', 'CALIBRATION', 'OVERHAUL', 'FABRICATION', 'OTHER'].map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <select value={woPriority} onChange={(e) => setWoPriority(e.target.value as WorkOrderPriority)} className="border rounded px-2 py-1 text-sm">
+                {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {!editingWo && <input type="number" placeholder="Factory ID" value={woFactoryId} onChange={(e) => setWoFactoryId(e.target.value)} className="border rounded px-2 py-1 text-sm" required />}
+              <input type="number" placeholder="Machine ID (opt)" value={woMachineId} onChange={(e) => setWoMachineId(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="date" placeholder="Start" value={woStartDate} onChange={(e) => setWoStartDate(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="date" placeholder="End" value={woEndDate} onChange={(e) => setWoEndDate(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <input type="text" placeholder="Cost" value={woCost} onChange={(e) => setWoCost(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="text" placeholder="Assigned To" value={woAssignedTo} onChange={(e) => setWoAssignedTo(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+              <input type="text" placeholder="Notes" value={woNotes} onChange={(e) => setWoNotes(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <input type="text" placeholder="Description" value={woDescription} onChange={(e) => setWoDescription(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" />
+            <div className="flex gap-2">
+              <button type="submit" disabled={isCreatingWo || isUpdatingWo} className="bg-orange-600 text-white px-4 py-1 rounded text-sm hover:bg-orange-700">
+                {editingWo ? 'Update' : 'Create'}
+              </button>
+              {editingWo && <button type="button" onClick={resetWoForm} className="bg-gray-400 text-white px-4 py-1 rounded text-sm">Cancel</button>}
+            </div>
+          </form>
+
+          {/* Work Orders List */}
+          {isLoadingWorkOrders ? (
+            <p className="text-orange-600">Loading work orders...</p>
+          ) : workOrders && workOrders.length > 0 ? (
+            <div className="space-y-2 mb-4">
+              <h3 className="font-semibold text-orange-700">Work Orders ({workOrders.length})</h3>
+              {workOrders.map((wo) => (
+                <div key={wo.id} className={`bg-white border rounded p-3 ${selectedWoId === wo.id ? 'ring-2 ring-orange-400' : ''}`}>
+                  <div className="flex justify-between items-start">
+                    <div className="text-sm flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-xs text-gray-500">{wo.work_order_number}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          wo.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                          wo.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                          wo.status === 'APPROVED' ? 'bg-teal-100 text-teal-700' :
+                          wo.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                          wo.status === 'PENDING_APPROVAL' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>{wo.status}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${
+                          wo.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
+                          wo.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                          wo.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>{wo.priority}</span>
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">{wo.work_type}</span>
+                      </div>
+                      <div className="font-medium">{wo.title}</div>
+                      <div className="text-gray-500 text-xs">
+                        Factory:{wo.factory_id}
+                        {wo.machine_id && <span> | Machine:{wo.machine_id}</span>}
+                        {wo.cost && <span> | Cost:${Number(wo.cost).toFixed(2)}</span>}
+                        {wo.assigned_to && <span> | Assigned:{wo.assigned_to}</span>}
+                        {wo.start_date && <span> | {wo.start_date}</span>}
+                        {wo.end_date && <span> - {wo.end_date}</span>}
+                      </div>
+                      <div className="text-xs mt-1">
+                        <span className={wo.order_approved ? 'text-green-600' : 'text-gray-400'}>
+                          Order:{wo.order_approved ? 'Approved' : 'Pending'}
+                        </span>
+                        <span className="mx-1">|</span>
+                        <span className={wo.cost_approved ? 'text-green-600' : 'text-gray-400'}>
+                          Cost:{wo.cost_approved ? 'Approved' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 ml-2">
+                      <div className="flex gap-1">
+                        <button onClick={() => handleEditWorkOrder(wo)} className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1">Edit</button>
+                        <button onClick={() => setSelectedWoId(selectedWoId === wo.id ? null : wo.id)} className="text-orange-600 hover:text-orange-800 text-xs px-2 py-1">
+                          {selectedWoId === wo.id ? 'Hide Items' : 'Items'}
+                        </button>
+                        <button onClick={() => handleDeleteWorkOrder(wo)} disabled={isDeletingWo} className="text-red-600 hover:text-red-800 text-xs px-2 py-1">Delete</button>
+                      </div>
+                      <div className="flex gap-1">
+                        {!wo.order_approved && <button onClick={() => handleApproveOrder(wo)} className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded hover:bg-green-200">Approve Order</button>}
+                        {!wo.cost_approved && <button onClick={() => handleApproveCost(wo)} className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded hover:bg-green-200">Approve Cost</button>}
+                      </div>
+                      <select
+                        value={wo.status}
+                        onChange={(e) => handleUpdateWoStatus(wo, e.target.value as WorkOrderStatus)}
+                        className="border rounded px-1 py-0.5 text-xs"
+                      >
+                        {['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Work Order Items (expanded) */}
+                  {selectedWoId === wo.id && (
+                    <div className="mt-3 pt-3 border-t">
+                      <h4 className="text-xs font-semibold text-orange-700 mb-2">Items for {wo.work_order_number}</h4>
+                      <form onSubmit={handleAddWoItem} className="flex gap-2 mb-2">
+                        <input type="number" placeholder="Item ID" value={woItemId} onChange={(e) => setWoItemId(e.target.value)} className="border rounded px-2 py-1 text-xs w-24" required />
+                        <input type="number" placeholder="Qty" value={woItemQty} onChange={(e) => setWoItemQty(e.target.value)} className="border rounded px-2 py-1 text-xs w-16" required />
+                        <button type="submit" disabled={isAddingWoItem} className="bg-orange-500 text-white px-3 py-1 rounded text-xs">Add</button>
+                      </form>
+                      {isLoadingWoItems ? (
+                        <p className="text-xs text-gray-500">Loading items...</p>
+                      ) : woItems && woItems.length > 0 ? (
+                        <div className="space-y-1">
+                          {woItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center bg-orange-50 rounded px-2 py-1 text-xs">
+                              <span>Item:{item.item_id} | Qty:{item.quantity} {item.notes && `| ${item.notes}`}</span>
+                              <button onClick={() => handleRemoveWoItem(item.id)} className="text-red-500 hover:text-red-700">Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">No items added yet.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">No work orders found.</p>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* PURCHASE ORDERS (blue theme) */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <h2 className="text-xl font-bold mb-4 text-blue-800">Purchase Orders</h2>
+
+          {/* Create Form */}
+          <div className="bg-blue-50 rounded p-3 mb-4">
+            <h3 className="text-sm font-semibold mb-2 text-blue-700">Create Purchase Order</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <input value={poAccountId} onChange={(e) => setPoAccountId(e.target.value)} placeholder="Account ID" className="border rounded px-2 py-1 text-sm" />
+              <select value={poDestType} onChange={(e) => setPoDestType(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="storage">Storage</option>
+                <option value="machine">Machine</option>
+                <option value="project">Project</option>
+              </select>
+              <input value={poDestId} onChange={(e) => setPoDestId(e.target.value)} placeholder="Dest ID" className="border rounded px-2 py-1 text-sm" />
+              <input value={poDescription} onChange={(e) => setPoDescription(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+              <input value={poNote} onChange={(e) => setPoNote(e.target.value)} placeholder="Order Note" className="border rounded px-2 py-1 text-sm" />
+              <input value={poInternalNote} onChange={(e) => setPoInternalNote(e.target.value)} placeholder="Internal Note" className="border rounded px-2 py-1 text-sm" />
+              <button
+                onClick={async () => {
+                  try {
+                    await createPO({
+                      account_id: parseInt(poAccountId),
+                      destination_type: poDestType,
+                      destination_id: parseInt(poDestId),
+                      description: poDescription || undefined,
+                      order_note: poNote || undefined,
+                      internal_note: poInternalNote || undefined,
+                      current_status_id: 1,
+                    }).unwrap();
+                    toast.success('Purchase order created');
+                    setPoAccountId(''); setPoDestId(''); setPoNote(''); setPoDescription(''); setPoInternalNote('');
+                  } catch (err: any) { toast.error(err.data?.detail || 'Failed'); }
+                }}
+                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+              >Create PO</button>
+            </div>
+          </div>
+
+          {/* List */}
+          {isLoadingPO ? <p>Loading...</p> : purchaseOrders && purchaseOrders.length > 0 ? (
+            <div className="space-y-2">
+              {purchaseOrders.map((po: PurchaseOrder) => (
+                <div key={po.id} className="border rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-semibold text-blue-700">{po.po_number}</span>
+                      <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{po.destination_type}</span>
+                      <span className="ml-2 text-xs text-gray-500">Total: ${Number(po.total_amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setSelectedPoId(selectedPoId === po.id ? null : po.id)} className="text-xs bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded">Items</button>
+                      <button onClick={async () => { try { await deletePO(po.id).unwrap(); toast.success('Deleted'); } catch { toast.error('Failed'); } }} className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded">Del</button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Dest: {po.destination_type}:{po.destination_id} | Account: {po.account_id} | Status: {po.current_status_id} | Subtotal: ${Number(po.subtotal).toFixed(2)}
+                    {po.description && <> | Desc: {po.description}</>}
+                    {po.order_note && <> | Note: {po.order_note}</>}
+                    {po.internal_note && <> | Internal: {po.internal_note}</>}
+                    {po.order_workflow_id && <> | Workflow: {po.order_workflow_id}</>}
+                    {po.invoice_id && <> | Invoice: {po.invoice_id}</>}
+                    <br />Created: {new Date(po.created_at).toLocaleString()} by #{po.created_by}
+                    {po.updated_at && <> | Updated: {new Date(po.updated_at).toLocaleString()}</>}
+                  </div>
+                  {selectedPoId === po.id && (
+                    <div className="mt-2 border-t pt-2">
+                      <div className="flex gap-2 mb-2">
+                        <input value={poItemItemId} onChange={(e) => setPoItemItemId(e.target.value)} placeholder="Item ID" className="border rounded px-2 py-1 text-xs w-20" />
+                        <input value={poItemQty} onChange={(e) => setPoItemQty(e.target.value)} placeholder="Qty" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={poItemPrice} onChange={(e) => setPoItemPrice(e.target.value)} placeholder="Price" className="border rounded px-2 py-1 text-xs w-20" />
+                        <button onClick={async () => {
+                          try {
+                            await addPOItem({ poId: po.id, data: { item_id: parseInt(poItemItemId), quantity_ordered: parseFloat(poItemQty), unit_price: parseFloat(poItemPrice) } }).unwrap();
+                            toast.success('Item added'); setPoItemItemId(''); setPoItemQty('1'); setPoItemPrice('0');
+                          } catch { toast.error('Failed'); }
+                        }} className="text-xs bg-blue-500 text-white px-2 py-1 rounded">Add</button>
+                      </div>
+                      {poItems && poItems.length > 0 ? (
+                        <div className="space-y-1">
+                          {poItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center bg-blue-50 rounded px-2 py-1 text-xs">
+                              <span>#{item.line_number} Item:{item.item_id} | Ordered:{Number(item.quantity_ordered)} Received:{Number(item.quantity_received)} @ ${Number(item.unit_price)} = ${Number(item.line_subtotal).toFixed(2)}{item.notes ? ` | ${item.notes}` : ''}</span>
+                              <button onClick={async () => { try { await removePOItem(item.id).unwrap(); toast.success('Removed'); } catch { toast.error('Failed'); } }} className="text-red-500 hover:text-red-700">X</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-xs text-gray-500">No items.</p>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-gray-500">No purchase orders found.</p>}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* TRANSFER ORDERS (green theme) */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+          <h2 className="text-xl font-bold mb-4 text-green-800">Transfer Orders</h2>
+
+          {/* Create Form */}
+          <div className="bg-green-50 rounded p-3 mb-4">
+            <h3 className="text-sm font-semibold mb-2 text-green-700">Create Transfer Order</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <select value={toSrcType} onChange={(e) => setToSrcType(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="storage">Storage</option>
+                <option value="machine">Machine</option>
+                <option value="damaged">Damaged</option>
+              </select>
+              <input value={toSrcId} onChange={(e) => setToSrcId(e.target.value)} placeholder="Source ID" className="border rounded px-2 py-1 text-sm" />
+              <select value={toDestType} onChange={(e) => setToDestType(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="machine">Machine</option>
+                <option value="storage">Storage</option>
+                <option value="project">Project</option>
+                <option value="damaged">Damaged</option>
+              </select>
+              <input value={toDestId} onChange={(e) => setToDestId(e.target.value)} placeholder="Dest ID" className="border rounded px-2 py-1 text-sm" />
+              <input value={toDescription} onChange={(e) => setToDescription(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-sm" />
+              <input value={toNote} onChange={(e) => setToNote(e.target.value)} placeholder="Note" className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  await createTO({
+                    source_location_type: toSrcType,
+                    source_location_id: parseInt(toSrcId),
+                    destination_location_type: toDestType,
+                    destination_location_id: parseInt(toDestId),
+                    description: toDescription || undefined,
+                    note: toNote || undefined,
+                    current_status_id: 1,
+                  }).unwrap();
+                  toast.success('Transfer order created');
+                  setToSrcId(''); setToDestId(''); setToNote(''); setToDescription('');
+                } catch (err: any) { toast.error(err.data?.detail || 'Failed'); }
+              }}
+              className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 mt-2"
+            >Create TO</button>
+          </div>
+
+          {/* List */}
+          {isLoadingTO ? <p>Loading...</p> : transferOrders && transferOrders.length > 0 ? (
+            <div className="space-y-2">
+              {transferOrders.map((to: TransferOrder) => (
+                <div key={to.id} className="border rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-semibold text-green-700">{to.transfer_number}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setSelectedToId(selectedToId === to.id ? null : to.id)} className="text-xs bg-green-100 hover:bg-green-200 px-2 py-1 rounded">Items</button>
+                      <button onClick={async () => { try { await deleteTO(to.id).unwrap(); toast.success('Deleted'); } catch { toast.error('Failed'); } }} className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded">Del</button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {to.source_location_type}:{to.source_location_id} → {to.destination_location_type}:{to.destination_location_id} | Status: {to.current_status_id}
+                    {to.description && <> | Desc: {to.description}</>}
+                    {to.note && <> | Note: {to.note}</>}
+                    <br />Date: {to.order_date} | Created: {new Date(to.created_at).toLocaleString()} by #{to.created_by}
+                    {to.updated_at && <> | Updated: {new Date(to.updated_at).toLocaleString()}</>}
+                    {to.completed_by && <> | Completed by #{to.completed_by} at {to.completed_at ? new Date(to.completed_at).toLocaleString() : ''}</>}
+                  </div>
+                  {selectedToId === to.id && (
+                    <div className="mt-2 border-t pt-2">
+                      <div className="flex gap-2 mb-2">
+                        <input value={toItemItemId} onChange={(e) => setToItemItemId(e.target.value)} placeholder="Item ID" className="border rounded px-2 py-1 text-xs w-20" />
+                        <input value={toItemQty} onChange={(e) => setToItemQty(e.target.value)} placeholder="Qty" className="border rounded px-2 py-1 text-xs w-16" />
+                        <button onClick={async () => {
+                          try {
+                            await addTOItem({ toId: to.id, data: { item_id: parseInt(toItemItemId), quantity: parseFloat(toItemQty) } }).unwrap();
+                            toast.success('Item added'); setToItemItemId(''); setToItemQty('1');
+                          } catch { toast.error('Failed'); }
+                        }} className="text-xs bg-green-500 text-white px-2 py-1 rounded">Add</button>
+                      </div>
+                      {toItems && toItems.length > 0 ? (
+                        <div className="space-y-1">
+                          {toItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center bg-green-50 rounded px-2 py-1 text-xs">
+                              <span>#{item.line_number} Item:{item.item_id} | Qty:{Number(item.quantity)} | {item.approved ? 'Approved' : 'Pending'} {item.transferred_by ? `| By: ${item.transferred_by}` : ''}{item.notes ? ` | ${item.notes}` : ''}</span>
+                              <button onClick={async () => { try { await removeTOItem(item.id).unwrap(); toast.success('Removed'); } catch { toast.error('Failed'); } }} className="text-red-500 hover:text-red-700">X</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-xs text-gray-500">No items.</p>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-gray-500">No transfer orders found.</p>}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* EXPENSE ORDERS (rose theme) */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-rose-500">
+          <h2 className="text-xl font-bold mb-4 text-rose-800">Expense Orders</h2>
+
+          {/* Filters */}
+          <div className="flex gap-2 mb-4">
+            <select value={eoFilterCategory} onChange={(e) => setEoFilterCategory(e.target.value)} className="border rounded px-2 py-1 text-sm">
+              <option value="">All Categories</option>
+              <option value="utilities">Utilities</option>
+              <option value="payroll">Payroll</option>
+              <option value="rent">Rent</option>
+              <option value="services">Services</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="insurance">Insurance</option>
+              <option value="misc">Misc</option>
+            </select>
+          </div>
+
+          {/* Create Form */}
+          <div className="bg-rose-50 rounded p-3 mb-4">
+            <h3 className="text-sm font-semibold mb-2 text-rose-700">Create Expense Order</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <select value={eoCategory} onChange={(e) => setEoCategory(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="utilities">Utilities</option>
+                <option value="payroll">Payroll</option>
+                <option value="rent">Rent</option>
+                <option value="services">Services</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="insurance">Insurance</option>
+                <option value="misc">Misc</option>
+              </select>
+              <input value={eoAccountId} onChange={(e) => setEoAccountId(e.target.value)} placeholder="Account ID" className="border rounded px-2 py-1 text-sm" />
+              <input value={eoExpenseDate} onChange={(e) => setEoExpenseDate(e.target.value)} placeholder="Expense Date (YYYY-MM-DD)" className="border rounded px-2 py-1 text-sm" />
+              <input value={eoDueDate} onChange={(e) => setEoDueDate(e.target.value)} placeholder="Due Date (YYYY-MM-DD)" className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+              <input value={eoDescription} onChange={(e) => setEoDescription(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-sm" />
+              <input value={eoNote} onChange={(e) => setEoNote(e.target.value)} placeholder="Expense Note" className="border rounded px-2 py-1 text-sm" />
+              <input value={eoInternalNote} onChange={(e) => setEoInternalNote(e.target.value)} placeholder="Internal Note" className="border rounded px-2 py-1 text-sm" />
+              <button
+                onClick={async () => {
+                  try {
+                    await createEO({
+                      expense_category: eoCategory,
+                      account_id: eoAccountId ? parseInt(eoAccountId) : undefined,
+                      expense_date: eoExpenseDate || undefined,
+                      due_date: eoDueDate || undefined,
+                      description: eoDescription || undefined,
+                      expense_note: eoNote || undefined,
+                      internal_note: eoInternalNote || undefined,
+                      current_status_id: 1,
+                    }).unwrap();
+                    toast.success('Expense order created');
+                    setEoNote(''); setEoAccountId(''); setEoExpenseDate(''); setEoDueDate(''); setEoDescription(''); setEoInternalNote('');
+                  } catch (err: any) { toast.error(err.data?.detail || 'Failed'); }
+                }}
+                className="bg-rose-600 text-white px-3 py-1 rounded text-sm hover:bg-rose-700"
+              >Create EO</button>
+            </div>
+          </div>
+
+          {/* List */}
+          {isLoadingEO ? <p>Loading...</p> : expenseOrders && expenseOrders.length > 0 ? (
+            <div className="space-y-2">
+              {expenseOrders.map((eo: ExpenseOrder) => (
+                <div key={eo.id} className="border rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-semibold text-rose-700">{eo.expense_number}</span>
+                      <span className="ml-2 text-xs bg-rose-100 text-rose-800 px-2 py-0.5 rounded">{eo.expense_category}</span>
+                      <span className="ml-2 text-xs text-gray-500">Total: ${Number(eo.total_amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setSelectedEoId(selectedEoId === eo.id ? null : eo.id)} className="text-xs bg-rose-100 hover:bg-rose-200 px-2 py-1 rounded">Items</button>
+                      <button onClick={async () => { try { await deleteEO(eo.id).unwrap(); toast.success('Deleted'); } catch { toast.error('Failed'); } }} className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded">Del</button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Date: {eo.expense_date} | Status: {eo.current_status_id} | Subtotal: ${Number(eo.subtotal).toFixed(2)}
+                    {eo.account_id && <> | Account: {eo.account_id}</>}
+                    {eo.due_date && <> | Due: {eo.due_date}</>}
+                    {eo.description && <> | Desc: {eo.description}</>}
+                    {eo.expense_note && <> | Note: {eo.expense_note}</>}
+                    {eo.internal_note && <> | Internal: {eo.internal_note}</>}
+                    {eo.order_template_id && <> | Template: {eo.order_template_id}</>}
+                    {eo.order_workflow_id && <> | Workflow: {eo.order_workflow_id}</>}
+                    {eo.invoice_id && <> | Invoice: {eo.invoice_id}</>}
+                    {eo.approved_by && <> | Approved by #{eo.approved_by}</>}
+                    <br />Created: {new Date(eo.created_at).toLocaleString()} by #{eo.created_by}
+                    {eo.updated_at && <> | Updated: {new Date(eo.updated_at).toLocaleString()}</>}
+                  </div>
+                  {selectedEoId === eo.id && (
+                    <div className="mt-2 border-t pt-2">
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        <input value={eoItemDesc} onChange={(e) => setEoItemDesc(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-xs flex-1 min-w-[100px]" />
+                        <input value={eoItemAccountId} onChange={(e) => setEoItemAccountId(e.target.value)} placeholder="Acct ID" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={eoItemQty} onChange={(e) => setEoItemQty(e.target.value)} placeholder="Qty" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={eoItemUnit} onChange={(e) => setEoItemUnit(e.target.value)} placeholder="Unit" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={eoItemPrice} onChange={(e) => setEoItemPrice(e.target.value)} placeholder="Price" className="border rounded px-2 py-1 text-xs w-20" />
+                        <button onClick={async () => {
+                          try {
+                            await addEOItem({ eoId: eo.id, data: { description: eoItemDesc || undefined, account_id: eoItemAccountId ? parseInt(eoItemAccountId) : undefined, quantity: parseFloat(eoItemQty), unit: eoItemUnit || undefined, unit_price: parseFloat(eoItemPrice) } }).unwrap();
+                            toast.success('Item added'); setEoItemDesc(''); setEoItemQty('1'); setEoItemPrice('0'); setEoItemUnit(''); setEoItemAccountId('');
+                          } catch { toast.error('Failed'); }
+                        }} className="text-xs bg-rose-500 text-white px-2 py-1 rounded">Add</button>
+                      </div>
+                      {eoItems && eoItems.length > 0 ? (
+                        <div className="space-y-1">
+                          {eoItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center bg-rose-50 rounded px-2 py-1 text-xs">
+                              <span>#{item.line_number} {item.description || '(no description)'}{item.account_id ? ` [Acct:${item.account_id}]` : ''} | Qty:{Number(item.quantity)} {item.unit || ''} {item.unit_price ? `@ $${Number(item.unit_price)}` : ''} {item.line_subtotal ? `= $${Number(item.line_subtotal).toFixed(2)}` : ''} | {item.approved ? 'Approved' : 'Pending'}{item.notes ? ` | ${item.notes}` : ''}</span>
+                              <button onClick={async () => { try { await removeEOItem(item.id).unwrap(); toast.success('Removed'); } catch { toast.error('Failed'); } }} className="text-red-500 hover:text-red-700">X</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-xs text-gray-500">No items.</p>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-gray-500">No expense orders found.</p>}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* ORDER TEMPLATES (violet theme) */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {isAuthenticated && workspace && (
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-violet-500">
+          <h2 className="text-xl font-bold mb-4 text-violet-800">Order Templates</h2>
+
+          {/* Filters */}
+          <div className="flex gap-2 mb-4">
+            <select value={tplFilterCategory} onChange={(e) => setTplFilterCategory(e.target.value)} className="border rounded px-2 py-1 text-sm">
+              <option value="">All Categories</option>
+              <option value="utilities">Utilities</option>
+              <option value="payroll">Payroll</option>
+              <option value="rent">Rent</option>
+              <option value="services">Services</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="misc">Misc</option>
+            </select>
+          </div>
+
+          {/* Create Form */}
+          <div className="bg-violet-50 rounded p-3 mb-4">
+            <h3 className="text-sm font-semibold mb-2 text-violet-700">Create Expense Template</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="Template Name" className="border rounded px-2 py-1 text-sm" />
+              <select value={tplCategory} onChange={(e) => setTplCategory(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="">No Category</option>
+                <option value="utilities">Utilities</option>
+                <option value="payroll">Payroll</option>
+                <option value="rent">Rent</option>
+                <option value="services">Services</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="misc">Misc</option>
+              </select>
+              <input value={tplAccountId} onChange={(e) => setTplAccountId(e.target.value)} placeholder="Account ID" className="border rounded px-2 py-1 text-sm" />
+              <input value={tplDesc} onChange={(e) => setTplDesc(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+              <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={tplIsRecurring} onChange={(e) => setTplIsRecurring(e.target.checked)} /> Recurring</label>
+              {tplIsRecurring && (
+                <>
+                  <select value={tplRecurrenceType} onChange={(e) => setTplRecurrenceType(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                    <option value="">Recurrence Type</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                  </select>
+                  <input value={tplRecurrenceDay} onChange={(e) => setTplRecurrenceDay(e.target.value)} placeholder="Recurrence Day" className="border rounded px-2 py-1 text-sm" />
+                </>
+              )}
+              <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={tplAutoGenerate} onChange={(e) => setTplAutoGenerate(e.target.checked)} /> Auto-generate</label>
+              <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={tplAutoApprove} onChange={(e) => setTplAutoApprove(e.target.checked)} /> Auto-approve</label>
+              <input value={tplNotes} onChange={(e) => setTplNotes(e.target.value)} placeholder="Notes" className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  await createTPL({
+                    template_name: tplName,
+                    expense_category: tplCategory || undefined,
+                    account_id: tplAccountId ? parseInt(tplAccountId) : undefined,
+                    description: tplDesc || undefined,
+                    is_recurring: tplIsRecurring,
+                    recurrence_type: tplRecurrenceType || undefined,
+                    recurrence_day: tplRecurrenceDay ? parseInt(tplRecurrenceDay) : undefined,
+                    auto_generate: tplAutoGenerate,
+                    auto_approve: tplAutoApprove,
+                    notes: tplNotes || undefined,
+                  }).unwrap();
+                  toast.success('Template created');
+                  setTplName(''); setTplDesc(''); setTplCategory(''); setTplAccountId(''); setTplIsRecurring(false); setTplRecurrenceType(''); setTplRecurrenceDay(''); setTplAutoGenerate(false); setTplAutoApprove(false); setTplNotes('');
+                } catch (err: any) { toast.error(err.data?.detail || 'Failed'); }
+              }}
+              className="bg-violet-600 text-white px-3 py-1 rounded text-sm hover:bg-violet-700 mt-2"
+            >Create Template</button>
+          </div>
+
+          {/* List */}
+          {isLoadingTPL ? <p>Loading...</p> : orderTemplates && orderTemplates.length > 0 ? (
+            <div className="space-y-2">
+              {orderTemplates.map((tpl: OrderTemplate) => (
+                <div key={tpl.id} className="border rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-semibold text-violet-700">{tpl.template_name}</span>
+                      {tpl.expense_category && <span className="ml-2 text-xs bg-violet-100 text-violet-800 px-2 py-0.5 rounded">{tpl.expense_category}</span>}
+                      {tpl.is_recurring && <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Recurring</span>}
+                      {!tpl.is_active && <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Inactive</span>}
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setSelectedTplId(selectedTplId === tpl.id ? null : tpl.id)} className="text-xs bg-violet-100 hover:bg-violet-200 px-2 py-1 rounded">Items</button>
+                      <button onClick={async () => { try { await deleteTPL(tpl.id).unwrap(); toast.success('Deleted'); } catch { toast.error('Failed'); } }} className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded">Del</button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {tpl.description || 'No description'}
+                    {tpl.account_id && <> | Account: {tpl.account_id}</>}
+                    {tpl.is_recurring && <> | {tpl.recurrence_type} (day {tpl.recurrence_day}){tpl.recurrence_interval && tpl.recurrence_interval > 1 ? ` every ${tpl.recurrence_interval}` : ''}</>}
+                    {tpl.auto_generate && <> | Auto-gen</>}
+                    {tpl.auto_approve && <> | Auto-approve</>}
+                    {tpl.next_generation_date && <> | Next: {tpl.next_generation_date}</>}
+                    {tpl.notes && <> | Notes: {tpl.notes}</>}
+                    <br />Created: {new Date(tpl.created_at).toLocaleString()}{tpl.created_by ? ` by #${tpl.created_by}` : ''}
+                    {tpl.updated_at && <> | Updated: {new Date(tpl.updated_at).toLocaleString()}</>}
+                  </div>
+                  {selectedTplId === tpl.id && (
+                    <div className="mt-2 border-t pt-2">
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        <input value={tplItemDesc} onChange={(e) => setTplItemDesc(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-xs flex-1 min-w-[100px]" />
+                        <input value={tplItemAccountId} onChange={(e) => setTplItemAccountId(e.target.value)} placeholder="Acct ID" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={tplItemQty} onChange={(e) => setTplItemQty(e.target.value)} placeholder="Qty" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={tplItemUnit} onChange={(e) => setTplItemUnit(e.target.value)} placeholder="Unit" className="border rounded px-2 py-1 text-xs w-16" />
+                        <input value={tplItemPrice} onChange={(e) => setTplItemPrice(e.target.value)} placeholder="Price" className="border rounded px-2 py-1 text-xs w-20" />
+                        <button onClick={async () => {
+                          try {
+                            await addTPLItem({ tplId: tpl.id, data: { description: tplItemDesc || undefined, account_id: tplItemAccountId ? parseInt(tplItemAccountId) : undefined, quantity: parseFloat(tplItemQty), unit: tplItemUnit || undefined, unit_price: parseFloat(tplItemPrice) } }).unwrap();
+                            toast.success('Item added'); setTplItemDesc(''); setTplItemQty('1'); setTplItemPrice('0'); setTplItemUnit(''); setTplItemAccountId('');
+                          } catch { toast.error('Failed'); }
+                        }} className="text-xs bg-violet-500 text-white px-2 py-1 rounded">Add</button>
+                      </div>
+                      {tplItems && tplItems.length > 0 ? (
+                        <div className="space-y-1">
+                          {tplItems.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center bg-violet-50 rounded px-2 py-1 text-xs">
+                              <span>#{item.line_number} {item.description || '(no description)'}{item.account_id ? ` [Acct:${item.account_id}]` : ''} | Qty:{Number(item.quantity)} {item.unit ? item.unit : ''} {item.unit_price ? `@ $${Number(item.unit_price)}` : ''} {item.line_subtotal ? `= $${Number(item.line_subtotal)}` : ''}{item.notes ? ` | ${item.notes}` : ''}</span>
+                              <button onClick={async () => { try { await removeTPLItem(item.id).unwrap(); toast.success('Removed'); } catch { toast.error('Failed'); } }} className="text-red-500 hover:text-red-700">X</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-xs text-gray-500">No items.</p>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-gray-500">No order templates found.</p>}
+        </div>
+      )}
+
     </div>
   );
 };

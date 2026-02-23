@@ -1,35 +1,46 @@
-"""Inventory schemas - finished goods inventory"""
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+"""Unified inventory schemas (STORAGE, DAMAGED, WASTE, SCRAP)"""
+from datetime import datetime
+from decimal import Decimal
+from pydantic import BaseModel, ConfigDict
+from app.models.enums import InventoryTypeEnum
 
 
-class InventoryBase(BaseModel):
-    """Base inventory schema"""
+class InventoryCreate(BaseModel):
+    """Create inventory record"""
     item_id: int
+    inventory_type: InventoryTypeEnum
     factory_id: int
-    qty: int = Field(..., ge=0)
-    avg_price: Optional[float] = Field(None, ge=0)
-
-
-class InventoryCreate(InventoryBase):
-    """Inventory creation schema (workspace_id injected by service)"""
-    pass
+    qty: int = 0
+    avg_price: Decimal | None = None
+    note: str | None = None
 
 
 class InventoryUpdate(BaseModel):
-    """Inventory update schema"""
-    qty: Optional[int] = Field(None, ge=0)
-    avg_price: Optional[float] = Field(None, ge=0)
+    """Update inventory record"""
+    qty: int | None = None
+    avg_price: Decimal | None = None
+    note: str | None = None
 
 
-class InventoryInDB(InventoryBase):
-    """Inventory schema as stored in database"""
-    model_config = ConfigDict(from_attributes=True)
-
+class InventoryResponse(BaseModel):
+    """Inventory response"""
     id: int
     workspace_id: int
+    item_id: int
+    inventory_type: InventoryTypeEnum
+    factory_id: int
+    qty: int
+    avg_price: Decimal | None = None
+    note: str | None = None
 
+    created_at: datetime
+    created_by: int | None = None
+    updated_at: datetime | None = None
+    updated_by: int | None = None
 
-class InventoryResponse(InventoryInDB):
-    """Inventory response schema"""
-    pass
+    is_active: bool
+    is_deleted: bool
+    deleted_at: datetime | None = None
+    deleted_by: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)

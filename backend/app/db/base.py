@@ -39,6 +39,7 @@ from app.models.order_attachment import OrderAttachment
 from app.models.project_attachment import ProjectAttachment
 from app.models.project_component_attachment import ProjectComponentAttachment
 from app.models.machine_event import MachineEvent
+from app.models.machine_maintenance_log import MachineMaintenanceLog
 from app.models.vendor import Vendor
 from app.models.account import Account
 from app.models.account_tag import AccountTag
@@ -46,6 +47,29 @@ from app.models.account_tag_assignment import AccountTagAssignment
 from app.models.account_invoice import AccountInvoice
 from app.models.invoice_payment import InvoicePayment
 from app.models.financial_audit_log import FinancialAuditLog
+# Inventory & Products
+from app.models.inventory import Inventory
+from app.models.inventory_ledger import InventoryLedger
+from app.models.product import Product
+from app.models.product_ledger import ProductLedger
+# Work Orders
+from app.models.work_order import WorkOrder
+from app.models.work_order_item import WorkOrderItem
+# Purchase Orders
+from app.models.purchase_order import PurchaseOrder
+from app.models.purchase_order_item import PurchaseOrderItem
+# Transfer Orders
+from app.models.transfer_order import TransferOrder
+from app.models.transfer_order_item import TransferOrderItem
+# Expense Orders
+from app.models.expense_order import ExpenseOrder
+from app.models.expense_order_item import ExpenseOrderItem
+# Order Templates
+from app.models.order_template import OrderTemplate
+from app.models.order_template_item import OrderTemplateItem
+# Sales Deliveries
+from app.models.sales_delivery import SalesDelivery
+from app.models.sales_delivery_item import SalesDeliveryItem
 # Production
 from app.models.production_line import ProductionLine
 from app.models.production_formula import ProductionFormula

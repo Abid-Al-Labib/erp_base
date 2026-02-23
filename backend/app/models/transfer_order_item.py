@@ -1,5 +1,5 @@
 """Transfer order item model - items within a transfer order"""
-from sqlalchemy import Column, Integer, ForeignKey, Text, Numeric, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Numeric, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
@@ -17,22 +17,21 @@ class TransferOrderItem(Base):
     transfer_order_id = Column(Integer, ForeignKey("transfer_orders.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # === LINE ITEM DETAILS ===
-    line_number = Column(Integer, nullable=False)  # For ordering (1, 2, 3...)
+    line_number = Column(Integer, nullable=False)
 
     # === ITEM ===
     item_id = Column(Integer, ForeignKey("items.id", ondelete="RESTRICT"), nullable=False, index=True)
 
     # === QUANTITY ===
-    quantity_requested = Column(Numeric(15, 2), nullable=False)
-    quantity_transferred = Column(Numeric(15, 2), nullable=False, default=0)  # Track partial transfers
+    quantity = Column(Numeric(15, 2), nullable=False)
 
-    # === APPROVAL FLAGS ===
+    # === APPROVAL ===
     approved = Column(Boolean, nullable=False, default=False)
     approved_by = Column(Integer, ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
 
     # === TRANSFER TRACKING ===
-    transferred_by = Column(Integer, ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
+    transferred_by = Column(String(200), nullable=True)  # Free text - person who physically transferred
     transferred_at = Column(DateTime, nullable=True)
 
     # === NOTES ===
@@ -42,4 +41,3 @@ class TransferOrderItem(Base):
     transfer_order = relationship("TransferOrder", backref="line_items")
     item = relationship("Item", backref="transfer_order_items")
     approver = relationship("Profile", foreign_keys=[approved_by], backref="approved_transfer_items")
-    transferrer = relationship("Profile", foreign_keys=[transferred_by], backref="transferred_items")

@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     factories,
     factory_sections,
     machines,
+    machine_maintenance_logs,
     statuses,
     # Items & Inventory
     items,
@@ -15,6 +16,8 @@ from app.api.v1.endpoints import (
     storage_items,
     machine_items,
     damaged_items,
+    inventory,
+    products,
     # Accounts & Financial
     accounts,
     account_tags,
@@ -26,6 +29,11 @@ from app.api.v1.endpoints import (
     order_workflows,
     order_items,
     order_part_logs,
+    work_orders,
+    purchase_orders,
+    transfer_orders,
+    expense_orders,
+    order_templates,
     # Sales
     sales_orders,
     sales_deliveries,
@@ -66,6 +74,7 @@ api_router.include_router(departments.router, prefix="/departments", tags=["orga
 api_router.include_router(factories.router, prefix="/factories", tags=["organization"])
 api_router.include_router(factory_sections.router, prefix="/factory-sections", tags=["organization"])
 api_router.include_router(machines.router, prefix="/machines", tags=["organization"])
+api_router.include_router(machine_maintenance_logs.router, prefix="/machine-maintenance-logs", tags=["organization"])
 api_router.include_router(statuses.router, prefix="/statuses", tags=["organization"])
 
 # Items & Inventory
@@ -74,6 +83,8 @@ api_router.include_router(item_tags.router, prefix="/item-tags", tags=["items"])
 api_router.include_router(storage_items.router, prefix="/storage-items", tags=["inventory"])
 api_router.include_router(machine_items.router, prefix="/machine-items", tags=["inventory"])
 api_router.include_router(damaged_items.router, prefix="/damaged-items", tags=["inventory"])
+api_router.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
+api_router.include_router(products.router, prefix="/products", tags=["inventory"])
 
 # Accounts & Financial
 api_router.include_router(accounts.router, prefix="/accounts", tags=["accounts"])
@@ -87,6 +98,21 @@ api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
 api_router.include_router(order_workflows.router, prefix="/order-workflows", tags=["orders"])
 api_router.include_router(order_items.router, prefix="/order-items", tags=["orders"])
 api_router.include_router(order_part_logs.router, prefix="/order-part-logs", tags=["orders"])
+
+# Work Orders
+api_router.include_router(work_orders.router, prefix="/work-orders", tags=["orders"])
+
+# Purchase Orders
+api_router.include_router(purchase_orders.router, prefix="/purchase-orders", tags=["orders"])
+
+# Transfer Orders
+api_router.include_router(transfer_orders.router, prefix="/transfer-orders", tags=["orders"])
+
+# Expense Orders
+api_router.include_router(expense_orders.router, prefix="/expense-orders", tags=["orders"])
+
+# Order Templates
+api_router.include_router(order_templates.router, prefix="/order-templates", tags=["orders"])
 
 # Sales
 api_router.include_router(sales_orders.router, prefix="/sales-orders", tags=["sales"])

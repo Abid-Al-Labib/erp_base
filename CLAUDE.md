@@ -96,6 +96,57 @@ A comprehensive authentication and multi-tenant workspace system has been implem
 - Balance queries and reconciliation endpoints
 - Cross-ledger reporting endpoints
 
+### Machines Module - ✅ COMPLETED (February 2026)
+
+Full 4-layer architecture implementation for machines with soft-delete, metadata, and event-driven status tracking.
+
+**1. Machine Model** (`app/models/machine.py`)
+- Core fields: `name`, `is_running` (bool), `factory_section_id`
+- Metadata: `model_number`, `manufacturer`, `next_maintenance_schedule` (Date), `next_maintenance_note`, `note`
+- Full soft-delete: `is_active`, `is_deleted`, `deleted_at`, `deleted_by`
+- Full audit: `created_at`, `created_by`, `updated_at`, `updated_by`
+
+**2. Machine Event Model** (`app/models/machine_event.py`)
+- Immutable audit trail of machine status changes
+- Event types (`MachineEventTypeEnum`): `IDLE`, `RUNNING`, `OFF`, `MAINTENANCE`
+- `initiated_by`: FK to profiles — NULL = system-initiated, user_id = person-initiated
+- `started_at`: business timestamp, `created_at`: system audit timestamp
+
+**3. Key Business Rules**
+- `is_running` is managed exclusively through events (not directly settable via update)
+- When event created: RUNNING → `is_running=True`, all others → `is_running=False`
+- Events are immutable — only `note` field can be updated
+- Redundant events (same status as current) are rejected
+- Machine name must be unique within a factory section
+
+**4. MachineManager** (`app/managers/machine_manager.py`)
+- CRUD with factory section validation and name uniqueness
+- `create_machine_event()` — creates event + syncs `is_running` in same transaction
+- Soft delete with validation (can't delete already-deleted, can't event on deleted)
+
+**5. MachineService** (`app/services/machine_service.py`)
+- Transaction orchestration (commit/rollback) wrapping manager calls
+
+**6. API Endpoints** (`app/api/v1/endpoints/machines.py` - 8 endpoints)
+
+Machine CRUD:
+- `GET /machines/` — list with filters (section, running, search by name/model/manufacturer)
+- `GET /machines/{id}` — get single machine
+- `POST /machines/` — create machine
+- `PUT /machines/{id}` — update metadata (not is_running)
+- `DELETE /machines/{id}` — soft delete (returns deleted object)
+
+Machine Events (nested sub-resource):
+- `POST /machines/{id}/events` — create status change event, auto-syncs is_running
+- `GET /machines/{id}/events` — event history with optional type filter
+- `GET /machines/{id}/events/latest` — most recent event
+
+All endpoints secured with `get_current_workspace` dependency for workspace isolation.
+
+**7. DAO Layer** (`app/dao/machine.py`, `app/dao/machine_event.py`)
+- `DAOMachine`: `get_by_section()`, `get_running_machines()`, `get_active_by_workspace()`, `soft_delete()`, `restore()`
+- `MachineEventDAO`: Full set of workspace-scoped queries (by machine, type, date range, initiator, etc.)
+
 ## Architecture
 
 The production architecture consists of three separate repositories:
@@ -779,7 +830,8 @@ alembic current
 - `factories` - Factory locations
 - `factory_sections` - Sections within factories
 - `departments` - Departments
-- `machines` - Machines within factory sections
+- `machines` - Machines within factory sections (with soft-delete, metadata: model_number, manufacturer, maintenance schedule)
+- `machine_events` - Immutable status change audit trail (event types: IDLE, RUNNING, OFF, MAINTENANCE)
 
 **projects**
 - `projects` - Projects with budget, deadlines, status
@@ -2320,6 +2372,31 @@ Manual inventory additions should now be logged using ledger tables:
 - Storage additions → `storage_item_ledger` with `source_type='manual'`
 - Machine additions → `machine_item_ledger` with `source_type='manual'`
 - Damaged additions → `damaged_item_ledger` with `source_type='manual'`
+
+### Old Inventory Tables Cleanup
+
+**Status**: TODO - Delete after unified inventory is verified
+
+The old separate inventory tables are still in the codebase but have been replaced by the unified `inventory` table (STORAGE, DAMAGED, WASTE, SCRAP) and the `products` table (finished goods). Once the new system is verified working, delete:
+
+**Models to delete:**
+- `app/models/storage_item.py` → replaced by `inventory` with type=STORAGE
+- `app/models/damaged_item.py` → replaced by `inventory` with type=DAMAGED
+- `app/models/storage_item_ledger.py` → replaced by `inventory_ledger`
+- `app/models/damaged_item_ledger.py` → replaced by `inventory_ledger`
+
+**Full stack to delete (DAO, schemas, endpoints):**
+- `app/dao/storage_item.py`, `app/schemas/storage_item.py`, `app/api/v1/endpoints/storage_items.py`
+- `app/dao/damaged_item.py`, `app/schemas/damaged_item.py`, `app/api/v1/endpoints/damaged_items.py`
+- `app/dao/storage_item_ledger.py`, `app/schemas/storage_item_ledger.py`
+- `app/dao/damaged_item_ledger.py`, `app/schemas/damaged_item_ledger.py`
+
+**Router entries to remove:**
+- `/storage-items` route
+- `/damaged-items` route
+
+**db/base.py imports to remove:**
+- `StorageItem`, `DamagedItem`, `StorageItemLedger`, `DamagedItemLedger`
 
 ### Vendor Table Migration
 

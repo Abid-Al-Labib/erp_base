@@ -20,6 +20,17 @@ import { projectComponentTasksApi } from '@/features/projectComponentTasks/proje
 import { miscellaneousProjectCostsApi } from '@/features/miscellaneousProjectCosts/miscellaneousProjectCostsApi';
 import { salesOrdersApi } from '@/features/salesOrders/salesOrdersApi';
 import { salesDeliveriesApi } from '@/features/salesDeliveries/salesDeliveriesApi';
+import { machinesApi } from '@/features/machines/machinesApi';
+import { machineItemsApi } from '@/features/machineItems/machineItemsApi';
+import { machineMaintenanceLogsApi } from '@/features/machineMaintenanceLogs/machineMaintenanceLogsApi';
+import { productionApi } from '@/features/production/productionApi';
+import { inventoryApi } from '@/features/inventory/inventoryApi';
+import { productsApi } from '@/features/products/productsApi';
+import { workOrdersApi } from '@/features/workOrders/workOrdersApi';
+import { purchaseOrdersApi } from '@/features/purchaseOrders/purchaseOrdersApi';
+import { transferOrdersApi } from '@/features/transferOrders/transferOrdersApi';
+import { expenseOrdersApi } from '@/features/expenseOrders/expenseOrdersApi';
+import { orderTemplatesApi } from '@/features/orderTemplates/orderTemplatesApi';
 
 export const store = configureStore({
   reducer: {
@@ -43,6 +54,17 @@ export const store = configureStore({
     [miscellaneousProjectCostsApi.reducerPath]: miscellaneousProjectCostsApi.reducer,
     [salesOrdersApi.reducerPath]: salesOrdersApi.reducer,
     [salesDeliveriesApi.reducerPath]: salesDeliveriesApi.reducer,
+    [machinesApi.reducerPath]: machinesApi.reducer,
+    [machineItemsApi.reducerPath]: machineItemsApi.reducer,
+    [machineMaintenanceLogsApi.reducerPath]: machineMaintenanceLogsApi.reducer,
+    [productionApi.reducerPath]: productionApi.reducer,
+    [inventoryApi.reducerPath]: inventoryApi.reducer,
+    [productsApi.reducerPath]: productsApi.reducer,
+    [workOrdersApi.reducerPath]: workOrdersApi.reducer,
+    [purchaseOrdersApi.reducerPath]: purchaseOrdersApi.reducer,
+    [transferOrdersApi.reducerPath]: transferOrdersApi.reducer,
+    [expenseOrdersApi.reducerPath]: expenseOrdersApi.reducer,
+    [orderTemplatesApi.reducerPath]: orderTemplatesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -65,6 +87,17 @@ export const store = configureStore({
       miscellaneousProjectCostsApi.middleware,
       salesOrdersApi.middleware,
       salesDeliveriesApi.middleware,
+      machinesApi.middleware,
+      machineItemsApi.middleware,
+      machineMaintenanceLogsApi.middleware,
+      productionApi.middleware,
+      inventoryApi.middleware,
+      productsApi.middleware,
+      workOrdersApi.middleware,
+      purchaseOrdersApi.middleware,
+      transferOrdersApi.middleware,
+      expenseOrdersApi.middleware,
+      orderTemplatesApi.middleware,
     ),
 });
 

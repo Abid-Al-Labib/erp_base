@@ -38,9 +38,8 @@ class ExpenseOrder(Base):
     due_date = Column(Date, nullable=True)  # When payment is due
 
     # === TOTALS (calculated from line items) ===
-    subtotal = Column(Numeric(15, 2), nullable=False, default=0)  # Sum of all line items
-    tax_total = Column(Numeric(15, 2), nullable=False, default=0)  # Total tax
-    total_amount = Column(Numeric(15, 2), nullable=False, default=0)  # subtotal + tax_total
+    subtotal = Column(Numeric(15, 2), nullable=False, default=0)  # Sum of all line_subtotals
+    total_amount = Column(Numeric(15, 2), nullable=False, default=0)  # Same as subtotal (no tax at line level)
 
     # === WORKFLOW ===
     current_status_id = Column(Integer, ForeignKey("statuses.id", ondelete="RESTRICT"), nullable=False, index=True)

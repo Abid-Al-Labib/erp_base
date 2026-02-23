@@ -19,6 +19,11 @@ class MachineEvent(Base):
     initiated_by = Column(Integer, ForeignKey("profiles.id"), nullable=True)  # NULL = system initiated
     note = Column(Text, nullable=True)
 
+    # Audit fields
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    created_by = Column(Integer, ForeignKey("profiles.id"), nullable=True)
+
     # Relationships
     machine = relationship("Machine", backref="events")
-    initiator = relationship("Profile", backref="initiated_machine_events")
+    initiator = relationship("Profile", foreign_keys=[initiated_by], backref="initiated_machine_events")
+    creator = relationship("Profile", foreign_keys=[created_by], backref="created_machine_events")
