@@ -33,20 +33,23 @@ def get_accounts(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, le=100, description="Maximum number of records to return"),
     search: Optional[str] = Query(None, description="Search by account name"),
+    tag_code: Optional[str] = Query(None, description="Filter by tag code (e.g. supplier, client, vendor)"),
     workspace: Workspace = Depends(get_current_workspace),
     db: Session = Depends(get_db)
 ):
     """Get all accounts with their tags included"""
-    accounts = account_service.get_accounts_with_tags(db, workspace_id=workspace.id, search=search, skip=skip, limit=limit)
+    accounts = account_service.get_accounts_with_tags(
+        db, workspace_id=workspace.id, search=search, tag_code=tag_code, skip=skip, limit=limit
+    )
     return accounts
 
 
 @router.get(
     "/{account_id}",
-    response_model=AccountResponse,
+    response_model=AccountWithTagsResponse,
     status_code=status.HTTP_200_OK,
     summary="Get account by ID",
-    description="Retrieve a single account by its ID. Raises 404 if not found."
+    description="Retrieve a single account by its ID with tags included. Raises 404 if not found."
 )
 def get_account(
     account_id: int,
@@ -54,13 +57,12 @@ def get_account(
     db: Session = Depends(get_db)
 ):
     """
-    Get account by ID.
+    Get account by ID with tags included.
 
     Service layer will raise NotFoundError if account doesn't exist,
     which will be caught by exception handler and returned as RFC 7807 error.
     """
-    account = account_service.get_account(db, account_id, workspace_id=workspace.id)
-    return account
+    return account_service.get_account_with_tags(db, account_id, workspace_id=workspace.id)
 
 
 @router.post(

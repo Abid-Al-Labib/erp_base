@@ -5,7 +5,7 @@ import type { Department, CreateDepartmentRequest, UpdateDepartmentRequest, List
 export const departmentsApi = createApi({
   reducerPath: 'departmentsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000/api/v1',
+    baseUrl: import.meta.env.VITE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
       const token = state.auth.token;

@@ -14,7 +14,7 @@ const UserDropdownPanel = () => {
     if (error) {
       toast.error(error.message)
     } else {
-      navigate("/login")
+      navigate("/login2")
     }
   }
 
