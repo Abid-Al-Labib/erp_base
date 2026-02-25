@@ -20,9 +20,6 @@ class OrderTemplateItem(Base):
     line_number = Column(Integer, nullable=False)
     description = Column(Text, nullable=True)
 
-    # === ACCOUNT (can override parent template) ===
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True, index=True)
-
     # === QUANTITY & PRICING ===
     quantity = Column(Numeric(15, 2), nullable=False, default=1)
     unit = Column(String(50), nullable=True)  # 'service', 'hours', 'kWh', 'month', etc.
@@ -34,4 +31,3 @@ class OrderTemplateItem(Base):
 
     # === RELATIONSHIPS ===
     template = relationship("OrderTemplate", backref="template_items")
-    account = relationship("Account", backref="template_items")

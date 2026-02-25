@@ -38,9 +38,8 @@ class OrderTemplate(Base):
     next_generation_date = Column(Date, nullable=True)
     last_generated_date = Column(Date, nullable=True)
 
-    # === AUTO-GENERATION SETTINGS ===
+    # === SETTINGS ===
     is_active = Column(Boolean, nullable=False, default=True)
-    auto_generate = Column(Boolean, nullable=False, default=False)
     generate_days_before = Column(Integer, nullable=False, default=0)
     auto_approve = Column(Boolean, nullable=False, default=False)
 

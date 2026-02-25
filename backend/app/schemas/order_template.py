@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict
 
 class OrderTemplateItemCreate(BaseModel):
     description: str | None = None
-    account_id: int | None = None
     quantity: Decimal = 1
     unit: str | None = None
     unit_price: Decimal | None = None
@@ -16,7 +15,6 @@ class OrderTemplateItemCreate(BaseModel):
 
 class OrderTemplateItemUpdate(BaseModel):
     description: str | None = None
-    account_id: int | None = None
     quantity: Decimal | None = None
     unit: str | None = None
     unit_price: Decimal | None = None
@@ -29,7 +27,6 @@ class OrderTemplateItemResponse(BaseModel):
     order_template_id: int
     line_number: int
     description: str | None = None
-    account_id: int | None = None
     quantity: Decimal
     unit: str | None = None
     unit_price: Decimal | None = None
@@ -50,7 +47,6 @@ class OrderTemplateCreate(BaseModel):
     recurrence_day: int | None = None
     start_date: date | None = None
     end_date: date | None = None
-    auto_generate: bool = False
     generate_days_before: int = 0
     auto_approve: bool = False
     requires_approval: bool = True
@@ -72,7 +68,6 @@ class OrderTemplateUpdate(BaseModel):
     end_date: date | None = None
     next_generation_date: date | None = None
     is_active: bool | None = None
-    auto_generate: bool | None = None
     auto_approve: bool | None = None
     requires_approval: bool | None = None
     default_approver_id: int | None = None
@@ -95,7 +90,6 @@ class OrderTemplateResponse(BaseModel):
     next_generation_date: date | None = None
     last_generated_date: date | None = None
     is_active: bool
-    auto_generate: bool
     generate_days_before: int
     auto_approve: bool
     requires_approval: bool

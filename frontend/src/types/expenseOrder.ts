@@ -4,7 +4,6 @@ export interface ExpenseOrderItem {
   expense_order_id: number;
   line_number: number;
   description: string | null;
-  account_id: number | null;
   quantity: number;
   unit: string | null;
   unit_price: number | null;
@@ -40,7 +39,6 @@ export interface ExpenseOrder {
 
 export interface CreateExpenseOrderItem {
   description?: string | null;
-  account_id?: number | null;
   quantity?: number;
   unit?: string | null;
   unit_price?: number | null;
@@ -73,7 +71,6 @@ export interface UpdateExpenseOrder {
 
 export interface UpdateExpenseOrderItem {
   description?: string | null;
-  account_id?: number | null;
   quantity?: number | null;
   unit?: string | null;
   unit_price?: number | null;

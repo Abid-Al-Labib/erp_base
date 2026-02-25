@@ -4,7 +4,7 @@ export interface OrderTemplateItem {
   order_template_id: number;
   line_number: number;
   description: string | null;
-  account_id: number | null;
+
   quantity: number;
   unit: string | null;
   unit_price: number | null;
@@ -28,7 +28,6 @@ export interface OrderTemplate {
   next_generation_date: string | null;
   last_generated_date: string | null;
   is_active: boolean;
-  auto_generate: boolean;
   generate_days_before: number;
   auto_approve: boolean;
   requires_approval: boolean;
@@ -42,7 +41,7 @@ export interface OrderTemplate {
 
 export interface CreateOrderTemplateItem {
   description?: string | null;
-  account_id?: number | null;
+
   quantity?: number;
   unit?: string | null;
   unit_price?: number | null;
@@ -60,7 +59,6 @@ export interface CreateOrderTemplate {
   recurrence_day?: number | null;
   start_date?: string | null;
   end_date?: string | null;
-  auto_generate?: boolean;
   generate_days_before?: number;
   auto_approve?: boolean;
   requires_approval?: boolean;
@@ -82,7 +80,6 @@ export interface UpdateOrderTemplate {
   end_date?: string | null;
   next_generation_date?: string | null;
   is_active?: boolean | null;
-  auto_generate?: boolean | null;
   auto_approve?: boolean | null;
   requires_approval?: boolean | null;
   default_approver_id?: number | null;
@@ -91,7 +88,7 @@ export interface UpdateOrderTemplate {
 
 export interface UpdateOrderTemplateItem {
   description?: string | null;
-  account_id?: number | null;
+
   quantity?: number | null;
   unit?: string | null;
   unit_price?: number | null;

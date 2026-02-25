@@ -21,9 +21,6 @@ class ExpenseOrderItem(Base):
     line_number = Column(Integer, nullable=False)
     description = Column(Text, nullable=True)
 
-    # === ACCOUNT (can override parent) ===
-    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True, index=True)
-
     # === QUANTITY & PRICING ===
     quantity = Column(Numeric(15, 2), nullable=False, default=1)
     unit = Column(String(50), nullable=True)
@@ -38,4 +35,3 @@ class ExpenseOrderItem(Base):
 
     # === RELATIONSHIPS ===
     expense_order = relationship("ExpenseOrder", backref="line_items")
-    account = relationship("Account", backref="expense_order_items")

@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict
 
 class ExpenseOrderItemCreate(BaseModel):
     description: str | None = None
-    account_id: int | None = None
     quantity: Decimal = 1
     unit: str | None = None
     unit_price: Decimal | None = None
@@ -16,7 +15,6 @@ class ExpenseOrderItemCreate(BaseModel):
 
 class ExpenseOrderItemUpdate(BaseModel):
     description: str | None = None
-    account_id: int | None = None
     quantity: Decimal | None = None
     unit: str | None = None
     unit_price: Decimal | None = None
@@ -30,7 +28,6 @@ class ExpenseOrderItemResponse(BaseModel):
     expense_order_id: int
     line_number: int
     description: str | None = None
-    account_id: int | None = None
     quantity: Decimal
     unit: str | None = None
     unit_price: Decimal | None = None

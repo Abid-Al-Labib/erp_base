@@ -704,7 +704,6 @@ const ApiTestPage: React.FC = () => {
   const [eoItemQty, setEoItemQty] = useState('1');
   const [eoItemPrice, setEoItemPrice] = useState('0');
   const [eoItemUnit, setEoItemUnit] = useState('');
-  const [eoItemAccountId, setEoItemAccountId] = useState('');
 
   // Expense Orders API hooks
   const { data: expenseOrders, isLoading: isLoadingEO } = useGetExpenseOrdersQuery({
@@ -725,7 +724,6 @@ const ApiTestPage: React.FC = () => {
   const [tplIsRecurring, setTplIsRecurring] = useState(false);
   const [tplRecurrenceType, setTplRecurrenceType] = useState('');
   const [tplRecurrenceDay, setTplRecurrenceDay] = useState('');
-  const [tplAutoGenerate, setTplAutoGenerate] = useState(false);
   const [tplAutoApprove, setTplAutoApprove] = useState(false);
   const [tplNotes, setTplNotes] = useState('');
   const [tplFilterCategory, setTplFilterCategory] = useState('');
@@ -734,7 +732,6 @@ const ApiTestPage: React.FC = () => {
   const [tplItemQty, setTplItemQty] = useState('1');
   const [tplItemPrice, setTplItemPrice] = useState('0');
   const [tplItemUnit, setTplItemUnit] = useState('');
-  const [tplItemAccountId, setTplItemAccountId] = useState('');
 
   // Order Templates API hooks
   const { data: orderTemplates, isLoading: isLoadingTPL } = useGetOrderTemplatesQuery({
@@ -8458,14 +8455,13 @@ const ApiTestPage: React.FC = () => {
                     <div className="mt-2 border-t pt-2">
                       <div className="flex gap-2 mb-2 flex-wrap">
                         <input value={eoItemDesc} onChange={(e) => setEoItemDesc(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-xs flex-1 min-w-[100px]" />
-                        <input value={eoItemAccountId} onChange={(e) => setEoItemAccountId(e.target.value)} placeholder="Acct ID" className="border rounded px-2 py-1 text-xs w-16" />
                         <input value={eoItemQty} onChange={(e) => setEoItemQty(e.target.value)} placeholder="Qty" className="border rounded px-2 py-1 text-xs w-16" />
                         <input value={eoItemUnit} onChange={(e) => setEoItemUnit(e.target.value)} placeholder="Unit" className="border rounded px-2 py-1 text-xs w-16" />
                         <input value={eoItemPrice} onChange={(e) => setEoItemPrice(e.target.value)} placeholder="Price" className="border rounded px-2 py-1 text-xs w-20" />
                         <button onClick={async () => {
                           try {
-                            await addEOItem({ eoId: eo.id, data: { description: eoItemDesc || undefined, account_id: eoItemAccountId ? parseInt(eoItemAccountId) : undefined, quantity: parseFloat(eoItemQty), unit: eoItemUnit || undefined, unit_price: parseFloat(eoItemPrice) } }).unwrap();
-                            toast.success('Item added'); setEoItemDesc(''); setEoItemQty('1'); setEoItemPrice('0'); setEoItemUnit(''); setEoItemAccountId('');
+                            await addEOItem({ eoId: eo.id, data: { description: eoItemDesc || undefined, quantity: parseFloat(eoItemQty), unit: eoItemUnit || undefined, unit_price: parseFloat(eoItemPrice) } }).unwrap();
+                            toast.success('Item added'); setEoItemDesc(''); setEoItemQty('1'); setEoItemPrice('0'); setEoItemUnit('');
                           } catch { toast.error('Failed'); }
                         }} className="text-xs bg-rose-500 text-white px-2 py-1 rounded">Add</button>
                       </div>
@@ -8473,7 +8469,7 @@ const ApiTestPage: React.FC = () => {
                         <div className="space-y-1">
                           {eoItems.map((item) => (
                             <div key={item.id} className="flex justify-between items-center bg-rose-50 rounded px-2 py-1 text-xs">
-                              <span>#{item.line_number} {item.description || '(no description)'}{item.account_id ? ` [Acct:${item.account_id}]` : ''} | Qty:{Number(item.quantity)} {item.unit || ''} {item.unit_price ? `@ $${Number(item.unit_price)}` : ''} {item.line_subtotal ? `= $${Number(item.line_subtotal).toFixed(2)}` : ''} | {item.approved ? 'Approved' : 'Pending'}{item.notes ? ` | ${item.notes}` : ''}</span>
+                              <span>#{item.line_number} {item.description || '(no description)'} | Qty:{Number(item.quantity)} {item.unit || ''} {item.unit_price ? `@ $${Number(item.unit_price)}` : ''} {item.line_subtotal ? `= $${Number(item.line_subtotal).toFixed(2)}` : ''} | {item.approved ? 'Approved' : 'Pending'}{item.notes ? ` | ${item.notes}` : ''}</span>
                               <button onClick={async () => { try { await removeEOItem(item.id).unwrap(); toast.success('Removed'); } catch { toast.error('Failed'); } }} className="text-red-500 hover:text-red-700">X</button>
                             </div>
                           ))}
@@ -8539,7 +8535,6 @@ const ApiTestPage: React.FC = () => {
                   <input value={tplRecurrenceDay} onChange={(e) => setTplRecurrenceDay(e.target.value)} placeholder="Recurrence Day" className="border rounded px-2 py-1 text-sm" />
                 </>
               )}
-              <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={tplAutoGenerate} onChange={(e) => setTplAutoGenerate(e.target.checked)} /> Auto-generate</label>
               <label className="flex items-center gap-1 text-sm"><input type="checkbox" checked={tplAutoApprove} onChange={(e) => setTplAutoApprove(e.target.checked)} /> Auto-approve</label>
               <input value={tplNotes} onChange={(e) => setTplNotes(e.target.value)} placeholder="Notes" className="border rounded px-2 py-1 text-sm" />
             </div>
@@ -8554,12 +8549,11 @@ const ApiTestPage: React.FC = () => {
                     is_recurring: tplIsRecurring,
                     recurrence_type: tplRecurrenceType || undefined,
                     recurrence_day: tplRecurrenceDay ? parseInt(tplRecurrenceDay) : undefined,
-                    auto_generate: tplAutoGenerate,
                     auto_approve: tplAutoApprove,
                     notes: tplNotes || undefined,
                   }).unwrap();
                   toast.success('Template created');
-                  setTplName(''); setTplDesc(''); setTplCategory(''); setTplAccountId(''); setTplIsRecurring(false); setTplRecurrenceType(''); setTplRecurrenceDay(''); setTplAutoGenerate(false); setTplAutoApprove(false); setTplNotes('');
+                  setTplName(''); setTplDesc(''); setTplCategory(''); setTplAccountId(''); setTplIsRecurring(false); setTplRecurrenceType(''); setTplRecurrenceDay(''); setTplAutoApprove(false); setTplNotes('');
                 } catch (err: any) { toast.error(err.data?.detail || 'Failed'); }
               }}
               className="bg-violet-600 text-white px-3 py-1 rounded text-sm hover:bg-violet-700 mt-2"
@@ -8587,7 +8581,6 @@ const ApiTestPage: React.FC = () => {
                     {tpl.description || 'No description'}
                     {tpl.account_id && <> | Account: {tpl.account_id}</>}
                     {tpl.is_recurring && <> | {tpl.recurrence_type} (day {tpl.recurrence_day}){tpl.recurrence_interval && tpl.recurrence_interval > 1 ? ` every ${tpl.recurrence_interval}` : ''}</>}
-                    {tpl.auto_generate && <> | Auto-gen</>}
                     {tpl.auto_approve && <> | Auto-approve</>}
                     {tpl.next_generation_date && <> | Next: {tpl.next_generation_date}</>}
                     {tpl.notes && <> | Notes: {tpl.notes}</>}
@@ -8598,14 +8591,13 @@ const ApiTestPage: React.FC = () => {
                     <div className="mt-2 border-t pt-2">
                       <div className="flex gap-2 mb-2 flex-wrap">
                         <input value={tplItemDesc} onChange={(e) => setTplItemDesc(e.target.value)} placeholder="Description" className="border rounded px-2 py-1 text-xs flex-1 min-w-[100px]" />
-                        <input value={tplItemAccountId} onChange={(e) => setTplItemAccountId(e.target.value)} placeholder="Acct ID" className="border rounded px-2 py-1 text-xs w-16" />
                         <input value={tplItemQty} onChange={(e) => setTplItemQty(e.target.value)} placeholder="Qty" className="border rounded px-2 py-1 text-xs w-16" />
                         <input value={tplItemUnit} onChange={(e) => setTplItemUnit(e.target.value)} placeholder="Unit" className="border rounded px-2 py-1 text-xs w-16" />
                         <input value={tplItemPrice} onChange={(e) => setTplItemPrice(e.target.value)} placeholder="Price" className="border rounded px-2 py-1 text-xs w-20" />
                         <button onClick={async () => {
                           try {
-                            await addTPLItem({ tplId: tpl.id, data: { description: tplItemDesc || undefined, account_id: tplItemAccountId ? parseInt(tplItemAccountId) : undefined, quantity: parseFloat(tplItemQty), unit: tplItemUnit || undefined, unit_price: parseFloat(tplItemPrice) } }).unwrap();
-                            toast.success('Item added'); setTplItemDesc(''); setTplItemQty('1'); setTplItemPrice('0'); setTplItemUnit(''); setTplItemAccountId('');
+                            await addTPLItem({ tplId: tpl.id, data: { description: tplItemDesc || undefined, quantity: parseFloat(tplItemQty), unit: tplItemUnit || undefined, unit_price: parseFloat(tplItemPrice) } }).unwrap();
+                            toast.success('Item added'); setTplItemDesc(''); setTplItemQty('1'); setTplItemPrice('0'); setTplItemUnit('');
                           } catch { toast.error('Failed'); }
                         }} className="text-xs bg-violet-500 text-white px-2 py-1 rounded">Add</button>
                       </div>
@@ -8613,7 +8605,7 @@ const ApiTestPage: React.FC = () => {
                         <div className="space-y-1">
                           {tplItems.map((item) => (
                             <div key={item.id} className="flex justify-between items-center bg-violet-50 rounded px-2 py-1 text-xs">
-                              <span>#{item.line_number} {item.description || '(no description)'}{item.account_id ? ` [Acct:${item.account_id}]` : ''} | Qty:{Number(item.quantity)} {item.unit ? item.unit : ''} {item.unit_price ? `@ $${Number(item.unit_price)}` : ''} {item.line_subtotal ? `= $${Number(item.line_subtotal)}` : ''}{item.notes ? ` | ${item.notes}` : ''}</span>
+                              <span>#{item.line_number} {item.description || '(no description)'} | Qty:{Number(item.quantity)} {item.unit ? item.unit : ''} {item.unit_price ? `@ $${Number(item.unit_price)}` : ''} {item.line_subtotal ? `= $${Number(item.line_subtotal)}` : ''}{item.notes ? ` | ${item.notes}` : ''}</span>
                               <button onClick={async () => { try { await removeTPLItem(item.id).unwrap(); toast.success('Removed'); } catch { toast.error('Failed'); } }} className="text-red-500 hover:text-red-700">X</button>
                             </div>
                           ))}
