@@ -108,7 +108,7 @@ const ProjectsPage: React.FC = () => {
     selectedComponentId ?? 0,
     { skip: !selectedComponentId }
   );
-  const { data: items = [] } = useGetItemsQuery({ skip: 0, limit: 500 }, { skip: false });
+  const { data: items = [] } = useGetItemsQuery({ skip: 0, limit: 100 }, { skip: false });
 
   const [deleteProject, { isLoading: isDeletingProject }] = useDeleteProjectMutation();
   const [deleteComponent, { isLoading: isDeletingComponent }] = useDeleteProjectComponentMutation();

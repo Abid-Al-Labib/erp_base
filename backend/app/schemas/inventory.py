@@ -27,6 +27,8 @@ class InventoryResponse(BaseModel):
     id: int
     workspace_id: int
     item_id: int
+    item_name: str | None = None
+    item_unit: str | None = None
     inventory_type: InventoryTypeEnum
     factory_id: int
     qty: int

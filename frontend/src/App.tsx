@@ -20,8 +20,13 @@ import AccountDetailPage from "./pages/newpages/AccountDetailPage";
 // import ViewOrderPage from "./pages/ViewOrderPage";
 // import ManageOrderPage from "./pages/ManageOrderPage";
 // import ViewPartPage from "./pages/ViewPartPage";
-// import StoragePage from "./pages/StoragePage";
-// import MachinePage from "./pages/MachinePage";
+import StoragePage from "./pages/newpages/StoragePage";
+import PurchaseOrdersPage from "./pages/newpages/orders/PurchaseOrdersPage";
+import TransferOrdersPage from "./pages/newpages/orders/TransferOrdersPage";
+import ExpenseOrdersPage from "./pages/newpages/orders/ExpenseOrdersPage";
+import SalesOrdersPage from "./pages/newpages/orders/SalesOrdersPage";
+import WorkOrdersPage from "./pages/newpages/orders/WorkOrdersPage";
+import MachinePage from "./pages/MachinePage";
 import ProjectsPage from "./pages/newpages/ProjectsPage";
 import ProductionPage from "./pages/newpages/ProductionPage";
 import { AuthProvider } from "./context/AuthContext";
@@ -62,6 +67,14 @@ const App: React.FC = () => {
             <Route path="/accounts/:id" element={<AccountDetailPage />} />
             <Route path="/project" element={<ProjectsPage />} />
             <Route path="/production" element={<ProductionPage />} />
+            <Route path="/machine" element={<Navigate to="/factories" replace />} />
+            <Route path="/orders" element={<Navigate to="/orders/purchase" replace />} />
+            <Route path="/orders/purchase" element={<PurchaseOrdersPage />} />
+            <Route path="/orders/transfer" element={<TransferOrdersPage />} />
+            <Route path="/orders/expense" element={<ExpenseOrdersPage />} />
+            <Route path="/orders/sales" element={<SalesOrdersPage />} />
+            <Route path="/orders/work" element={<WorkOrdersPage />} />
+            <Route path="/management" element={<Navigate to="/dashboard" replace />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/api-test" element={<ApiTestPage />} />
 
@@ -79,8 +92,8 @@ const App: React.FC = () => {
             {/* <Route path="/createorder" element={<PrivateRoute pageKey="create order"><CreateOrderPage /></PrivateRoute>} /> */}
             {/* <Route path="/vieworder/:id" element={<PrivateRoute pageKey="view order"><ViewOrderPage /></PrivateRoute>} /> */}
             {/* <Route path="/manageorder/:id" element={<PrivateRoute pageKey="manage order"><ManageOrderPage /></PrivateRoute>} /> */}
-            {/* <Route path="/storage" element={<PrivateRoute pageKey="storage"><StoragePage /></PrivateRoute>} /> */}
-            {/* <Route path="/machine" element={<PrivateRoute pageKey="machine"><MachinePage /></PrivateRoute>} /> */}
+            <Route path="/storage" element={<StoragePage />} />
+            <Route path="/machine-old" element={<PrivateRoute pageKey="machine"><MachinePage /></PrivateRoute>} />
             <Route path="/businesslens" element={<BusinessLensPage />} />
             <Route path="/businesslens/:templateId" element={<BusinessLensWizardPage />} />
 

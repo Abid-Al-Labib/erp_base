@@ -1,0 +1,24 @@
+---
+description: Factory and section selectors in page header; no page scroll for list+detail layouts
+globs: frontend/src/pages/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Factory-Scoped Pages Design
+
+## Factory & Section in Header
+
+For pages scoped by factory/section (Machines, Production, etc.):
+
+- **Factory** and **Section** selectors MUST be in the **page header bar**, not in a separate filters card.
+- Layout: icon + title left; Factory, Section, Search, primary action right.
+- Reference: `MachinesPage.tsx`, `ProductionPage.tsx`
+
+## No Page Scroll
+
+For list + detail layouts:
+
+- Page container: `h-screen overflow-hidden` (no page scroll).
+- List and detail panels: `overflow-y-auto` on their content areas.
+- Use `flex-1 min-h-0` on flex children so internal scrolling works.
+- Header: `flex-shrink-0`; content: `flex-1 min-h-0 overflow-hidden`.

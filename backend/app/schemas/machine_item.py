@@ -24,8 +24,10 @@ class MachineItemUpdate(BaseModel):
 
 
 class MachineItemResponse(MachineItemBase):
-    """Machine item response schema"""
+    """Machine item response schema - includes item name/unit when item is loaded"""
     id: int
     workspace_id: int
+    item_name: str | None = None
+    item_unit: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -101,25 +101,26 @@
   }
 }
 
-/* Purple scrollbar for navbar */
-.scrollbar-purple {
+/* Themed scrollbar - MANDATORY for all scrollable areas site-wide */
+* {
   scrollbar-width: thin;
-  scrollbar-color: hsl(266 45% 59%) transparent;
+  scrollbar-color: hsl(var(--primary)) transparent;
 }
 
-.scrollbar-purple::-webkit-scrollbar {
+*::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
-.scrollbar-purple::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.scrollbar-purple::-webkit-scrollbar-thumb {
-  background: hsl(266 45% 59%);
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary));
   border-radius: 3px;
 }
 
-.scrollbar-purple::-webkit-scrollbar-thumb:hover {
-  background: hsl(266 45% 65%);
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary-hover));
 }

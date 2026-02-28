@@ -1,4 +1,5 @@
 """Work Order Manager - business logic for work orders"""
+from datetime import date
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -7,12 +8,14 @@ from fastapi import HTTPException, status
 from app.managers.base_manager import BaseManager
 from app.models.work_order import WorkOrder
 from app.models.work_order_item import WorkOrderItem
-from app.models.enums import WorkTypeEnum, WorkOrderPriorityEnum, WorkOrderStatusEnum
+from app.models.enums import WorkTypeEnum, WorkOrderPriorityEnum, WorkOrderStatusEnum, MaintenanceTypeEnum
 from app.schemas.work_order import WorkOrderCreate, WorkOrderUpdate
 from app.schemas.work_order_item import WorkOrderItemCreate, WorkOrderItemUpdate
+from app.schemas.machine_maintenance_log import MachineMaintenanceLogCreate
 from app.dao.work_order import work_order_dao
 from app.dao.work_order_item import work_order_item_dao
 from app.dao.factory import factory_dao
+from app.managers.machine_maintenance_log_manager import machine_maintenance_log_manager
 
 
 class WorkOrderManager(BaseManager[WorkOrder]):
@@ -77,6 +80,37 @@ class WorkOrderManager(BaseManager[WorkOrder]):
         if 'cost_approved' in update_dict and update_dict['cost_approved'] and not record.cost_approved:
             update_dict['cost_approved_by'] = user_id
             update_dict['cost_approved_at'] = func.now()
+
+        # When status changes to COMPLETED and machine_id is set, create a Machine Maintenance Log
+        new_status = update_dict.get('status')
+        machine_id = update_dict.get('machine_id') if 'machine_id' in update_dict else record.machine_id
+        if new_status == WorkOrderStatusEnum.COMPLETED and machine_id is not None:
+            work_type_to_maintenance = {
+                WorkTypeEnum.MAINTENANCE: MaintenanceTypeEnum.PREVENTIVE,
+                WorkTypeEnum.INSPECTION: MaintenanceTypeEnum.INSPECTION,
+                WorkTypeEnum.REPAIR: MaintenanceTypeEnum.REPAIR,
+                WorkTypeEnum.INSTALLATION: MaintenanceTypeEnum.REPAIR,
+                WorkTypeEnum.CALIBRATION: MaintenanceTypeEnum.INSPECTION,
+                WorkTypeEnum.OVERHAUL: MaintenanceTypeEnum.REPAIR,
+                WorkTypeEnum.FABRICATION: MaintenanceTypeEnum.REPAIR,
+                WorkTypeEnum.OTHER: MaintenanceTypeEnum.REPAIR,
+            }
+            maint_type = work_type_to_maintenance.get(record.work_type, MaintenanceTypeEnum.REPAIR)
+            summary = f"Work order {record.work_order_number} completed: {record.title}"
+            if record.completion_notes:
+                summary = f"{summary}. {record.completion_notes}"
+            log_data = MachineMaintenanceLogCreate(
+                machine_id=machine_id,
+                maintenance_type=maint_type,
+                maintenance_date=date.today(),
+                summary=summary[:500] if len(summary) > 500 else summary,
+                cost=record.cost,
+                performed_by=record.assigned_to,
+            )
+            machine_maintenance_log_manager.create_log(
+                session, log_data=log_data,
+                workspace_id=record.workspace_id, user_id=user_id
+            )
 
         return self.wo_dao.update(session, db_obj=record, obj_in=update_dict)
 

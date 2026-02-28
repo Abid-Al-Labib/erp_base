@@ -1,0 +1,24 @@
+---
+description: Themed scrollbar must be used site-wide for all scrollable areas
+globs: frontend/src/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Themed Scrollbar
+
+**MANDATORY**: All scrollable areas in the site must use the themed purple scrollbar.
+
+## Implementation
+
+The themed scrollbar is applied **globally** in `frontend/src/index.css`:
+- Uses `--primary` (purple) for thumb and `--primary-hover` for hover
+- Thin scrollbar (6px)
+- Transparent track
+- Rounded thumb
+
+## Rule
+
+- Do NOT add custom scrollbar styles that override the global theme
+- Do NOT use `scrollbar-gutter` or other scrollbar utilities that conflict
+- All `overflow-y-auto` and `overflow-x-auto` elements automatically get the themed scrollbar
+- No additional classes needed when adding new scrollable areas
