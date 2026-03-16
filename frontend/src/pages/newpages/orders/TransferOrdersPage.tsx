@@ -2,15 +2,18 @@ import React, { useState, useMemo } from 'react';
 import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   useGetTransferOrdersQuery,
   useDeleteTransferOrderMutation,
 } from '@/features/transferOrders/transferOrdersApi';
+import { useGetStatusesQuery } from '@/features/statuses/statusesApi';
 import type { TransferOrder } from '@/types/transferOrder';
 import { ArrowLeftRight, Plus, Loader2, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import TransferOrderDetailPanel from '@/components/newcomponents/customui/orders/TransferOrderDetailPanel';
+import TransferOrderListRow from '@/components/newcomponents/customui/orders/TransferOrderListRow';
+import AddTransferOrderDialog from '@/components/newcomponents/customui/orders/AddTransferOrderDialog';
+import { ORDER_LIST_WIDTH } from '@/components/newcomponents/customui/orders/orderListConstants';
 
 const TransferOrdersPage: React.FC = () => {
   const [isNavCollapsed, setIsNavCollapsed] = useState(() =>
@@ -18,9 +21,13 @@ const TransferOrdersPage: React.FC = () => {
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const { data: orders = [], isLoading } = useGetTransferOrdersQuery({ skip: 0, limit: 200 });
+  const { data: orders = [], isLoading } = useGetTransferOrdersQuery({ skip: 0, limit: 1000 });
+  const { data: statuses = [] } = useGetStatusesQuery({ skip: 0, limit: 100 });
   const [deleteOrder] = useDeleteTransferOrderMutation();
+  const statusLabel = (id: number) => statuses.find((s) => s.id === id)?.name ?? `#${id}`;
+  const formatDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString() : '—');
 
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return orders;
@@ -67,7 +74,10 @@ const TransferOrdersPage: React.FC = () => {
                   className="pl-9 h-9 bg-background"
                 />
               </div>
-              <Button className="bg-brand-primary hover:bg-brand-primary-hover h-9" disabled title="Add dialog coming soon">
+              <Button
+                className="bg-brand-primary hover:bg-brand-primary-hover h-9"
+                onClick={() => setAddDialogOpen(true)}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Transfer Order
               </Button>
@@ -76,7 +86,7 @@ const TransferOrdersPage: React.FC = () => {
         </div>
 
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          <div className="w-[340px] flex-shrink-0 border-r border-border flex flex-col min-h-0 bg-card">
+          <div className="flex-shrink-0 border-r border-border flex flex-col min-h-0 bg-card" style={{ width: ORDER_LIST_WIDTH }}>
             <div className="px-4 py-3 border-b border-border text-sm text-muted-foreground font-medium">
               {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
             </div>
@@ -96,24 +106,14 @@ const TransferOrdersPage: React.FC = () => {
               ) : (
                 <div className="divide-y divide-border">
                   {filteredOrders.map((o) => (
-                    <button
+                    <TransferOrderListRow
                       key={o.id}
-                      type="button"
+                      order={o}
+                      isSelected={selectedOrderId === o.id}
                       onClick={() => setSelectedOrderId(o.id)}
-                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${
-                        selectedOrderId === o.id ? 'bg-brand-primary/10 dark:bg-brand-primary/20 border-l-2 border-brand-primary' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-card-foreground truncate">{o.transfer_number}</span>
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          #{o.current_status_id}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground truncate mt-0.5">
-                        {o.source_location_type} → {o.destination_location_type}
-                      </div>
-                    </button>
+                      statusLabel={statusLabel(o.current_status_id)}
+                      formatDate={formatDate}
+                    />
                   ))}
                 </div>
               )}
@@ -136,6 +136,14 @@ const TransferOrdersPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AddTransferOrderDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSuccess={(createdOrder) => {
+          setSelectedOrderId((createdOrder as TransferOrder).id);
+        }}
+      />
     </div>
   );
 };

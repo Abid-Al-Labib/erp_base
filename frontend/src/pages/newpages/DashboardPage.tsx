@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, TrendingUp, TrendingDown, DollarSign, Users as UsersIcon, Activity, Percent } from 'lucide-react';
+import { Search, TrendingUp, DollarSign, Users as UsersIcon, Activity, Percent } from 'lucide-react';
 import { useAppSelector } from '@/app/hooks';
 
 const DashboardPage: React.FC = () => {
@@ -10,52 +10,15 @@ const DashboardPage: React.FC = () => {
     localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
   );
 
-  // Mock data for widgets
   const stats = [
-    { 
-      title: 'Current MRR', 
-      value: '$12.4k', 
-      bgColor: 'bg-brand-primary',
-      icon: <DollarSign size={24} />,
-    },
-    { 
-      title: 'Current Customers', 
-      value: '16,601', 
-      bgColor: 'bg-brand-primary-hover',
-      icon: <UsersIcon size={24} />,
-    },
-    { 
-      title: 'Active Customers', 
-      value: '33%', 
-      bgColor: 'bg-brand-accent',
-      icon: <Activity size={24} />,
-      textDark: true,
-    },
-    { 
-      title: 'Churn Rate', 
-      value: '2%', 
-      bgColor: 'bg-card',
-      border: true,
-      icon: <Percent size={24} />,
-      textDark: true,
-    },
+    { title: 'Current MRR', value: '—', bgColor: 'bg-brand-primary', icon: <DollarSign size={24} /> },
+    { title: 'Current Customers', value: '—', bgColor: 'bg-brand-primary-hover', icon: <UsersIcon size={24} /> },
+    { title: 'Active Customers', value: '—', bgColor: 'bg-brand-accent', icon: <Activity size={24} />, textDark: true },
+    { title: 'Churn Rate', value: '—', bgColor: 'bg-card', border: true, icon: <Percent size={24} />, textDark: true },
   ];
 
-  const transactions = [
-    { name: 'S. Evergreen', badge: 'PRO', amount: '+$430', status: 'up' },
-    { name: 'B. Sterling', badge: 'PREMIUM', amount: '+$320', status: 'up' },
-    { name: 'O. Meadows', badge: 'BASE', amount: '+$120', status: 'up' },
-    { name: 'H. Hawthorne', badge: 'BASE', amount: '+$90', status: 'up' },
-    { name: 'I. Wittman', badge: 'ENTERPRISE', amount: '+$240', status: 'up' },
-    { name: 'E. Frost', badge: 'BASE', amount: '+$120', status: 'up' },
-  ];
-
-  const supportTickets = [
-    { email: 'jessica.smith123@example.com', issue: 'Login Issue', status: 'OPEN', color: 'bg-brand-primary' },
-    { email: 'david.jones456@emaildummy.com', issue: 'Billing Inquiry', status: 'PENDING', color: 'bg-yellow-500' },
-    { email: 'emily.wilson789@fieldsjournal.net', issue: 'Product Malfunction', status: 'CLOSED', color: 'bg-gray-500' },
-    { email: 'andrew.johnson223@ghonyinbox.org', issue: 'Feature Request', status: 'OPEN', color: 'bg-brand-primary' },
-  ];
+  const transactions: { name: string; badge: string; amount: string; status: string }[] = [];
+  const supportTickets: { email: string; issue: string; status: string; color: string }[] = [];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -187,23 +150,27 @@ const DashboardPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {transactions.map((transaction, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-brand-primary/10 rounded-full flex items-center justify-center text-brand-primary font-semibold text-sm">
-                          {transaction.name.charAt(0)}
+                  {transactions.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground text-sm">No transactions yet</p>
+                  ) : (
+                    transactions.map((transaction, index) => (
+                      <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-brand-primary/10 rounded-full flex items-center justify-center text-brand-primary font-semibold text-sm">
+                            {transaction.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-card-foreground">{transaction.name}</div>
+                            <div className="text-xs text-muted-foreground">{transaction.badge}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-card-foreground">{transaction.name}</div>
-                          <div className="text-xs text-muted-foreground">{transaction.badge}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-card-foreground">{transaction.amount}</span>
+                          {transaction.status === 'up' && <TrendingUp size={16} className="text-green-500" />}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-card-foreground">{transaction.amount}</span>
-                        {transaction.status === 'up' && <TrendingUp size={16} className="text-green-500" />}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                   <button className="w-full mt-4 py-2 text-brand-primary hover:bg-brand-primary/5 rounded-lg font-medium transition-colors">
                     View all transactions
                   </button>
@@ -226,17 +193,21 @@ const DashboardPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {supportTickets.map((ticket, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                      <div className="flex-1 min-w-0 mr-4">
-                        <div className="text-sm text-muted-foreground truncate">{ticket.email}</div>
-                        <div className="text-xs font-medium text-card-foreground">{ticket.issue}</div>
+                  {supportTickets.length === 0 ? (
+                    <p className="py-8 text-center text-muted-foreground text-sm">No support tickets</p>
+                  ) : (
+                    supportTickets.map((ticket, index) => (
+                      <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                        <div className="flex-1 min-w-0 mr-4">
+                          <div className="text-sm text-muted-foreground truncate">{ticket.email}</div>
+                          <div className="text-xs font-medium text-card-foreground">{ticket.issue}</div>
+                        </div>
+                        <span className={`text-xs px-2 py-1 ${ticket.color} text-white rounded font-medium whitespace-nowrap`}>
+                          {ticket.status}
+                        </span>
                       </div>
-                      <span className={`text-xs px-2 py-1 ${ticket.color} text-white rounded font-medium whitespace-nowrap`}>
-                        {ticket.status}
-                      </span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

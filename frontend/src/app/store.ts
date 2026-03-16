@@ -32,6 +32,7 @@ import { purchaseOrdersApi } from '@/features/purchaseOrders/purchaseOrdersApi';
 import { transferOrdersApi } from '@/features/transferOrders/transferOrdersApi';
 import { expenseOrdersApi } from '@/features/expenseOrders/expenseOrdersApi';
 import { orderTemplatesApi } from '@/features/orderTemplates/orderTemplatesApi';
+import { statusesApi } from '@/features/statuses/statusesApi';
 
 export const store = configureStore({
   reducer: {
@@ -67,6 +68,7 @@ export const store = configureStore({
     [transferOrdersApi.reducerPath]: transferOrdersApi.reducer,
     [expenseOrdersApi.reducerPath]: expenseOrdersApi.reducer,
     [orderTemplatesApi.reducerPath]: orderTemplatesApi.reducer,
+    [statusesApi.reducerPath]: statusesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -101,6 +103,7 @@ export const store = configureStore({
       transferOrdersApi.middleware,
       expenseOrdersApi.middleware,
       orderTemplatesApi.middleware,
+      statusesApi.middleware,
     ),
 });
 

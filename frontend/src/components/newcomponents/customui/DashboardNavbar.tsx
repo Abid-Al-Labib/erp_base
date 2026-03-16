@@ -50,7 +50,7 @@ interface DashboardNavbarProps {
 const HOVER_ZONE_WIDTH = 56; // Wide enough to cover button + easy to trigger
 
 const FACTORIES_SUB_PATHS = ['/factories', '/items', '/storage', '/project', '/production'];
-const ORDERS_SUB_PATHS = ['/orders/purchase', '/orders/transfer', '/orders/expense', '/orders/sales', '/orders/work'];
+const ORDERS_SUB_PATHS = ['/orders', '/orders/purchase', '/orders/transfer', '/orders/expense', '/orders/sales', '/orders/work'];
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) => {
   const location = useLocation();
@@ -404,6 +404,9 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="right" className="w-56">
                   <DropdownMenuItem asChild>
+                    <Link to="/orders">Overview</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/orders/purchase">Purchase Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -443,6 +446,18 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                 </div>
                 <CollapsibleContent>
                   <ul className="mt-1 ml-4 pl-4 border-l border-white/20 dark:border-border space-y-1">
+                    <li>
+                      <Link
+                        to="/orders"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders') && location.pathname === '/orders'
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Overview</span>
+                      </Link>
+                    </li>
                     <li>
                       <Link
                         to="/orders/purchase"

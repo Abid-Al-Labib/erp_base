@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   useGetWorkOrdersQuery,
   useUpdateWorkOrderMutation,
@@ -13,7 +12,9 @@ import type { WorkOrderStatus } from '@/types/workOrder';
 import { Wrench, Plus, Loader2, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import WorkOrderDetailPanel from '@/components/newcomponents/customui/orders/WorkOrderDetailPanel';
+import WorkOrderListRow from '@/components/newcomponents/customui/orders/WorkOrderListRow';
 import AddWorkOrderDialog from '@/components/newcomponents/customui/orders/AddWorkOrderDialog';
+import { ORDER_LIST_WIDTH } from '@/components/newcomponents/customui/orders/orderListConstants';
 
 const STATUS_OPTIONS: { value: WorkOrderStatus; label: string }[] = [
   { value: 'DRAFT', label: 'Draft' },
@@ -51,6 +52,7 @@ const WorkOrdersPage: React.FC = () => {
   }, [orders, searchQuery]);
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) ?? null;
+  const formatDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString() : '—');
 
   const handleDelete = async (o: WorkOrder) => {
     if (!window.confirm(`Delete work order ${o.work_order_number}?`)) return;
@@ -110,7 +112,7 @@ const WorkOrdersPage: React.FC = () => {
         </div>
 
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          <div className="w-[340px] flex-shrink-0 border-r border-border flex flex-col min-h-0 bg-card">
+          <div className="flex-shrink-0 border-r border-border flex flex-col min-h-0 bg-card" style={{ width: ORDER_LIST_WIDTH }}>
             <div className="px-4 py-3 border-b border-border text-sm text-muted-foreground font-medium">
               {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
             </div>
@@ -136,23 +138,13 @@ const WorkOrdersPage: React.FC = () => {
               ) : (
                 <div className="divide-y divide-border">
                   {filteredOrders.map((o) => (
-                    <button
+                    <WorkOrderListRow
                       key={o.id}
-                      type="button"
+                      order={o}
+                      isSelected={selectedOrderId === o.id}
                       onClick={() => setSelectedOrderId(o.id)}
-                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${
-                        selectedOrderId === o.id ? 'bg-brand-primary/10 dark:bg-brand-primary/20 border-l-2 border-brand-primary' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-card-foreground truncate">{o.work_order_number}</span>
-                        <Badge variant={o.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-xs shrink-0">
-                          {o.status}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground truncate mt-0.5">{o.title}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{o.work_type}</div>
-                    </button>
+                      formatDate={formatDate}
+                    />
                   ))}
                 </div>
               )}

@@ -1,23 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import DashboardNavbar, { SIDEBAR_COLLAPSED_KEY } from '@/components/newcomponents/customui/DashboardNavbar';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   useGetPurchaseOrdersQuery,
-  useGetPurchaseOrderItemsQuery,
-  useCreatePurchaseOrderMutation,
-  useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
 } from '@/features/purchaseOrders/purchaseOrdersApi';
 import { useGetAccountsQuery } from '@/features/accounts/accountsApi';
 import { useGetFactoriesQuery } from '@/features/factories/factoriesApi';
+import { useGetStatusesQuery } from '@/features/statuses/statusesApi';
 import type { PurchaseOrder } from '@/types/purchaseOrder';
-import { ShoppingCart, Plus, Loader2, Search, Pencil, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, Loader2, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import AddPurchaseOrderDialog from '@/components/newcomponents/customui/orders/AddPurchaseOrderDialog';
 import PurchaseOrderDetailPanel from '@/components/newcomponents/customui/orders/PurchaseOrderDetailPanel';
+import PurchaseOrderListRow from '@/components/newcomponents/customui/orders/PurchaseOrderListRow';
+import { ORDER_LIST_WIDTH } from '@/components/newcomponents/customui/orders/orderListConstants';
 
 const PurchaseOrdersPage: React.FC = () => {
   const [isNavCollapsed, setIsNavCollapsed] = useState(() =>
@@ -27,10 +25,13 @@ const PurchaseOrdersPage: React.FC = () => {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const { data: orders = [], isLoading } = useGetPurchaseOrdersQuery({ skip: 0, limit: 200 });
+  const { data: orders = [], isLoading } = useGetPurchaseOrdersQuery({ skip: 0, limit: 100 });
   const { data: accounts = [] } = useGetAccountsQuery({ skip: 0, limit: 100 });
   const { data: factories = [] } = useGetFactoriesQuery({ skip: 0, limit: 100 });
+  const { data: statuses = [] } = useGetStatusesQuery({ skip: 0, limit: 100 });
   const [deleteOrder] = useDeletePurchaseOrderMutation();
+
+  const statusMap = useMemo(() => new Map(statuses.map((s) => [s.id, s.name])), [statuses]);
 
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return orders;
@@ -48,6 +49,18 @@ const PurchaseOrdersPage: React.FC = () => {
     v != null ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(v) : '—';
 
   const accountName = (id: number) => accounts.find((a) => a.id === id)?.name ?? `#${id}`;
+  const statusLabel = (id: number) => statusMap.get(id) ?? `#${id}`;
+  const destinationLabel = (order: PurchaseOrder) => {
+    if (order.destination_type === 'storage') {
+      const factory = factories.find((f) => f.id === order.destination_id);
+      return factory ? `Storage (${factory.name})` : 'Storage';
+    }
+    if (order.destination_type === 'machine') {
+      return `Machine #${order.destination_id}`;
+    }
+    return `${order.destination_type} #${order.destination_id}`;
+  };
+  const formatDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString() : '—');
 
   const handleDelete = async (o: PurchaseOrder) => {
     if (!window.confirm(`Delete purchase order ${o.po_number}?`)) return;
@@ -96,7 +109,7 @@ const PurchaseOrdersPage: React.FC = () => {
 
         <div className="flex-1 min-h-0 flex overflow-hidden">
           {/* List panel */}
-          <div className="w-[340px] flex-shrink-0 border-r border-border flex flex-col min-h-0 bg-card">
+          <div className="flex-shrink-0 border-r border-border flex flex-col min-h-0 bg-card" style={{ width: ORDER_LIST_WIDTH }}>
             <div className="px-4 py-3 border-b border-border text-sm text-muted-foreground font-medium">
               {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
             </div>
@@ -122,23 +135,17 @@ const PurchaseOrdersPage: React.FC = () => {
               ) : (
                 <div className="divide-y divide-border">
                   {filteredOrders.map((o) => (
-                    <button
+                    <PurchaseOrderListRow
                       key={o.id}
-                      type="button"
+                      order={o}
+                      isSelected={selectedOrderId === o.id}
                       onClick={() => setSelectedOrderId(o.id)}
-                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${
-                        selectedOrderId === o.id ? 'bg-brand-primary/10 dark:bg-brand-primary/20 border-l-2 border-brand-primary' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-card-foreground truncate">{o.po_number}</span>
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          #{o.current_status_id}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground truncate mt-0.5">{accountName(o.account_id)}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{formatCurrency(Number(o.total_amount))}</div>
-                    </button>
+                      accountName={accountName(o.account_id)}
+                      statusLabel={statusLabel(o.current_status_id)}
+                      destinationLabel={destinationLabel(o)}
+                      formatCurrency={formatCurrency}
+                      formatDate={formatDate}
+                    />
                   ))}
                 </div>
               )}

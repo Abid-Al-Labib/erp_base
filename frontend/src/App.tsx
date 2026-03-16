@@ -21,6 +21,7 @@ import AccountDetailPage from "./pages/newpages/AccountDetailPage";
 // import ManageOrderPage from "./pages/ManageOrderPage";
 // import ViewPartPage from "./pages/ViewPartPage";
 import StoragePage from "./pages/newpages/StoragePage";
+import OrdersOverviewPage from "./pages/newpages/orders/OrdersOverviewPage";
 import PurchaseOrdersPage from "./pages/newpages/orders/PurchaseOrdersPage";
 import TransferOrdersPage from "./pages/newpages/orders/TransferOrdersPage";
 import ExpenseOrdersPage from "./pages/newpages/orders/ExpenseOrdersPage";
@@ -68,7 +69,7 @@ const App: React.FC = () => {
             <Route path="/project" element={<ProjectsPage />} />
             <Route path="/production" element={<ProductionPage />} />
             <Route path="/machine" element={<Navigate to="/factories" replace />} />
-            <Route path="/orders" element={<Navigate to="/orders/purchase" replace />} />
+            <Route path="/orders" element={<OrdersOverviewPage />} />
             <Route path="/orders/purchase" element={<PurchaseOrdersPage />} />
             <Route path="/orders/transfer" element={<TransferOrdersPage />} />
             <Route path="/orders/expense" element={<ExpenseOrdersPage />} />
