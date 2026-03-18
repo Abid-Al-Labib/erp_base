@@ -23,6 +23,8 @@ class WorkOrderItemResponse(BaseModel):
     workspace_id: int
     work_order_id: int
     item_id: int
+    item_name: str | None = None
+    item_unit: str | None = None
     quantity: int
     notes: str | None = None
     created_at: datetime

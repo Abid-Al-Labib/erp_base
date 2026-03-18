@@ -26,13 +26,13 @@ const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="max-w-3xl h-[66vh] overflow-hidden flex flex-col p-0">
         {order ? (
           <>
             <DialogHeader className="border-b border-border px-6 py-4 shrink-0">
               <DialogTitle>{order.sales_order_number}</DialogTitle>
             </DialogHeader>
-            <div className="overflow-y-auto flex-1 min-h-0 px-6 pb-6">
+            <div className="overflow-y-auto flex-1 min-h-0 p-6 pt-4">
               <SalesOrderDetailPanel
                 order={order}
                 accounts={accounts}

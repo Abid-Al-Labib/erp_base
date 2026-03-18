@@ -20,32 +20,58 @@ This document tracks the ongoing work on the orders module (Purchase, Sales, Tra
 
 ### 2. Detail panel layout (right side)
 
-- **Two-column layout**:
-  - **Left**: Overview (order info, metadata, actions) – max width `ORDER_OVERVIEW_MAX_WIDTH = 380px`
-  - **Right**: Items card – fixed width `ORDER_ITEMS_CARD_WIDTH = 520px`
+- **Stacked layout** (Option A): Details on top, items below (full width).
+  - Header: Back button
+  - Order details: Title, key info in inline format (Subtotal, Total, dates, etc.), status actions
+  - Items: Full-width table below
 
-- All five order types use this layout: Purchase, Sales, Transfer, Expense, Work.
-- **Transfer Orders**: Source and destination shown as separate cards with arrow (→) between them. Location names resolved from factories, machines, projects.
+- Applied to: Purchase, Transfer, Expense, Work order detail panels.
+- **Transfer Orders**: Source → Destination shown inline with arrow.
 
 ### 3. Shared constants
 
 **File**: `frontend/src/components/newcomponents/customui/orders/orderListConstants.ts`
 
 ```ts
-ORDER_LIST_WIDTH = 480
-ORDER_OVERVIEW_MAX_WIDTH = 380
-ORDER_ITEMS_CARD_WIDTH = 520
+ORDER_LIST_WIDTH = 360
 ```
 
 ### 4. Order status actions layout
 
 - **Component**: `OrderStatusActions` (`OrderStatusActions.tsx`)
-- **Layout**: Horizontal bar with three separate elements:
+- **Layout** (as of March 18, 2026): Two elements only:
   - **Advance** – Primary button: "Advance to {next status} →"
-  - **Status** – Dropdown to change status directly
   - **Delete** – Outline button with trash icon (when `onDelete` passed)
 - **Used in**: Purchase, Transfer, Expense detail panels (Sales has no Delete)
 - **Work orders**: Use their own status buttons, not OrderStatusActions
+
+### 5. Order detail UX improvements (March 18, 2026)
+
+**Purchase Order Details** (`PurchaseOrderDetailPanel.tsx`):
+- Removed progress bar (redundant with "Received X/Y (Z%)" text)
+- Replaced inline metadata with 2-column definition grid: Supplier, Destination, Subtotal, Total, Received, Created, Invoice (when linked)
+- Cleaner header: PO# + status badge only
+
+**Transfer Order Details** (`TransferOrderDetailPanel.tsx`):
+- Source and destination made more prominent: bordered card with "From" / "To" labels
+- Each location shows icon, name, and type (storage, machine, etc.)
+- Arrow between source and destination
+
+**OrderStatusActions** – Simplified:
+- Removed status change dropdown
+- Now only: **Advance** button + **Delete** button (when `onDelete` provided)
+
+**Button placement** – Moved after items list:
+- Advance and Delete buttons now appear at the bottom of the detail panel, after the items table
+- Applied to: Purchase, Transfer, Expense, Sales detail panels
+
+**Right panel scrollability**:
+- Detail panel container already uses `flex-1 min-h-0 overflow-y-auto` for scroll when content overflows
+
+**Sales Order Modal** (`SalesOrderDetailModal.tsx`, `SalesOrderDetailPanel.tsx`):
+- Modal height set to **66vh** (66% of viewport)
+- Entire modal content scrollable (single scroll area below header)
+- Removed nested overflow from panel; items table uses `overflow-x-auto` only (horizontal scroll for wide tables)
 
 ---
 
@@ -57,6 +83,7 @@ ORDER_ITEMS_CARD_WIDTH = 520
 | Status actions | `frontend/src/components/newcomponents/customui/orders/OrderStatusActions.tsx` |
 | List rows | `frontend/src/components/newcomponents/customui/orders/*OrderListRow.tsx` |
 | Detail panels | `frontend/src/components/newcomponents/customui/orders/*OrderDetailPanel.tsx` |
+| Sales modal | `frontend/src/components/newcomponents/customui/orders/SalesOrderDetailModal.tsx` |
 | Add dialogs | `frontend/src/components/newcomponents/customui/orders/Add*OrderDialog.tsx` |
 | Pages | `frontend/src/pages/newpages/orders/*OrdersPage.tsx` |
 | Orders Overview | `frontend/src/pages/newpages/orders/OrdersOverviewPage.tsx` |
@@ -80,7 +107,7 @@ ORDER_ITEMS_CARD_WIDTH = 520
 ## Status workflow (March 2026)
 
 - **Standard stages**: Pending → Approved → In Transit → Received (for Purchase, Transfer, Expense, Sales)
-- **OrderStatusActions** component: Advance button + Change status dropdown on each detail panel
+- **OrderStatusActions** component: Advance button + Delete button (dropdown removed March 18)
 - **Statuses**: Standard workflow uses 4 statuses (id 1–4)
 - **Work orders**: Use separate status enum (DRAFT, PENDING_APPROVAL, APPROVED, IN_PROGRESS, COMPLETED, CANCELLED)
 
@@ -143,4 +170,4 @@ ORDER_ITEMS_CARD_WIDTH = 520
 
 ---
 
-*Last updated: March 16, 2026*
+*Last updated: March 18, 2026*

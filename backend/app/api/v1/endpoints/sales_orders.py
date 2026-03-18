@@ -4,7 +4,7 @@ Sales order endpoints
 Provides CRUD operations for sales orders (customer contracts with deliveries).
 Sales orders link to customer accounts and can have multiple deliveries over time.
 """
-from typing import List, Optional
+from typing import List, Optional  # List used for response_model
 from fastapi import APIRouter, Depends, Query, Body, status
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,7 @@ from app.schemas.sales_order import (
     SalesOrderUpdate,
     SalesOrderResponse
 )
-from app.schemas.sales_order_item import SalesOrderItemInput
+from app.schemas.sales_order_item import SalesOrderItemInput, SalesOrderItemListResponse
 from app.services.sales_service import sales_service
 
 
@@ -143,6 +143,7 @@ def update_sales_order(
 
 @router.get(
     "/{order_id}/items",
+    response_model=List[SalesOrderItemListResponse],
     status_code=status.HTTP_200_OK,
     summary="Get sales order items",
     description="Get all line items for a sales order."

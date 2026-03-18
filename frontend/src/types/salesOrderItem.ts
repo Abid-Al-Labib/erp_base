@@ -3,8 +3,11 @@ export interface SalesOrderItem {
   workspace_id: number;
   sales_order_id: number;
   item_id: number;
+  item_name: string | null;
+  item_unit: string | null;
   quantity_ordered: number;
   quantity_delivered: number;
+  quantity_remaining?: number;
   unit_price: number;
   line_total: number;
   notes: string | null;

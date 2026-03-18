@@ -92,6 +92,8 @@ export interface WorkOrderItem {
   workspace_id: number;
   work_order_id: number;
   item_id: number;
+  item_name: string | null;
+  item_unit: string | null;
   quantity: number;
   notes: string | null;
   created_at: string;

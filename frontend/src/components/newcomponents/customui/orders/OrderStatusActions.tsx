@@ -1,12 +1,5 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ORDER_STATUS_WORKFLOW, getNextStatusId } from './orderStatusConstants';
 import { ChevronRight, Loader2, Trash2 } from 'lucide-react';
 
@@ -50,25 +43,6 @@ const OrderStatusActions: React.FC<OrderStatusActionsProps> = ({
           )}
         </Button>
       )}
-      <Select
-        value={currentStatusId.toString()}
-        onValueChange={(v) => {
-          const id = Number(v);
-          if (id !== currentStatusId) onStatusChange(id);
-        }}
-        disabled={isLoading}
-      >
-        <SelectTrigger className="w-[130px] h-8 text-sm">
-          <SelectValue placeholder="Change status" />
-        </SelectTrigger>
-        <SelectContent>
-          {statuses.map((s) => (
-            <SelectItem key={s.id} value={s.id.toString()}>
-              {s.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
       {onDelete && (
         <Button
           variant="outline"

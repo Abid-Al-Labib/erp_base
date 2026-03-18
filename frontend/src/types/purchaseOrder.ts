@@ -4,6 +4,8 @@ export interface PurchaseOrderItem {
   purchase_order_id: number;
   line_number: number;
   item_id: number;
+  item_name: string | null;
+  item_unit: string | null;
   quantity_ordered: number;
   quantity_received: number;
   unit_price: number;

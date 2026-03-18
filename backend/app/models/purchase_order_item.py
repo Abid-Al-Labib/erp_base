@@ -33,4 +33,12 @@ class PurchaseOrderItem(Base):
 
     # === RELATIONSHIPS ===
     purchase_order = relationship("PurchaseOrder", backref="line_items")
-    item = relationship("Item", backref="purchase_order_items")
+    item = relationship("Item", backref="purchase_order_items", lazy="joined")
+
+    @property
+    def item_name(self) -> str | None:
+        return self.item.name if self.item else None
+
+    @property
+    def item_unit(self) -> str | None:
+        return self.item.unit if self.item else None

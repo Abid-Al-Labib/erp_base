@@ -39,5 +39,13 @@ class TransferOrderItem(Base):
 
     # === RELATIONSHIPS ===
     transfer_order = relationship("TransferOrder", backref="line_items")
-    item = relationship("Item", backref="transfer_order_items")
+    item = relationship("Item", backref="transfer_order_items", lazy="joined")
+
+    @property
+    def item_name(self) -> str | None:
+        return self.item.name if self.item else None
+
+    @property
+    def item_unit(self) -> str | None:
+        return self.item.unit if self.item else None
     approver = relationship("Profile", foreign_keys=[approved_by], backref="approved_transfer_items")

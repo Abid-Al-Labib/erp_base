@@ -23,5 +23,13 @@ class WorkOrderItem(Base):
 
     # Relationships
     work_order = relationship("WorkOrder", back_populates="items")
-    item = relationship("Item", backref="work_order_items")
+    item = relationship("Item", backref="work_order_items", lazy="joined")
+
+    @property
+    def item_name(self) -> str | None:
+        return self.item.name if self.item else None
+
+    @property
+    def item_unit(self) -> str | None:
+        return self.item.unit if self.item else None
     creator = relationship("Profile", foreign_keys=[created_by], backref="created_work_order_items")

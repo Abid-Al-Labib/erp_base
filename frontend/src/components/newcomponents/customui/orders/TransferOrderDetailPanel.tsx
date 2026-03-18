@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,9 +10,14 @@ import { useGetStatusesQuery } from '@/features/statuses/statusesApi';
 import { useGetFactoriesQuery } from '@/features/factories/factoriesApi';
 import { useGetMachinesQuery } from '@/features/machines/machinesApi';
 import { useGetProjectsQuery } from '@/features/projects/projectsApi';
-import { ORDER_OVERVIEW_FLEX, ORDER_ITEMS_FLEX } from '@/components/newcomponents/customui/orders/orderListConstants';
 import type { TransferOrder } from '@/types/transferOrder';
 import { ArrowLeft, ArrowRight, Package, Warehouse, Cpu, AlertTriangle, FolderKanban } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import toast from 'react-hot-toast';
 import OrderStatusActions from './OrderStatusActions';
 import { API_LIMITS } from '@/constants/apiLimits';
@@ -68,6 +72,11 @@ const TransferOrderDetailPanel: React.FC<TransferOrderDetailPanelProps> = ({
   const [updateOrder, { isLoading: isUpdating }] = useUpdateTransferOrderMutation();
 
   const formatDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString() : '—');
+  const formatDateTime = (d: string | null | undefined) => (d ? new Date(d).toLocaleString() : '—');
+  const itemDisplayName = (it: { item_name: string | null; item_id: number }) =>
+    it.item_name ?? `Item #${it.item_id}`;
+  const qtyWithUnit = (qty: number, unit: string | null) =>
+    unit ? `${qty} ${unit}` : String(qty);
 
   const statusLabel = statuses.find((s) => s.id === order.current_status_id)?.name ?? `#${order.current_status_id}`;
 
@@ -98,110 +107,128 @@ const TransferOrderDetailPanel: React.FC<TransferOrderDetailPanelProps> = ({
   };
 
   return (
-    <div className="p-6 flex gap-6 min-h-0 overflow-hidden">
-      <div
-        className="min-w-0 overflow-y-auto"
-        style={{ flex: `${ORDER_OVERVIEW_FLEX} ${ORDER_OVERVIEW_FLEX} 0` }}
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-        </div>
+    <div className="p-6 flex flex-col gap-6 min-h-0 overflow-y-auto">
+      <div className="flex items-center gap-3 shrink-0">
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+      </div>
 
-        <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="shrink-0 space-y-4">
+        <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-card-foreground">{order.transfer_number}</h2>
           <Badge variant="secondary">{statusLabel}</Badge>
         </div>
 
-        {/* Source → Destination cards with arrow */}
-        <div className="flex items-stretch gap-3 mb-6">
-          <Card className="flex-1 min-w-0">
-            <CardContent className="pt-4 pb-4">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Source</div>
-              <div className="flex items-center gap-2 text-card-foreground">
-                <span className="text-muted-foreground">{source.icon}</span>
-                <span className="font-medium">{source.label}</span>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1 capitalize">{order.source_location_type}</div>
-            </CardContent>
-          </Card>
-          <div className="flex flex-col justify-center shrink-0 px-2">
-            <ArrowRight className="h-8 w-8 text-brand-primary" />
+        {/* Source → Destination - prominent transfer path */}
+        <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/30">
+          <div className="flex-1 flex flex-col gap-1 min-w-0">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">From</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground shrink-0">{source.icon}</span>
+              <span className="font-semibold text-card-foreground truncate">{source.label}</span>
+            </div>
+            <span className="text-xs text-muted-foreground capitalize">{order.source_location_type}</span>
           </div>
-          <Card className="flex-1 min-w-0">
-            <CardContent className="pt-4 pb-4">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Destination</div>
-              <div className="flex items-center gap-2 text-card-foreground">
-                <span className="text-muted-foreground">{dest.icon}</span>
-                <span className="font-medium">{dest.label}</span>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1 capitalize">{order.destination_location_type}</div>
-            </CardContent>
-          </Card>
+          <ArrowRight className="h-6 w-6 text-brand-primary shrink-0" aria-hidden />
+          <div className="flex-1 flex flex-col gap-1 min-w-0">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">To</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground shrink-0">{dest.icon}</span>
+              <span className="font-semibold text-card-foreground truncate">{dest.label}</span>
+            </div>
+            <span className="text-xs text-muted-foreground capitalize">{order.destination_location_type}</span>
+          </div>
         </div>
 
-        <Card className="mb-6">
-          <CardContent className="pt-4 pb-4">
-            <dl className="grid grid-cols-2 gap-2 text-sm">
-              <dt className="text-muted-foreground">Order date</dt>
-              <dd>{formatDate(order.order_date)}</dd>
-              <dt className="text-muted-foreground">Created</dt>
-              <dd>{formatDate(order.created_at)}</dd>
-            </dl>
-            {order.description && <p className="text-sm text-muted-foreground mt-3">{order.description}</p>}
-          </CardContent>
-        </Card>
-
-        <div className="pt-4 border-t border-border">
-          <OrderStatusActions
-            currentStatusId={order.current_status_id}
-            onStatusChange={handleStatusChange}
-            isLoading={isUpdating}
-            statuses={statuses}
-            onDelete={onDelete}
-          />
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <span><span className="text-muted-foreground">Order date:</span> {formatDate(order.order_date)}</span>
+          <span><span className="text-muted-foreground">Created:</span> {formatDate(order.created_at)}</span>
         </div>
+
+        {order.description && <p className="text-sm text-muted-foreground">{order.description}</p>}
       </div>
 
-      <Card
-        className="min-w-0 overflow-hidden flex flex-col"
-        style={{ flex: `${ORDER_ITEMS_FLEX} ${ORDER_ITEMS_FLEX} 0` }}
-      >
-        <CardContent className="pt-6 pb-4 flex-1 min-h-0 flex flex-col">
-          <div className="flex items-center gap-2 mb-3">
-            <Package className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-base font-semibold text-card-foreground">Items ({items.length})</h3>
-          </div>
-          {itemsLoading ? (
-            <p className="text-sm text-muted-foreground py-4">Loading...</p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">No items</p>
-          ) : (
-            <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="py-2">Item</TableHead>
-                    <TableHead className="py-2">Qty</TableHead>
-                    <TableHead className="py-2">Approved</TableHead>
+      <div className="flex-1 min-h-0 flex flex-col shrink-0">
+        <div className="flex items-center gap-2 mb-3">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-base font-semibold text-card-foreground">Items ({items.length})</h3>
+        </div>
+        {itemsLoading ? (
+          <p className="text-sm text-muted-foreground py-4">Loading...</p>
+        ) : items.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No items</p>
+        ) : (
+          <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="py-2 w-10">#</TableHead>
+                  <TableHead className="py-2">Item name</TableHead>
+                  <TableHead className="py-2">Qty</TableHead>
+                  <TableHead className="py-2">Approved</TableHead>
+                  <TableHead className="py-2">Transferred at</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((it) => (
+                  <TableRow key={it.id} className="border-b border-border">
+                    <TableCell className="py-2 text-muted-foreground">{it.line_number}</TableCell>
+                    <TableCell className="py-2">
+                      <span className="font-medium text-sm">{itemDisplayName(it)}</span>
+                    </TableCell>
+                    <TableCell className="py-2">{qtyWithUnit(it.quantity, it.item_unit)}</TableCell>
+                    <TableCell className="py-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {it.approved ? 'Yes' : 'No'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {it.approved
+                              ? `Approved on ${formatDateTime(it.approved_at)}${it.approved_by ? ` by user #${it.approved_by}` : ''}`
+                              : 'Pending approval'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {it.transferred_at ? formatDate(it.transferred_at) : '—'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {it.transferred_at
+                              ? `Transferred by ${it.transferred_by ?? '—'} on ${formatDateTime(it.transferred_at)}`
+                              : 'Not yet transferred'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((it) => (
-                    <TableRow key={it.id} className="border-b border-border">
-                      <TableCell className="py-2 font-mono text-sm">{it.item_id}</TableCell>
-                      <TableCell className="py-2">{it.quantity}</TableCell>
-                      <TableCell className="py-2">{it.approved ? 'Yes' : 'No'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
+
+      {/* Actions - after items */}
+      <div className="shrink-0 pt-2">
+        <OrderStatusActions
+          currentStatusId={order.current_status_id}
+          onStatusChange={handleStatusChange}
+          isLoading={isUpdating}
+          statuses={statuses}
+          onDelete={onDelete}
+        />
+      </div>
     </div>
   );
 };

@@ -31,5 +31,18 @@ class SalesOrderItem(Base):
 
     # === RELATIONSHIPS ===
     sales_order = relationship("SalesOrder", backref="items")
-    item = relationship("Item", backref="sales_order_items")
+    item = relationship("Item", backref="sales_order_items", lazy="joined")
+
+    @property
+    def item_name(self) -> str | None:
+        return self.item.name if self.item else None
+
+    @property
+    def item_unit(self) -> str | None:
+        return self.item.unit if self.item else None
+
+    @property
+    def quantity_remaining(self) -> int:
+        return max(0, self.quantity_ordered - self.quantity_delivered)
+
     workspace = relationship("Workspace", backref="sales_order_items")

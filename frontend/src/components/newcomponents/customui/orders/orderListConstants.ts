@@ -1,6 +1,6 @@
 /** Shared constants for order list/detail layouts across all order types */
-export const ORDER_LIST_WIDTH = 480;
+export const ORDER_LIST_WIDTH = 360;
 
-/** Layout B: Equal-width columns - Overview 50% / Items 50% */
+/** @deprecated Used by legacy two-column detail layout. New layout is stacked (details top, items below). */
 export const ORDER_OVERVIEW_FLEX = 1;
 export const ORDER_ITEMS_FLEX = 1;
