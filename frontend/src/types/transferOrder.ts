@@ -4,6 +4,8 @@ export interface TransferOrderItem {
   transfer_order_id: number;
   line_number: number;
   item_id: number;
+  item_name: string | null;
+  item_unit: string | null;
   quantity: number;
   approved: boolean;
   approved_by: number | null;

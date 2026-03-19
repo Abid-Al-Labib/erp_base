@@ -25,6 +25,8 @@ class TransferOrderItemResponse(BaseModel):
     transfer_order_id: int
     line_number: int
     item_id: int
+    item_name: str | None = None
+    item_unit: str | None = None
     quantity: Decimal
     approved: bool
     approved_by: int | None = None

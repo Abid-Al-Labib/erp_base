@@ -8,6 +8,8 @@ export interface Inventory {
   id: number;
   workspace_id: number;
   item_id: number;
+  item_name?: string | null;
+  item_unit?: string | null;
   inventory_type: InventoryType;
   factory_id: number;
   qty: number;

@@ -6,6 +6,8 @@ export interface Product {
   id: number;
   workspace_id: number;
   item_id: number;
+  item_name?: string | null;
+  item_unit?: string | null;
   factory_id: number;
   qty: number;
   avg_cost: number | null;

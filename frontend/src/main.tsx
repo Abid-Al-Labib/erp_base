@@ -4,7 +4,6 @@ import App from './App.js'
 import './index.css'
 import { Toaster } from 'react-hot-toast';
 
-
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
@@ -15,4 +14,4 @@ ReactDOM.createRoot(rootElement as HTMLElement).render(
     <App />
     <Toaster />
   </React.StrictMode>,
-)
+);

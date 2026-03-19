@@ -31,6 +31,8 @@ class ProductResponse(BaseModel):
     id: int
     workspace_id: int
     item_id: int
+    item_name: str | None = None
+    item_unit: str | None = None
     factory_id: int
     qty: int
     avg_cost: Decimal | None = None

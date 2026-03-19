@@ -40,7 +40,16 @@ class Inventory(Base):
     deleted_by = Column(Integer, ForeignKey("profiles.id"), nullable=True)
 
     # Relationships
-    item = relationship("Item", backref="inventory_records")
+    item = relationship("Item", backref="inventory_records", lazy="joined")
+
+    @property
+    def item_name(self) -> str | None:
+        return self.item.name if self.item else None
+
+    @property
+    def item_unit(self) -> str | None:
+        return self.item.unit if self.item else None
+
     factory = relationship("Factory", backref="inventory_records")
     creator = relationship("Profile", foreign_keys=[created_by], backref="created_inventory")
     updater = relationship("Profile", foreign_keys=[updated_by], backref="updated_inventory")

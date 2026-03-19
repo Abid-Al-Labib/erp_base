@@ -7,7 +7,6 @@ import {
   ShoppingCart,
   Package,
   Archive,
-  Cog,
   FolderKanban,
   FlaskConical,
   Settings,
@@ -50,7 +49,8 @@ interface DashboardNavbarProps {
 
 const HOVER_ZONE_WIDTH = 56; // Wide enough to cover button + easy to trigger
 
-const FACTORIES_SUB_PATHS = ['/factories', '/items', '/storage', '/machine', '/project', '/production'];
+const FACTORIES_SUB_PATHS = ['/factories', '/items', '/storage', '/project', '/production'];
+const ORDERS_SUB_PATHS = ['/orders', '/orders/purchase', '/orders/transfer', '/orders/expense', '/orders/sales', '/orders/work'];
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) => {
   const location = useLocation();
@@ -60,6 +60,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
   const { theme, toggleTheme } = useTheme();
   const [factoryDialogOpen, setFactoryDialogOpen] = useState(false);
   const [factoriesExpanded, setFactoriesExpanded] = useState(false);
+  const [ordersExpanded, setOrdersExpanded] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
@@ -92,9 +93,25 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
   const navItems: NavItem[] = [
     { name: 'Accounts', icon: <Users size={20} />, path: '/accounts' },
     { name: 'BusinessLens', icon: <BarChart3 size={20} />, path: '/businesslens' },
-    { name: 'Orders', icon: <ShoppingCart size={20} />, path: '/orders' },
     { name: 'Management', icon: <Settings size={20} />, path: '/management' },
   ];
+
+  const isOrdersActive = ORDERS_SUB_PATHS.some(
+    (p) => location.pathname === p || location.pathname.startsWith(p + '/')
+  );
+  const ordersUserCollapsedRef = useRef(false);
+  useEffect(() => {
+    if (isOrdersActive && !ordersUserCollapsedRef.current) {
+      setOrdersExpanded(true);
+    }
+  }, [isOrdersActive]);
+  useEffect(() => {
+    if (!isOrdersActive) ordersUserCollapsedRef.current = false;
+  }, [isOrdersActive]);
+  const handleOrdersOpenChange = (open: boolean) => {
+    if (!open) ordersUserCollapsedRef.current = true;
+    setOrdersExpanded(open);
+  };
 
   const isFactoriesActive = FACTORIES_SUB_PATHS.some(
     (p) => location.pathname === p || (p !== '/dashboard' && location.pathname.startsWith(p + '/'))
@@ -195,7 +212,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
       </div>
 
       {/* Navigation Items - scrollable when content overflows */}
-      <nav className="flex-1 min-h-0 overflow-y-auto py-6 px-3 scrollbar-purple">
+      <nav className="flex-1 min-h-0 overflow-y-auto py-6 px-3">
         <ul className="space-y-1">
           <li>
             <Link
@@ -245,9 +262,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/storage">Storage</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/machine">Machine</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/project">Project</Link>
@@ -342,19 +356,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                     </li>
                     <li>
                       <Link
-                        to="/machine"
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                          isActive('/machine')
-                            ? 'bg-brand-primary text-white'
-                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
-                        }`}
-                      >
-                        <Cog size={18} />
-                        <span className="text-sm font-medium">Machine</span>
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
                         to="/project"
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
                           isActive('/project')
@@ -377,6 +378,144 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ onCollapsedChange }) 
                       >
                         <FlaskConical size={18} />
                         <span className="text-sm font-medium">Production</span>
+                      </Link>
+                    </li>
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </li>
+
+          {/* Orders expandable section */}
+          <li>
+            {isCollapsed ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div
+                    className={`flex items-center justify-center w-full px-2 py-3 rounded-lg cursor-pointer ${
+                      isOrdersActive
+                        ? 'bg-brand-primary text-white'
+                        : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                    }`}
+                    title="Orders"
+                  >
+                    <ShoppingCart size={20} className="shrink-0" />
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="right" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders">Overview</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders/purchase">Purchase Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders/transfer">Transfer Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders/expense">Expense Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders/sales">Sales Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders/work">Work Orders</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Collapsible open={ordersExpanded} onOpenChange={handleOrdersOpenChange}>
+                <div
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all w-full ${
+                    isOrdersActive
+                      ? 'bg-brand-primary text-white'
+                      : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                  }`}
+                >
+                  <CollapsibleTrigger asChild>
+                    <button className="flex items-center gap-3 flex-1 min-w-0 text-left" title="Orders">
+                      <ShoppingCart size={20} className="shrink-0" />
+                      <span className="font-medium flex-1 truncate">Orders</span>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleTrigger asChild>
+                    <button className="shrink-0 p-1">
+                      {ordersExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                  <ul className="mt-1 ml-4 pl-4 border-l border-white/20 dark:border-border space-y-1">
+                    <li>
+                      <Link
+                        to="/orders"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders') && location.pathname === '/orders'
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Overview</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/orders/purchase"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders/purchase')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Purchase</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/orders/transfer"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders/transfer')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Transfer</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/orders/expense"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders/expense')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Expense</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/orders/sales"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders/sales')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Sales</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/orders/work"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                          isActive('/orders/work')
+                            ? 'bg-brand-primary text-white'
+                            : 'text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-muted hover:text-white dark:hover:text-foreground'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">Work Orders</span>
                       </Link>
                     </li>
                   </ul>

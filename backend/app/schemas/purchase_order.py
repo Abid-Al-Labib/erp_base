@@ -25,6 +25,8 @@ class PurchaseOrderItemResponse(BaseModel):
     purchase_order_id: int
     line_number: int
     item_id: int
+    item_name: str | None = None
+    item_unit: str | None = None
     quantity_ordered: Decimal
     quantity_received: Decimal
     unit_price: Decimal

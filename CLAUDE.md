@@ -219,6 +219,21 @@ src/
 └── App.tsx               # Root component
 ```
 
+### Frontend Design Patterns
+
+**Factory-scoped pages** (Machines, Production, etc.):
+- Factory and Section selectors MUST be in the **page header bar**, not in a separate filters card.
+- Layout: icon + title left; Factory, Section, Search, primary action right.
+- See `.cursor/rules/factory-scoped-pages.mdc` and `progressDesign.md` (2026-02-25).
+
+**List + detail layouts** (no page scroll):
+- Page container: `h-screen overflow-hidden`. List and detail panels scroll within their areas (`overflow-y-auto`).
+- Use `flex-1 min-h-0` on flex children for correct internal scrolling.
+
+**Reusable components**: Extract custom UI (MachineDetailCard, ContributionHeatmap, etc.) to `frontend/src/components/newcomponents/customui/` for reuse.
+
+**Themed scrollbar**: All scrollable areas use the themed purple scrollbar (global in `index.css`). Do not add custom scrollbar overrides.
+
 ### Redux Toolkit Setup
 
 ```typescript
@@ -2247,6 +2262,7 @@ def create_order(
 - Use functional components with hooks (no class components)
 - TypeScript for all code with strict typing
 - Use `@/` path alias for imports from `src/`
+- **Types**: ONLY import from `frontend/src/types/` (e.g. `@/types/item`); do NOT use root `types.ts` for new code (legacy)
 - Async/await over `.then()` chains
 - Component props must have explicit TypeScript interfaces
 - Use RTK Query hooks for all API calls

@@ -1,0 +1,28 @@
+---
+description: Use types only from frontend/src/types/ directory
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend Type Definitions
+
+**MANDATORY**: All TypeScript types and interfaces MUST come from `frontend/src/types/`.
+
+## Rules
+
+- ✅ Import from `@/types/[domain]` (e.g. `import type { Item } from '@/types/item'`)
+- ✅ Add new types to `frontend/src/types/` — one file per domain (item.ts, machine.ts, factory.ts, etc.)
+- ❌ DO NOT import from root `types.ts` — that file is legacy (Supabase-based) for old pages only
+
+## Examples
+
+```typescript
+// ✅ CORRECT
+import type { Item } from '@/types/item';
+import type { Machine } from '@/types/machine';
+import type { MachineItem } from '@/types/machineItem';
+import type { Factory } from '@/types/factory';
+
+// ❌ WRONG (legacy)
+import { Machine, Part } from '@/types';
+```

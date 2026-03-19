@@ -23,10 +23,12 @@ import { useGetTagsQuery } from '@/features/items/itemTagsApi';
 import { Checkbox } from '@/components/ui/checkbox';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import type { Item } from '@/types/item';
 
 interface AddItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: (item: Item) => void;
 }
 
 const UNIT_OPTIONS = [
@@ -44,7 +46,7 @@ const UNIT_OPTIONS = [
   { value: 'pair', label: 'Pair' },
 ];
 
-const AddItemDialog: React.FC<AddItemDialogProps> = ({ open, onOpenChange }) => {
+const AddItemDialog: React.FC<AddItemDialogProps> = ({ open, onOpenChange, onSuccess }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [unit, setUnit] = useState('');
@@ -67,7 +69,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ open, onOpenChange }) => 
     }
 
     try {
-      await createItem({
+      const created = await createItem({
         name: name.trim(),
         description: description.trim() || null,
         unit,
@@ -82,6 +84,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({ open, onOpenChange }) => 
       setUnit('');
       setSelectedTagIds([]);
       onOpenChange(false);
+      onSuccess?.(created);
     } catch (error: any) {
       console.error('Failed to create item:', error);
       toast.error(error?.data?.detail || 'Failed to create item');
