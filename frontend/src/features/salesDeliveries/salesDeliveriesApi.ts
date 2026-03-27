@@ -22,7 +22,7 @@ export interface ActionResponse<T> {
 export const salesDeliveriesApi = createApi({
   reducerPath: 'salesDeliveriesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000/api/v1',
+    baseUrl: import.meta.env.VITE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
       const token = state.auth.token;
