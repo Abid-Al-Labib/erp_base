@@ -88,7 +88,9 @@ const AddProjectDialog: React.FC<AddProjectDialogProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add Project</DialogTitle>
-          <DialogDescription>Create a new project.</DialogDescription>
+          <DialogDescription>
+            Create a new project with basic details. Budget and costs will be calculated later.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -10,7 +10,7 @@ import type { FinancialAuditLog } from '../../types/financialAuditLog';
 export const financialAuditLogsApi = createApi({
   reducerPath: 'financialAuditLogsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL,
+    baseUrl: 'http://localhost:8000/api/v1',
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
       const token = state.auth.token;
